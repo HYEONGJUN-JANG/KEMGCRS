@@ -40,6 +40,8 @@ def parseargs():
     parser.add_argument("--device", default='0', type=str, help="GPU Device")  # HJ : Log file middle Name
     parser.add_argument('--know_topk', default=3, type=int, help="Number of retrieval know text")  # HJ: Know_text retrieve Top-k
     parser.add_argument('--log_dir', default='logs', type=str, help="logging file directory")  # HJ: log file directory
+    parser.add_argument('--model_dir', default='models', type=str, help="saved model directory")  # TH: model file directory
+
     parser.add_argument('--log_name', default='', type=str, help="log file name")  # HJ: log file name
     args = parser.parse_args()
     if args.time == '': args.time = get_time_kst()
@@ -49,7 +51,8 @@ def parseargs():
     elif sysChecker() == "Windows":
         pass  # HJ local
     else:
-        print("Check Your Platform Setting"); exit()
+        print("Check Your Platform Setting");
+        exit()
     return args
 
 

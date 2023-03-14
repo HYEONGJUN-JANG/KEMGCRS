@@ -26,15 +26,18 @@ def knowledge_db_save(args, knowledgeDB, max_length, tokenizer, model):
     np.save(os.path.join(args.data_dir, args.k_idx_name), knowledge_index)
 
 
-def dataset_reader(args, tokenizer, knowledgeDB):
+def dataset_reader(args, tokenizer, knowledgeDB, data_name='train'):
     if not os.path.exists(os.path.join(args.data_dir, 'cache')): os.makedirs(os.path.join(args.data_dir, 'cache'))
-    cachename = os.path.join(args.data_dir, 'cache', f"cached_{args.data_name}.pt")
+    cachename = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}.txt")
+    cachename_know = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}_know.txt")
+
     if args.data_cache and os.path.exists(cachename):
         train_sample = read_pkl(cachename)
+        knowledge_sample = read_pkl(cachename_know)
     else:
         train_sample = []
         knowledge_sample = []
-        data_path = os.path.join(args.data_dir, args.data_name)
+        data_path = os.path.join(args.data_dir, f"en_{data_name}.txt")
         with open(data_path, 'r', encoding='UTF-8') as f:
             for line in tqdm(f, desc="Dataset Read", bar_format=' {percentage:3.0f} % | {bar:23} {r_bar}'):
                 dialog = json.loads(line)
@@ -55,7 +58,7 @@ def dataset_reader(args, tokenizer, knowledgeDB):
                     role = role_seq[i]
                     if role == 'System' and len(augmented_dialog) > 0:
                         flatten_dialog = tokenizer.sep_token.join(augmented_dialog)
-
+                        flatten_dialog = '<topic>' + dialog['goal_topic_list'][i] + '<dialog>' + flatten_dialog # [TH] 일단 임시로 넣어봄
                         tokenized_dialog = tokenizer(flatten_dialog,
                                                      max_length=args.max_length,
                                                      padding='max_length',
@@ -76,11 +79,14 @@ def dataset_reader(args, tokenizer, knowledgeDB):
                                                      'target_knowledge': knowledgeDB.index(knowledge_seq[i])
                                                      })
                     augmented_dialog.append(conversation[i])
-        if args.data_cache: write_pkl(train_sample, cachename)
+        if args.data_cache:
+            write_pkl(train_sample, cachename)
+            write_pkl(knowledge_sample, cachename_know)
 
-    train_sample = DialogDataset(train_sample)
-    train_dataloader = DataLoader(train_sample, batch_size=1)
-    return train_dataloader
+    data_sample = DialogDataset(knowledge_sample)
+    batch_size = args.batch_size if 'train' == data_name else 1
+    dataloader = DataLoader(data_sample, batch_size=batch_size)
+    return dataloader
 
 
 if __name__ == "__main__":
