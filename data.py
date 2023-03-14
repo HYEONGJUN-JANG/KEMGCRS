@@ -58,7 +58,7 @@ def dataset_reader(args, tokenizer, knowledgeDB, data_name='train'):
                     role = role_seq[i]
                     if role == 'System' and len(augmented_dialog) > 0:
                         flatten_dialog = tokenizer.sep_token.join(augmented_dialog)
-                        flatten_dialog = '<topic>' + dialog['goal_topic_list'][i] + '<dialog>' + flatten_dialog # [TH] 일단 임시로 넣어봄
+                        flatten_dialog = '<topic>' + dialog['goal_topic_list'][i] + '<dialog>' + flatten_dialog  # [TH] 일단 임시로 넣어봄
                         tokenized_dialog = tokenizer(flatten_dialog,
                                                      max_length=args.max_length,
                                                      padding='max_length',
