@@ -83,7 +83,8 @@ def main():
     optimizer = optim.Adam(bert_model.parameters(), lr=1e-5) # TODO: 이것들은 왜 여기에 (TH)
 
     jsonlineSave = []
-    bert_model.load_state_dict(torch.load(os.path.join(args.model_dir, args.pretrained_model)))  # state_dict를 불러 온 후, 모델에 저장`
+    if args.model_load:
+        bert_model.load_state_dict(torch.load(os.path.join(args.model_dir, args.pretrained_model)))  # state_dict를 불러 온 후, 모델에 저장`
     bert_model = bert_model.to(args.device)
 
     train(args, train_dataloader, knowledge_index, bert_model) # [TH] <topic> 추가됐으니까 재학습
