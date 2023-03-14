@@ -37,7 +37,7 @@ class DialogDataset(Dataset):
         target_knowledge = data['target_knowledge']
         response = data['response']
         goal_type = data['goal_type']
-        topic= data['topic']
+        topic = data['topic']
         return dialog_token, dialog_mask, target_knowledge, goal_type, response, topic
 
     def __len__(self):
