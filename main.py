@@ -9,7 +9,6 @@ import data
 from utils import *
 
 
-
 class Retriever(nn.Module):
     def __init__(self, bert_model, hidden_size):
         super(Retriever, self).__init__()
@@ -19,12 +18,14 @@ class Retriever(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_size // 2, hidden_size)
         )
+
     def forward(self, token_seq, mask):
         dialog_emb = self.bert_model(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         dialog_emb = self.proj(dialog_emb)
         return dialog_emb
 
-def train(args, train_dataloader,  knowledge_index, bert_model ):
+
+def train(args, train_dataloader, knowledge_index, bert_model):
     # For training BERT indexing
     # train_dataloader = data_pre.dataset_reader(args, tokenizer, knowledgeDB)
     retriever = Retriever(bert_model, args.hidden_size)
@@ -55,11 +56,11 @@ def train(args, train_dataloader,  knowledge_index, bert_model ):
 
     # torch.save(bert_model.state_dict(), f"{args.time}_{args.model_name}_bin.pt")  # TIME_MODELNAME 형식
 
+
 def main():
     args = parseargs()
     checkPath(args.log_dir)
-    logging.basicConfig(level=logging.DEBUG, filename=os.path.join(args.log_dir , f'/{args.time}_{args.log_name + "_"}log.txt'),
-                        filemode='a', format='%(asctime)s: %(levelname)s: %(message)s', datefmt='%Y/%m/%d_%p_%I:%M:%S ')
+    logging.basicConfig(level=logging.DEBUG, filename=os.path.join(args.log_dir, f'{args.time}_{args.log_name + "_"}log.txt'), filemode='a', format='%(asctime)s: %(levelname)s: %(message)s', datefmt='%Y/%m/%d_%p_%I:%M:%S ')
     logging.info('Commend: {}'.format(', '.join(map(str, sys.argv))))
     args.device = f'cuda:{args.device}' if args.device else "cpu"
     args.data_cache = True
@@ -70,10 +71,9 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
 
     # Read knowledge DB
-    knowledgeDB = data.read_pkl(os.path.join(args.data_dir, args.k_DB_name))
+    knowledgeDB = data.read_pkl(os.path.join(args.data_dir, args.k_DB_name)) # TODO: verbalize (TH)
     knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name)))
     train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB)
-
 
     retriever = Retriever(bert_model, args.hidden_size)
     knowledge_index = knowledge_index.to(args.device)
@@ -90,7 +90,7 @@ def main():
         dialog_token = batch[0].to(args.device)
         dialog_mask = batch[1].to(args.device)
         target_knowledge = batch[2].to(args.device)
-        goal_type = batch[3] #
+        goal_type = batch[3]  #
         response = batch[4]
         topic = batch[5]
 
@@ -109,21 +109,20 @@ def main():
 
         input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
         target_knowledge_text = [knowledgeDB[idx] for idx in target_knowledge]  # target knowledge
-        retrieved_knowledge_text = [knowledgeDB[idx] for idx in top_candidate[0]] # list
+        retrieved_knowledge_text = [knowledgeDB[idx] for idx in top_candidate[0]]  # list
         correct = target_knowledge_text[0] in retrieved_knowledge_text
 
-        jsonlineSave.append(
-            {'goal_type': goal_type[0], 'topic' : topic, 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response[0], "predict5": retrieved_knowledge_text})
+        jsonlineSave.append({'goal_type': goal_type[0], 'topic': topic, 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response[0], "predict5": retrieved_knowledge_text})
         cnt += 1
-        if cnt==22: break
+        if cnt == 22: break
         # correct.append((target_knowledge_text == retrieved_knowledge_text))
 
     # TODO 입출력 저장
-    write_pkl(obj=jsonlineSave, filename='jsonline.pkl') # 입출력 저장
+    write_pkl(obj=jsonlineSave, filename='jsonline.pkl')  # 입출력 저장
     save_json(args, f"{args.time}_inout", jsonlineSave)
 
-
     print('done')
+
 
 if __name__ == "__main__":
     main()

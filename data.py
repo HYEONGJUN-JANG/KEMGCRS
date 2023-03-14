@@ -5,6 +5,7 @@ import numpy as np
 import json
 from utils import *
 
+
 def knowledge_db_save(args, knowledgeDB, max_length, tokenizer, model):
     knowledgeDataset = KnowledgeDataset(knowledgeDB, max_length, tokenizer)
     knowledgeDataLoader = DataLoader(
@@ -24,13 +25,16 @@ def knowledge_db_save(args, knowledgeDB, max_length, tokenizer, model):
     # np.save('knowledge_index.npy', knowledge_index)
     np.save(os.path.join(args.data_dir, args.k_idx_name), knowledge_index)
 
-def dataset_reader(args, tokenizer,knowledgeDB):
-    if not os.path.exists(os.path.join(args.data_dir,'cache')): os.makedirs(os.path.join(args.data_dir,'cache'))
-    cachename=os.path.join(args.data_dir,'cache', f"cached_{args.data_name}.pt")
-    if args.data_cache and os.path.exists(cachename): train_sample = read_pkl(cachename)
+
+def dataset_reader(args, tokenizer, knowledgeDB):
+    if not os.path.exists(os.path.join(args.data_dir, 'cache')): os.makedirs(os.path.join(args.data_dir, 'cache'))
+    cachename = os.path.join(args.data_dir, 'cache', f"cached_{args.data_name}.pt")
+    if args.data_cache and os.path.exists(cachename):
+        train_sample = read_pkl(cachename)
     else:
         train_sample = []
-        data_path=os.path.join(args.data_dir, args.data_name)
+        knowledge_sample = []
+        data_path = os.path.join(args.data_dir, args.data_name)
         with open(data_path, 'r', encoding='UTF-8') as f:
             for line in tqdm(f, desc="Dataset Read", bar_format=' {percentage:3.0f} % | {bar:23} {r_bar}'):
                 dialog = json.loads(line)
@@ -49,7 +53,7 @@ def dataset_reader(args, tokenizer,knowledgeDB):
                 augmented_dialog = []
                 for i in range(len(conversation)):
                     role = role_seq[i]
-                    if role == 'System' and len(augmented_dialog) > 0 and knowledge_seq[i] != '':
+                    if role == 'System' and len(augmented_dialog) > 0:
                         flatten_dialog = tokenizer.sep_token.join(augmented_dialog)
 
                         tokenized_dialog = tokenizer(flatten_dialog,
@@ -59,24 +63,33 @@ def dataset_reader(args, tokenizer,knowledgeDB):
                                                      add_special_tokens=True)
                         train_sample.append({'dialog_token': tokenized_dialog.input_ids,
                                              'dialog_mask': tokenized_dialog.attention_mask,
-                                             'target_knowledge': knowledgeDB.index(knowledge_seq[i]),
                                              'response': conversation[i],
                                              'goal_type': dialog['goal_type_list'][i],
                                              'topic': dialog['goal_topic_list'][i]
                                              })
+                        if knowledge_seq[i] != '':
+                            knowledge_sample.append({'dialog_token': tokenized_dialog.input_ids,
+                                                     'dialog_mask': tokenized_dialog.attention_mask,
+                                                     'response': conversation[i],
+                                                     'goal_type': dialog['goal_type_list'][i],
+                                                     'topic': dialog['goal_topic_list'][i],
+                                                     'target_knowledge': knowledgeDB.index(knowledge_seq[i])
+                                                     })
                     augmented_dialog.append(conversation[i])
-        if args.data_cache : write_pkl(train_sample, cachename)
+        if args.data_cache: write_pkl(train_sample, cachename)
 
     train_sample = DialogDataset(train_sample)
     train_dataloader = DataLoader(train_sample, batch_size=1)
     return train_dataloader
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     from transformers import AutoModel, AutoTokenizer
-    args=parseargs()
-    args.data_cache=False
+
+    args = parseargs()
+    args.data_cache = False
     if not os.path.exists(os.path.join("cache", args.model_name)): os.makedirs(os.path.join("cache", args.model_name))
     bert_model = AutoModel.from_pretrained(args.model_name, cache_dir=os.path.join("cache", args.model_name))
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-    knowledgeDB = read_pkl("datasets/knowledgeDB.txt")
+    knowledgeDB = read_pkl("data/knowledgeDB.txt")
     dataset_reader(args, tokenizer, knowledgeDB)
