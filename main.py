@@ -44,7 +44,7 @@ def train(args, train_dataloader, knowledge_index, bert_model):
             # tokenizer.batch_decode(dialog_token, skip_special_tokens=True)  # 'dialog context'
             # print([knowledgeDB[idx] for idx in target_knowledge]) # target knowledge
 
-            dialog_emb = bert_model(input_ids=dialog_token, attention_mask=dialog_mask)  # [B, d]
+            dialog_emb = bert_model(input_ids=dialog_token, attention_mask=dialog_mask).last_hidden_state[:, 0, :]  # [B, d]
             dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
             loss = criterion(dot_score, target_knowledge)
             total_loss += loss.data.float()
@@ -70,6 +70,7 @@ def main():
     bert_model = AutoModel.from_pretrained(args.model_name, cache_dir=os.path.join("cache", args.model_name))
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
+    bert_model.resize_token_embeddings(len(tokenizer))
 
     # Read knowledge DB
     knowledgeDB = data.read_pkl(os.path.join(args.data_dir, args.k_DB_name))  # TODO: verbalize (TH)
