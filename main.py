@@ -59,14 +59,14 @@ def train(args, train_dataloader, knowledge_data, retriever):
         print('LOSS:\t%.4f' % total_loss)
     torch.save(retriever.state_dict(), f"{args.time}_{args.model_name}_bin.pt")  # TIME_MODELNAME 형식
 
-def eval_know(args, test_dataloader, bert_model, tokenizer, knowledge_index):
+def eval_know(args, test_dataloader, retriever, tokenizer, knowledge_index):
 
     # Read knowledge DB
     knowledgeDB = data.read_pkl(os.path.join(args.data_dir, args.k_DB_name))  # TODO: verbalize (TH)
     knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
     knowledge_index = knowledge_index.to(args.device)
     jsonlineSave = []
-    bert_model = bert_model.to(args.device)
+    # bert_model = bert_model.to(args.device)
 
     cnt = 0
     for batch in tqdm(test_dataloader, desc="Knowledge_Test", bar_format=' {percentage:3.0f} % | {bar:23} {r_bar}'): # TODO: Knowledge task 분리중
@@ -78,9 +78,7 @@ def eval_know(args, test_dataloader, bert_model, tokenizer, knowledge_index):
         response = batch[4]
         topic = batch[5]
 
-        # dialog_emb = retriever(dialog_token, dialog_mask)  # [B, d]
-        dialog_emb = bert_model(input_ids=dialog_token, attention_mask=dialog_mask).last_hidden_state[:, 0, :]  # [B, d]
-        dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
+        dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, knowledge_index)
 
         top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
 
