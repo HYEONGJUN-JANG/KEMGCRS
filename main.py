@@ -125,9 +125,8 @@ def main():
     # TODO: retriever 로 바꿔서 save 와 load
     # if args.model_load:
     #     bert_model.load_state_dict(torch.load(os.path.join(args.model_dir, args.pretrained_model)))  # state_dict를 불러 온 후, 모델에 저장`
-    bert_model = bert_model.to(args.device)
-
     retriever = Retriever(args, bert_model)
+    retriever = retriever.to(args.device)
     train(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
     eval_know(args, test_dataloader, retriever, tokenizer, knowledge_index) # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
