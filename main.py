@@ -29,6 +29,7 @@ class Retriever(nn.Module):
 
 
 def knowledge_reindexing(args, knowledge_data, bert_model):
+    print('...knowledge indexing...')
     knowledgeDataLoader = DataLoader(
         knowledge_data,
         batch_size=args.batch_size
