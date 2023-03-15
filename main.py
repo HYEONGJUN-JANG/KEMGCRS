@@ -58,13 +58,14 @@ def train(args, train_dataloader, knowledge_data, retriever):
             optimizer.step()
         print('LOSS:\t%.4f' % total_loss)
     torch.save(retriever.state_dict(), f"{args.time}_{args.model_name}_bin.pt")  # TIME_MODELNAME 형식
+    return knowledge_index
 
 
-def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer):
+def eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer):
 
     # Read knowledge DB
-    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
-    knowledge_index = knowledge_index.to(args.device)
+    # knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+    # knowledge_index = knowledge_index.to(args.device)
     jsonlineSave = []
     # bert_model = bert_model.to(args.device)
 
@@ -96,6 +97,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
     print('done')
 
+
 def main():
     args = parseargs()
     # args.data_cache = False
@@ -113,21 +115,21 @@ def main():
 
     # Read knowledge DB
     knowledgeDB = data.read_pkl(os.path.join(args.data_dir, args.k_DB_name))  # TODO: verbalize (TH)
-    knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name)))
     knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
 
     train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'train')
     test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'test')
 
-    knowledge_index = knowledge_index.to(args.device)
+    # knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name)))
+    # knowledge_index = knowledge_index.to(args.device)
 
     # TODO: retriever 로 바꿔서 save 와 load
     # if args.model_load:
     #     bert_model.load_state_dict(torch.load(os.path.join(args.model_dir, args.pretrained_model)))  # state_dict를 불러 온 후, 모델에 저장`
     retriever = Retriever(args, bert_model)
     retriever = retriever.to(args.device)
-    train(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
-    eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer) # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    knowledge_index = train(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
+    eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer) # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
 
