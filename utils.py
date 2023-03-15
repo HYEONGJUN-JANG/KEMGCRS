@@ -26,7 +26,7 @@ def parseargs():
     parser.add_argument("--model_load", action='store_true', help="Whether to load saved model.")
 
     parser.add_argument("--data_dir", default='data', type=str, help="The data directory.")
-    parser.add_argument('--data_name', default='en_test.txt', type=str, help="dataset name")
+    # parser.add_argument('--data_name', default='en_test.txt', type=str, help="dataset name")
     parser.add_argument('--k_DB_name', default='knowledgeDB.txt', type=str, help="knowledge DB file name in data_dir")
     parser.add_argument('--k_idx_name', default='knowledge_index.npy', type=str, help="knowledge index file name in data_dir")
 
@@ -52,6 +52,7 @@ def parseargs():
     parser.add_argument('--log_name', default='', type=str, help="log file name")  # HJ: log file name
     args = parser.parse_args()
     args.device = f'cuda:{args.device}' if args.device else "cpu"
+    checkPath(args.model_dir)
     if args.time == '': args.time = get_time_kst()
     from platform import system as sysChecker
     if sysChecker() == 'Linux':
