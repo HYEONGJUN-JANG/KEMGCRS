@@ -3,10 +3,10 @@ from torch.utils.data import Dataset
 
 
 class KnowledgeDataset(Dataset):
-    def __init__(self, knowledgeDB, max_length, tokenizer):
+    def __init__(self, args, knowledgeDB, tokenizer):
         super(Dataset, self).__init__()
         self.tokenizer = tokenizer
-        self.max_length = max_length
+        self.max_length = args.max_length
         self.knowledgeDB = knowledgeDB
         self.data_samples = []
 
