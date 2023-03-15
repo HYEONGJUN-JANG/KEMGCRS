@@ -30,11 +30,13 @@ def parseargs():
     parser.add_argument('--k_DB_name', default='knowledgeDB.txt', type=str, help="knowledge DB file name in data_dir")
     parser.add_argument('--k_idx_name', default='knowledge_index.npy', type=str, help="knowledge index file name in data_dir")
 
-    parser.add_argument('--model_name', default='bert-base-uncased', type=str, help="BERT Model Name")
+    parser.add_argument('--bert_name', default='bert-base-uncased', type=str, help="BERT Model Name")
+    parser.add_argument('--model_name', default='myretriever', type=str, help="BERT Model Name")
+
     parser.add_argument('--pretrained_model', default='bert_model.pt', type=str, help="Pre-trained Retriever BERT Model Name")
 
-    parser.add_argument('--max_length', default=512, type=int, help="dataset name")
-    parser.add_argument('--batch_size', default=32, type=int, help="batch size")
+    parser.add_argument('--max_length', default=128, type=int, help="dataset name")
+    parser.add_argument('--batch_size', default=2, type=int, help="batch size")
 
     parser.add_argument('--hidden_size', default=768, type=int, help="hidden size")
     parser.add_argument('--num_epochs', default=10, type=int, help="Number of epoch")
@@ -45,6 +47,7 @@ def parseargs():
     parser.add_argument('--know_topk', default=3, type=int, help="Number of retrieval know text")  # HJ: Know_text retrieve Top-k
     parser.add_argument('--log_dir', default='logs', type=str, help="logging file directory")  # HJ: log file directory
     parser.add_argument('--model_dir', default='models', type=str, help="saved model directory")  # TH: model file directory
+    parser.add_argument('--saved_model_path', default='', type=str, help="saved model file name")  # TH: model file directory
 
     parser.add_argument('--log_name', default='', type=str, help="log file name")  # HJ: log file name
     args = parser.parse_args()
@@ -74,11 +77,12 @@ def save_json(args, filename, saved_jsonlines):
         txtlines = []
         for js in saved_jsonlines:  # TODO: Movie recommendation, Food recommendation, POI recommendation, Music recommendation, Q&A, Chat about stars
             goal, topic, tf, dialog, targetkg, resp, pred5 = js['goal_type'], js['topic'], js['tf'], js['dialog'], js['target'], js['response'], js["predict5"]
-            pred_txt = "\n".join(pred5)
-            txt = f"\n---------------------------\n[Goal]: {goal}\t[Topic]: {topic[0]}\t[TF]: {tf}\n[Target Know_text]: {targetkg}\n[PRED_KnowText]\n{pred_txt}\n[Dialog]"
-            for i in dialog.replace("user :", '|user :').replace("system :", "|system : ").split('|'):
-                txt += f"{i}\n"
-            txtlines.append(txt)
+            if goal == 'Movie recommendation' or goal=='Food recommendation' or goal=='POI recommendation' or goal=='Music recommendation' or goal=='Q&A' or goal=='Chat about stars':
+                pred_txt = "\n".join(pred5)
+                txt = f"\n---------------------------\n[Goal]: {goal}\t[Topic]: {topic[0]}\t[TF]: {tf}\n[Target Know_text]: {targetkg}\n[PRED_KnowText]\n{pred_txt}\n[Dialog]"
+                for i in dialog.replace("user :", '|user :').replace("system :", "|system : ").split('|'):
+                    txt += f"{i}\n"
+                txtlines.append(txt)
         return txtlines
 
     path = os.path.join(args.data_dir, 'print')
@@ -86,7 +90,7 @@ def save_json(args, filename, saved_jsonlines):
     file = f'{path}/{filename}.txt'
     txts = json2txt(saved_jsonlines)
     with open(file, 'w', encoding='utf-8') as f:
-        for i in range(min(5000, len(txts))): # TODO: 왜 5000개? (TJ)
+        for i in range(len(txts)): # TODO: 왜 5000개? (TJ)
             f.write(txts[i])
 
 

@@ -13,7 +13,7 @@ from utils import *
 from models import *
 
 
-def knowledge_reindexing(args, knowledge_data, bert_model):
+def knowledge_reindexing(args, knowledge_data, retriever):
     print('...knowledge indexing...')
     knowledgeDataLoader = DataLoader(
         knowledge_data,
@@ -24,24 +24,20 @@ def knowledge_reindexing(args, knowledge_data, bert_model):
     for batch in tqdm(knowledgeDataLoader):
         input_ids = batch[0].to(args.device)
         attention_mask = batch[1].to(args.device)
-        knowledge_emb = bert_model(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]
-        # knowledge_index.append()
+        knowledge_emb = retriever.bert_model(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]
         knowledge_index.extend(knowledge_emb.cpu().detach())
     knowledge_index = torch.stack(knowledge_index, 0)
     return knowledge_index
 
 
-def train(args, train_dataloader, knowledge_data, bert_model):
+def train(args, train_dataloader, knowledge_index, retriever):
     # For training BERT indexing
     # train_dataloader = data_pre.dataset_reader(args, tokenizer, knowledgeDB)
     # knowledge_index = knowledge_index.to(args.device)
-    knowledge_index = knowledge_reindexing(args, knowledge_data, bert_model)
-    knowledge_index = knowledge_index.to(args.device)
+
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(bert_model.parameters(), lr=1e-5)
+    optimizer = optim.Adam(retriever.parameters(), lr=1e-5)
     for epoch in range(args.num_epochs):
-
-
         total_loss = 0
         for batch in tqdm(train_dataloader):
             batch_size = batch[0].size(0)
@@ -52,8 +48,7 @@ def train(args, train_dataloader, knowledge_data, bert_model):
             # tokenizer.batch_decode(dialog_token, skip_special_tokens=True)  # 'dialog context'
             # print([knowledgeDB[idx] for idx in target_knowledge]) # target knowledge
 
-            dialog_emb = bert_model(input_ids=dialog_token, attention_mask=dialog_mask).last_hidden_state[:, 0, :]  # [B, d]
-            dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
+            dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, knowledge_index)
             loss = criterion(dot_score, target_knowledge)
             total_loss += loss.data.float()
 
@@ -61,16 +56,16 @@ def train(args, train_dataloader, knowledge_data, bert_model):
             loss.backward()
             optimizer.step()
         print('LOSS:\t%.4f' % total_loss)
-    torch.save(bert_model.state_dict(), f"{args.time}_{args.model_name}_bin.pt")  # TIME_MODELNAME 형식
+    torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
 
-def eval_know(args, test_dataloader, bert_model, tokenizer, knowledge_index):
+
+def eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer):
 
     # Read knowledge DB
-    knowledgeDB = data.read_pkl(os.path.join(args.data_dir, args.k_DB_name))  # TODO: verbalize (TH)
-    knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
-    knowledge_index = knowledge_index.to(args.device)
+    # knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+    # knowledge_index = knowledge_index.to(args.device)
     jsonlineSave = []
-    bert_model = bert_model.to(args.device)
+    # bert_model = bert_model.to(args.device)
 
     cnt = 0
     for batch in tqdm(test_dataloader, desc="Knowledge_Test", bar_format=' {percentage:3.0f} % | {bar:23} {r_bar}'): # TODO: Knowledge task 분리중
@@ -82,9 +77,7 @@ def eval_know(args, test_dataloader, bert_model, tokenizer, knowledge_index):
         response = batch[4]
         topic = batch[5]
 
-        # dialog_emb = retriever(dialog_token, dialog_mask)  # [B, d]
-        dialog_emb = bert_model(input_ids=dialog_token, attention_mask=dialog_mask).last_hidden_state[:, 0, :]  # [B, d]
-        dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
+        dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, knowledge_index)
 
         top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
 
@@ -102,37 +95,48 @@ def eval_know(args, test_dataloader, bert_model, tokenizer, knowledge_index):
 
     print('done')
 
+
 def main():
     args = parseargs()
     # args.data_cache = False
     checkPath(args.log_dir)
+    checkPath(args.model_dir)
+
     logging.basicConfig(level=logging.DEBUG, filename=os.path.join(args.log_dir, f'{args.time}_{args.log_name + "_"}log.txt'), filemode='a', format='%(asctime)s: %(levelname)s: %(message)s', datefmt='%Y/%m/%d_%p_%I:%M:%S ')
     logging.info('Commend: {}'.format(', '.join(map(str, sys.argv))))
 
     # Model cached load
-    checkPath(os.path.join("cache", args.model_name))
-    bert_model = AutoModel.from_pretrained(args.model_name, cache_dir=os.path.join("cache", args.model_name))
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    checkPath(os.path.join("cache", args.bert_name))
+    bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
+    tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
     tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
     bert_model.resize_token_embeddings(len(tokenizer))
+    args.hidden_size = bert_model.config.hidden_size  # BERT large 쓸 때 대비
 
     # Read knowledge DB
     knowledgeDB = data.read_pkl(os.path.join(args.data_dir, args.k_DB_name))  # TODO: verbalize (TH)
-    knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name)))
     knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
 
     train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'train')
     test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'test')
 
+    # knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name)))
+    # knowledge_index = knowledge_index.to(args.device)
+
+    # TODO: retriever 로 바꿔서 save 와 load
+    # if args.model_load:
+    #     bert_model.load_state_dict(torch.load(os.path.join(args.model_dir, args.pretrained_model)))  # state_dict를 불러 온 후, 모델에 저장`
+    retriever = Retriever(args, bert_model)
+    retriever = retriever.to(args.device)
+    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     knowledge_index = knowledge_index.to(args.device)
 
-    if args.model_load:
-        bert_model.load_state_dict(torch.load(os.path.join(args.model_dir, args.pretrained_model)))  # state_dict를 불러 온 후, 모델에 저장`
-    bert_model = bert_model.to(args.device)
+    if args.saved_model_path == '':
+        train(args, train_dataloader, knowledge_index, retriever)  # [TH] <topic> 추가됐으니까 재학습
+    else:
+        retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
 
-    train(args, train_dataloader, knowledge_data, bert_model)  # [TH] <topic> 추가됐으니까 재학습
-    eval_know(args, test_dataloader, bert_model, tokenizer, knowledge_index) # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
-
+    eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer) # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
 if __name__ == "__main__":
