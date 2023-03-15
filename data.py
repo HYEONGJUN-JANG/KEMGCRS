@@ -58,15 +58,25 @@ def dataset_reader(args, tokenizer, knowledgeDB, data_name='train'):
                     role = role_seq[i]
                     if role == 'System' and len(augmented_dialog) > 0:
                         flatten_dialog = tokenizer.sep_token.join(augmented_dialog)
+                        prefix = '<type>' + dialog['goal_type_list'][i] + '<topic>' + dialog['goal_topic_list'][i]  # [TH] 일단 임시로 넣어봄
+
+                        # Truncate and padding
+                        tokenized_dialog = tokenizer(flatten_dialog, add_special_tokens=False)
+                        tokenized_prefix = tokenizer(prefix, add_special_tokens=False)
+                        truncate_size = args.max_length - len(tokenized_prefix.input_ids) - 1  # 1 for cls-token
+                        input_ids = [tokenizer.cls_token_id] + tokenized_dialog.input_ids[-truncate_size:] + tokenized_prefix.input_ids
+                        attention_mask = [1] + tokenized_dialog.attention_mask[-truncate_size:] + tokenized_prefix.attention_mask
+
+                        input_ids = input_ids + [0] * (args.max_length - len(input_ids))
+                        attention_mask = attention_mask + [0] * (args.max_length - len(attention_mask))
+
                         # TODO: argument 받아서 처리하기
-                        flatten_dialog = '<type>' + dialog['goal_type_list'][i] + '<topic>' + dialog['goal_topic_list'][i] + '<dialog>' + flatten_dialog  # [TH] 일단 임시로 넣어봄
-                        tokenized_dialog = tokenizer(flatten_dialog,
-                                                     max_length=args.max_length,
-                                                     padding='max_length',
-                                                     truncation=True,
-                                                     add_special_tokens=True)
-                        train_sample.append({'dialog_token': tokenized_dialog.input_ids,
-                                             'dialog_mask': tokenized_dialog.attention_mask,
+                        # tokenized_dialog = tokenizer(flatten_dialog,
+                        #                              padding='max_length',
+                        #                              truncation=True,
+                        #                              add_special_tokens=True)
+                        train_sample.append({'dialog_token': input_ids,
+                                             'dialog_mask': attention_mask,
                                              'response': conversation[i],
                                              'goal_type': dialog['goal_type_list'][i],
                                              'topic': dialog['goal_topic_list'][i]

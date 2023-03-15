@@ -35,7 +35,7 @@ def parseargs():
 
     parser.add_argument('--pretrained_model', default='bert_model.pt', type=str, help="Pre-trained Retriever BERT Model Name")
 
-    parser.add_argument('--max_length', default=512, type=int, help="dataset name")
+    parser.add_argument('--max_length', default=128, type=int, help="dataset name")
     parser.add_argument('--batch_size', default=32, type=int, help="batch size")
 
     parser.add_argument('--hidden_size', default=768, type=int, help="hidden size")
