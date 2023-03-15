@@ -48,6 +48,7 @@ def parseargs():
 
     parser.add_argument('--log_name', default='', type=str, help="log file name")  # HJ: log file name
     args = parser.parse_args()
+    args.device = f'cuda:{args.device}' if args.device else "cpu"
     if args.time == '': args.time = get_time_kst()
     from platform import system as sysChecker
     if sysChecker() == 'Linux':
