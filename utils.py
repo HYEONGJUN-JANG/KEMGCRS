@@ -86,7 +86,7 @@ def save_json(args, filename, saved_jsonlines):
     file = f'{path}/{filename}.txt'
     txts = json2txt(saved_jsonlines)
     with open(file, 'w', encoding='utf-8') as f:
-        for i in range(min(5000, len(txts))): # TODO: 왜 5000개? (TJ)
+        for i in range(len(txts)): # TODO: 왜 5000개? (TJ)
             f.write(txts[i])
 
 
