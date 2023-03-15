@@ -60,7 +60,7 @@ def train(args, train_dataloader, knowledge_data, retriever):
     torch.save(retriever.state_dict(), f"{args.time}_{args.model_name}_bin.pt")  # TIME_MODELNAME 형식
 
 
-def eval_know(args, test_dataloader, retriever, knowledge_data, tokenizer):
+def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer):
 
     # Read knowledge DB
     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
@@ -127,7 +127,7 @@ def main():
     retriever = Retriever(args, bert_model)
     retriever = retriever.to(args.device)
     train(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
-    eval_know(args, test_dataloader, retriever, knowledge_data, tokenizer) # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer) # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
 
