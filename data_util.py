@@ -1,6 +1,7 @@
 
-def readDic(filename):
-    output=dict()
+def readDic(filename, out="str"):
+    output_str_idx=dict()
+    output_idx_str=dict()
     with open(filename, 'r', encoding='utf-8') as infile:
         for line in infile:
             try:
@@ -8,9 +9,16 @@ def readDic(filename):
             except:
                 print(line)
                 k,idx=line.strip().split()
-            output[k]=idx
-        output[len(output)] = '<PAD>'
-    return output
+            output_str_idx[k]=idx
+            output_idx_str[idx]=k
+        output_str_idx[len(output_str_idx)] = '<PAD>'
+        output_idx_str[len(output_idx_str)] = '<PAD>'
+    if out=='str':
+        return output_str_idx
+    elif out=='idx':
+        return output_idx_str
+    else:
+        return output_str_idx, output_idx_str
 
 def v2conv(conv, istopic=True, isgoal=True, iskg=True):
     """
