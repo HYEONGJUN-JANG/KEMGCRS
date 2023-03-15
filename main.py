@@ -103,10 +103,7 @@ def main():
     train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'train')
     test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'test')
 
-    retriever = Retriever(bert_model, args.hidden_size)
     knowledge_index = knowledge_index.to(args.device)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(bert_model.parameters(), lr=1e-5)  # TODO: 이것들은 왜 여기에 (TH)
 
     jsonlineSave = []
     if args.model_load:
