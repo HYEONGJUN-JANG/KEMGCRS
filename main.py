@@ -109,6 +109,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
     tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
     bert_model.resize_token_embeddings(len(tokenizer))
+    args.hidden_size = bert_model.config.hidden_size # BERT large 쓸 때 대비
 
     # Read knowledge DB
     knowledgeDB = data.read_pkl(os.path.join(args.data_dir, args.k_DB_name))  # TODO: verbalize (TH)
