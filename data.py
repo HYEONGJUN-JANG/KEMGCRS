@@ -28,10 +28,10 @@ def knowledge_db_save(args, knowledgeDB, max_length, tokenizer, model):
 
 def dataset_reader(args, tokenizer, knowledgeDB, data_name='train'):
     if not os.path.exists(os.path.join(args.data_dir, 'cache')): os.makedirs(os.path.join(args.data_dir, 'cache'))
-    cachename = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}.txt")
-    cachename_know = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}_know.txt")
+    cachename = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}.pkl")
+    cachename_know = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}_know.pkl")
 
-    if args.data_cache and os.path.exists(cachename):
+    if args.data_cache and os.path.exists(cachename) and os.path.exists(cachename_know):
         train_sample = read_pkl(cachename)
         knowledge_sample = read_pkl(cachename_know)
     else:
@@ -80,6 +80,7 @@ def dataset_reader(args, tokenizer, knowledgeDB, data_name='train'):
                                                      'target_knowledge': knowledgeDB.index(knowledge_seq[i])
                                                      })
                     augmented_dialog.append(conversation[i])
+
         if args.data_cache:
             write_pkl(train_sample, cachename)
             write_pkl(knowledge_sample, cachename_know)
