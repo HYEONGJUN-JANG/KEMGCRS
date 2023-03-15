@@ -16,3 +16,9 @@ class Retriever(nn.Module):
         dialog_emb = self.bert_model(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         dialog_emb = self.proj(dialog_emb)
         return dialog_emb
+
+class Model(nn.Module):
+    def __init__(self, bert_model, args):
+        super(Model, self).__init__()
+        self.args=args
+        self.bert_model = bert_model
