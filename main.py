@@ -53,6 +53,8 @@ def train(args, train_dataloader, knowledge_data, bert_model):
     optimizer = optim.Adam(bert_model.parameters(), lr=1e-5)
     for epoch in range(args.num_epochs):
         knowledge_index = knowledge_reindexing(args, knowledge_data, bert_model)
+        knowledge_index = knowledge_index.to(args.device)
+
         total_loss = 0
         for batch in tqdm(train_dataloader):
             batch_size = batch[0].size(0)
