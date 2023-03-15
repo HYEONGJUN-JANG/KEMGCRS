@@ -50,11 +50,12 @@ def train(args, train_dataloader, knowledge_data, bert_model):
     # For training BERT indexing
     # train_dataloader = data_pre.dataset_reader(args, tokenizer, knowledgeDB)
     # knowledge_index = knowledge_index.to(args.device)
+    knowledge_index = knowledge_reindexing(args, knowledge_data, bert_model)
+    knowledge_index = knowledge_index.to(args.device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(bert_model.parameters(), lr=1e-5)
     for epoch in range(args.num_epochs):
-        knowledge_index = knowledge_reindexing(args, knowledge_data, bert_model)
-        knowledge_index = knowledge_index.to(args.device)
+
 
         total_loss = 0
         for batch in tqdm(train_dataloader):
