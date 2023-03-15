@@ -30,7 +30,7 @@ def parseargs():
     parser.add_argument('--k_DB_name', default='knowledgeDB.txt', type=str, help="knowledge DB file name in data_dir")
     parser.add_argument('--k_idx_name', default='knowledge_index.npy', type=str, help="knowledge index file name in data_dir")
 
-    parser.add_argument('--model_name', default='bert-base-uncased', type=str, help="BERT Model Name")
+    parser.add_argument('--bert_name', default='bert-base-uncased', type=str, help="BERT Model Name")
     parser.add_argument('--pretrained_model', default='bert_model.pt', type=str, help="Pre-trained Retriever BERT Model Name")
 
     parser.add_argument('--max_length', default=512, type=int, help="dataset name")

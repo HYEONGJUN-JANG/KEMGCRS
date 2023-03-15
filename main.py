@@ -106,9 +106,9 @@ def main():
     logging.info('Commend: {}'.format(', '.join(map(str, sys.argv))))
 
     # Model cached load
-    checkPath(os.path.join("cache", args.model_name))
-    bert_model = AutoModel.from_pretrained(args.model_name, cache_dir=os.path.join("cache", args.model_name))
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    checkPath(os.path.join("cache", args.bert_name))
+    bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
+    tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
     tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
     bert_model.resize_token_embeddings(len(tokenizer))
 
