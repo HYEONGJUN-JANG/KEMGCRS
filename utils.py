@@ -47,6 +47,7 @@ def parseargs():
     parser.add_argument('--know_topk', default=3, type=int, help="Number of retrieval know text")  # HJ: Know_text retrieve Top-k
     parser.add_argument('--log_dir', default='logs', type=str, help="logging file directory")  # HJ: log file directory
     parser.add_argument('--model_dir', default='models', type=str, help="saved model directory")  # TH: model file directory
+    parser.add_argument('--saved_model_path', default='', type=str, help="saved model file name")  # TH: model file directory
 
     parser.add_argument('--log_name', default='', type=str, help="log file name")  # HJ: log file name
     args = parser.parse_args()

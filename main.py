@@ -30,12 +30,11 @@ def knowledge_reindexing(args, knowledge_data, retriever):
     return knowledge_index
 
 
-def train(args, train_dataloader, knowledge_data, retriever):
+def train(args, train_dataloader, knowledge_index, retriever):
     # For training BERT indexing
     # train_dataloader = data_pre.dataset_reader(args, tokenizer, knowledgeDB)
     # knowledge_index = knowledge_index.to(args.device)
-    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
-    knowledge_index = knowledge_index.to(args.device)
+
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(retriever.parameters(), lr=1e-5)
     for epoch in range(args.num_epochs):
@@ -57,8 +56,7 @@ def train(args, train_dataloader, knowledge_data, retriever):
             loss.backward()
             optimizer.step()
         print('LOSS:\t%.4f' % total_loss)
-    torch.save(retriever.state_dict(), f"{args.time}_{args.model_name}_bin.pt")  # TIME_MODELNAME 형식
-    return knowledge_index
+    torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
 
 
 def eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer):
@@ -102,6 +100,8 @@ def main():
     args = parseargs()
     # args.data_cache = False
     checkPath(args.log_dir)
+    checkPath(args.model_dir)
+
     logging.basicConfig(level=logging.DEBUG, filename=os.path.join(args.log_dir, f'{args.time}_{args.log_name + "_"}log.txt'), filemode='a', format='%(asctime)s: %(levelname)s: %(message)s', datefmt='%Y/%m/%d_%p_%I:%M:%S ')
     logging.info('Commend: {}'.format(', '.join(map(str, sys.argv))))
 
@@ -128,7 +128,14 @@ def main():
     #     bert_model.load_state_dict(torch.load(os.path.join(args.model_dir, args.pretrained_model)))  # state_dict를 불러 온 후, 모델에 저장`
     retriever = Retriever(args, bert_model)
     retriever = retriever.to(args.device)
-    knowledge_index = train(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
+    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+    knowledge_index = knowledge_index.to(args.device)
+
+    if args.saved_model_path != '':
+        train(args, train_dataloader, knowledge_index, retriever)  # [TH] <topic> 추가됐으니까 재학습
+    else:
+        retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
+
     eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer) # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
