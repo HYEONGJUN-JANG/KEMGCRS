@@ -30,7 +30,7 @@ def knowledge_reindexing(args, knowledge_data, retriever):
     return knowledge_index
 
 
-def train(args, train_dataloader, knowledge_index, retriever):
+def train_retriever_idx(args, train_dataloader, knowledge_index, retriever):
     # For training BERT indexing
     # train_dataloader = data_pre.dataset_reader(args, tokenizer, knowledgeDB)
     # knowledge_index = knowledge_index.to(args.device)
@@ -132,7 +132,7 @@ def main():
     knowledge_index = knowledge_index.to(args.device)
 
     if args.saved_model_path == '':
-        train(args, train_dataloader, knowledge_index, retriever)  # [TH] <topic> 추가됐으니까 재학습
+        train_retriever_idx(args, train_dataloader, knowledge_index, retriever)  # [TH] <topic> 추가됐으니까 재학습
     else:
         retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
 
