@@ -39,6 +39,7 @@ class DialogDataset(Dataset):
         goal_type = data['goal_type']
         topic = data['topic']
         return dialog_token, dialog_mask, target_knowledge, goal_type, response, topic
-
+        # return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'target_knowledge': target_knowledge, 'goal_type': goal_type, 'response': response, 'topic': topic}
+        # 0: dialog_token, 1: dialog_mask, 2: target_knowledge, 3: goal_type, 4: response, 5: topic
     def __len__(self):
         return len(self.train_sample)
