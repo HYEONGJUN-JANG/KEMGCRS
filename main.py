@@ -58,6 +58,19 @@ def train_retriever_idx(args, train_dataloader, knowledge_index, retriever):
         print('LOSS:\t%.4f' % total_loss)
     torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
 
+def train_retriever_mlm(args, train_dataloader, knowledge_index, retriever):
+    # For Pre-training Retriever-BERT
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(retriever.parameters(), lr=1e-5)
+    for epoch in range(args.num_epochs):
+        total_loss = 0
+        for batch in tqdm(train_dataloader):
+            batch_size = batch[0].size(0)
+            dialog_token = batch[0].to(args.device)
+            dialog_mask = batch[1].to(args.device)
+            target_knowledge = batch[2].to(args.device)
+
 
 def eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer):
 
