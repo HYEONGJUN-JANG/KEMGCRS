@@ -32,8 +32,8 @@ class DialogDataset(Dataset):
 
     def __getitem__(self, idx):
         data = self.train_sample[idx]
-        dialog_token = data['dialog_token']
-        dialog_mask = data['dialog_mask']
+        dialog_token = torch.LongTensor(data['dialog_token'])
+        dialog_mask = torch.LongTensor(data['dialog_mask'])
         target_knowledge = data['target_knowledge']
         response = data['response']
         goal_type = data['goal_type']
