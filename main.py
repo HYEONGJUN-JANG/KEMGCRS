@@ -131,6 +131,10 @@ def eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, to
     print('done')
 
 
+def task_train(args, retriever):
+    pass
+
+
 def main():
     args = parseargs()
     # args.data_cache = False
