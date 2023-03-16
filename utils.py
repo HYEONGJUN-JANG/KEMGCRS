@@ -24,7 +24,7 @@ def parseargs():
     parser = argparse.ArgumentParser(description="train.py")
     parser.add_argument("--data_cache", action='store_true', help="Whether to run finetune.")
     parser.add_argument("--model_load", action='store_true', help="Whether to load saved model.")
-    parser.add_argument("--momentum", action='store_false', help="Whether to load saved model.")
+    parser.add_argument("--momentum", action='store_true', help="Whether to load saved model.")
 
     parser.add_argument("--data_dir", default='data', type=str, help="The data directory.")
     # parser.add_argument('--data_name', default='en_test.txt', type=str, help="dataset name")
