@@ -3,7 +3,7 @@ from torch import nn
 
 
 class Retriever(nn.Module):
-    def __init__(self, args, bert_model):
+    def __init__(self, args, bert_model, goal_dict, topic_dict):
         super(Retriever, self).__init__()
         self.bert_model = bert_model
         self.proj = nn.Sequential(
@@ -17,6 +17,9 @@ class Retriever(nn.Module):
             nn.ReLU(),
             nn.Linear(args.hidden_size // 2, args.hidden_size)
         )
+        # Topic, Goal Dict (idx:topic , idx:goal)
+        self.goalDict = goal_dict
+        self.topicDict = topic_dict
 
 
     def forward(self, token_seq, mask):
