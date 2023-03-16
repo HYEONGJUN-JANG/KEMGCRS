@@ -30,7 +30,7 @@ def knowledge_reindexing(args, knowledge_data, retriever):
     return knowledge_index
 
 
-def train(args, train_dataloader, knowledge_index, retriever):
+def train_retriever_idx(args, train_dataloader, knowledge_index, retriever):
     # For training BERT indexing
     # train_dataloader = data_pre.dataset_reader(args, tokenizer, knowledgeDB)
     # knowledge_index = knowledge_index.to(args.device)
@@ -59,6 +59,19 @@ def train(args, train_dataloader, knowledge_index, retriever):
             optimizer.step()
         print('LOSS:\t%.4f' % total_loss)
     torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
+
+def train_retriever_mlm(args, train_dataloader, knowledge_index, retriever):
+    # For Pre-training Retriever-BERT
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(retriever.parameters(), lr=1e-5)
+    for epoch in range(args.num_epochs):
+        total_loss = 0
+        for batch in tqdm(train_dataloader):
+            batch_size = batch[0].size(0)
+            dialog_token = batch[0].to(args.device)
+            dialog_mask = batch[1].to(args.device)
+            target_knowledge = batch[2].to(args.device)
 
 
 def eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer):
@@ -135,7 +148,7 @@ def main():
     knowledge_index = knowledge_index.to(args.device)
 
     if args.saved_model_path == '':
-        train(args, train_dataloader, knowledge_index, retriever)  # [TH] <topic> 추가됐으니까 재학습
+        train_retriever_idx(args, train_dataloader, knowledge_index, retriever)  # [TH] <topic> 추가됐으니까 재학습
     else:
         retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
 

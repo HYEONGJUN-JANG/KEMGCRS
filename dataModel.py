@@ -42,8 +42,9 @@ class DialogDataset(Dataset):
         response = data['response']
         goal_type = data['goal_type']
         topic = data['topic']
-
-        return dialog_token, dialog_mask, target_knowledge, negative_knowledge, goal_type, response, topic
+        return dialog_token, dialog_mask, target_knowledge, goal_type, response, topic
+        # return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'target_knowledge': target_knowledge, 'goal_type': goal_type, 'response': response, 'topic': topic}
+        # 0: dialog_token, 1: dialog_mask, 2: target_knowledge, 3: goal_type, 4: response, 5: topic
 
     def negative_sampler(self, target_knowledge):
         total_knowledge_num = self.args.knowledge_num
@@ -53,6 +54,7 @@ class DialogDataset(Dataset):
             if (negative_idx not in negative_indice) and (negative_idx != target_knowledge):
                 negative_indice.append(negative_idx)
         return negative_indice
+
 
     def __len__(self):
         return len(self.train_sample)
