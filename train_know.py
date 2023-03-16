@@ -15,9 +15,8 @@ def knowledge_reindexing(args, knowledge_data, retriever):
     for batch in tqdm(knowledgeDataLoader):
         input_ids = batch[0].to(args.device)
         attention_mask = batch[1].to(args.device)
-        knowledge_emb = retriever.key_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]
+        knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]
         knowledge_index.extend(knowledge_emb.cpu().detach())
-        break
     knowledge_index = torch.stack(knowledge_index, 0)
     return knowledge_index
 
@@ -38,9 +37,6 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
     optimizer = optim.Adam(retriever.parameters(), lr=args.lr)
     for epoch in range(args.num_epochs):
         print(f"[Epoch-{epoch}]")
-        knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
-        knowledge_index = knowledge_index.to(args.device)
-
         total_loss = 0
         for batch in tqdm(train_dataloader):
             dialog_token, dialog_mask, target_knowledge, goal_type, response, topic, candidate_knowledge_token, candidate_knowledge_mask = batch
@@ -66,5 +62,8 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
                 update_moving_average(retriever.key_bert, retriever.query_bert)
 
         print('LOSS:\t%.4f' % total_loss)
+    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+    knowledge_index = knowledge_index.to(args.device)
+
     torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
     return knowledge_index
