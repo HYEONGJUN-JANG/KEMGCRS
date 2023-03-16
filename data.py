@@ -30,7 +30,7 @@ def knowledge_db_save(args, knowledgeDB, max_length, tokenizer, model):
 
 def dataset_reader(args, tokenizer, knowledgeDB, data_name='train'):
     if args.who=='TH':
-        return dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train')
+        return dataset_reader_raw(args, tokenizer, knowledgeDB, data_name)
     elif args.who=="HJ":
         return dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train')
     else:
