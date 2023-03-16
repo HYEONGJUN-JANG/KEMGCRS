@@ -15,8 +15,7 @@ def main():
     # TH 작업 main
     args = parseargs()
     # args.data_cache = False
-    args.who="TH"
-    args.log_name = 'LOG'
+    args.who = "TH"
 
     checkPath(args.log_dir)
     checkPath(args.model_dir)
