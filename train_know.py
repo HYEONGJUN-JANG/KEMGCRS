@@ -36,8 +36,8 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
             # tokenizer.batch_decode(dialog_token, skip_special_tokens=True)  # 'dialog context'
             # print([knowledgeDB[idx] for idx in target_knowledge]) # target knowledge
 
-            dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
-            loss = (-torch.log_softmax(dot_score, dim=1).select(dim=1, index=0)).mean()
+            logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+            loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
             # loss = criterion(dot_score, target_knowledge)
             total_loss += loss.data.float()
 

@@ -21,30 +21,28 @@ def knowledge_reindexing(args, knowledge_data, retriever):
     return knowledge_index
 
 
-def eval_know(args, test_dataloader, retriever, knowledgeDB, tokenizer):
+def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer):
 
     # Read knowledge DB
     # knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     # knowledge_index = knowledge_index.to(args.device)
     jsonlineSave = []
     # bert_model = bert_model.to(args.device)
-    # knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
-    # knowledge_index = knowledge_index.to(args.device)
+    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+    knowledge_index = knowledge_index.to(args.device)
 
     cnt = 0
     for batch in tqdm(test_dataloader, desc="Knowledge_Test", bar_format=' {percentage:3.0f} % | {bar:23} {r_bar}'): # TODO: Knowledge task 분리중
-        dialog_token, dialog_mask, target_knowledge, goal_type, response, topic, candidate_knowledge_token, candidate_knowledge_mask = batch
+        dialog_token, dialog_mask, target_knowledge, goal_type, response, topic, _, _ = batch
         batch_size = dialog_token.size(0)
         dialog_token = dialog_token.to(args.device)
         dialog_mask = dialog_mask.to(args.device)
         target_knowledge = target_knowledge.to(args.device)
-        candidate_knowledge_token = candidate_knowledge_token.to(args.device)
-        candidate_knowledge_mask = candidate_knowledge_mask.to(args.device)
 
         # tokenizer.batch_decode(dialog_token, skip_special_tokens=True)  # 'dialog context'
         # print([knowledgeDB[idx] for idx in target_knowledge]) # target knowledge
 
-        dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+        dot_score = retriever.compute_score(dialog_token, dialog_mask, knowledge_index)
 
         top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
 
