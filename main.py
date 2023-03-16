@@ -168,9 +168,6 @@ def main():
     retriever = Retriever(args, bert_model1, bert_model2)
     retriever = retriever.to(args.device)
 
-    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
-    knowledge_index = knowledge_index.to(args.device)
-
 
     if args.saved_model_path == '':
         knowledge_index = train_retriever_idx(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
