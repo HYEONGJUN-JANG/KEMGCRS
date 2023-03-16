@@ -37,7 +37,8 @@ def parseargs():
 
     parser.add_argument('--max_length', default=128, type=int, help="dataset name")
     parser.add_argument('--batch_size', default=2, type=int, help="batch size")
-    parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
+    parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate')
+    parser.add_argument('--negative_num', default=4, type=int, help="negative_num")
 
     parser.add_argument('--hidden_size', default=768, type=int, help="hidden size")
     parser.add_argument('--num_epochs', default=10, type=int, help="Number of epoch")
