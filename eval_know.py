@@ -12,15 +12,18 @@ def eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, to
 
     cnt = 0
     for batch in tqdm(test_dataloader, desc="Knowledge_Test", bar_format=' {percentage:3.0f} % | {bar:23} {r_bar}'): # TODO: Knowledge task 분리중
-        batch_size = batch[0].size(0)
-        dialog_token = batch[0].to(args.device)
-        dialog_mask = batch[1].to(args.device)
-        target_knowledge = batch[2].to(args.device)
-        goal_type = batch[3]  #
-        response = batch[4]
-        topic = batch[5]
+        dialog_token, dialog_mask, target_knowledge, goal_type, response, topic, candidate_knowledge_token, candidate_knowledge_mask = batch
+        batch_size = dialog_token.size(0)
+        dialog_token = dialog_token.to(args.device)
+        dialog_mask = dialog_mask.to(args.device)
+        target_knowledge = target_knowledge.to(args.device)
+        candidate_knowledge_token = candidate_knowledge_token.to(args.device)
+        candidate_knowledge_mask = candidate_knowledge_mask.to(args.device)
 
-        dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, knowledge_index)
+        # tokenizer.batch_decode(dialog_token, skip_special_tokens=True)  # 'dialog context'
+        # print([knowledgeDB[idx] for idx in target_knowledge]) # target knowledge
+
+        dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
 
         top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
 
