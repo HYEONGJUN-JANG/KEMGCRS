@@ -36,7 +36,7 @@ def train(args, train_dataloader, knowledge_index, retriever):
     # knowledge_index = knowledge_index.to(args.device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(retriever.parameters(), lr=1e-5)
+    optimizer = optim.Adam(retriever.parameters(), lr=args.lr)
     for epoch in range(args.num_epochs):
         total_loss = 0
         for batch in tqdm(train_dataloader):

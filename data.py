@@ -75,8 +75,7 @@ def dataset_reader(args, tokenizer, knowledgeDB, data_name='train'):
                                              'dialog_mask': attention_mask,
                                              'response': conversation[i],
                                              'goal_type': dialog['goal_type_list'][i],
-                                             'topic': dialog['goal_topic_list'][i]
-                                             })
+                                             'topic': dialog['goal_topic_list'][i]})
                         if knowledge_seq[i] != '':
                             # input_ids = truncationPadding(input_ids=tokenized_dialog.input_ids, suffix=[tokenizer.cls_token_id], max_length=args.max_length)
                             # attention_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, suffix=[1], max_length=args.max_length)
@@ -85,8 +84,7 @@ def dataset_reader(args, tokenizer, knowledgeDB, data_name='train'):
                                                      'response': conversation[i],
                                                      'goal_type': dialog['goal_type_list'][i],
                                                      'topic': dialog['goal_topic_list'][i],
-                                                     'target_knowledge': knowledgeDB.index(knowledge_seq[i])
-                                                     })
+                                                     'target_knowledge': knowledgeDB.index(knowledge_seq[i])})
                     augmented_dialog.append(conversation[i])
         if args.data_cache:
             write_pkl(train_sample, cachename)
