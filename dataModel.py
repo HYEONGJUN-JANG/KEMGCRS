@@ -76,7 +76,7 @@ class DialogDataset(Dataset):
         total_knowledge_num = self.args.knowledge_num
         negative_indice = []
         while len(negative_indice) < self.args.negative_num:
-            negative_idx = random.randint(0, total_knowledge_num)
+            negative_idx = random.randint(0, total_knowledge_num-1)
             if (negative_idx not in negative_indice) and (negative_idx != target_knowledge):
                 negative_indice.append(negative_idx)
         return negative_indice
