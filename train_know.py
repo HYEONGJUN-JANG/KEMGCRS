@@ -17,6 +17,7 @@ def knowledge_reindexing(args, knowledge_data, retriever):
         attention_mask = batch[1].to(args.device)
         knowledge_emb = retriever.key_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]
         knowledge_index.extend(knowledge_emb.cpu().detach())
+        break
     knowledge_index = torch.stack(knowledge_index, 0)
     return knowledge_index
 
@@ -42,19 +43,20 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
 
         total_loss = 0
         for batch in tqdm(train_dataloader):
-            dialog_token, dialog_mask, target_knowledge, goal_type, response, topic = batch
+            dialog_token, dialog_mask, target_knowledge, goal_type, response, topic, candidate_knowledge_token, candidate_knowledge_mask = batch
             batch_size = dialog_token.size(0)
             dialog_token =dialog_token.to(args.device)
             dialog_mask = dialog_mask.to(args.device)
             target_knowledge = target_knowledge.to(args.device)
-            # negative_knowledge = negative_knowledge.to(args.device)
-
+            candidate_knowledge_token = candidate_knowledge_token.to(args.device)
+            candidate_knowledge_mask = candidate_knowledge_mask.to(args.device)
 
             # tokenizer.batch_decode(dialog_token, skip_special_tokens=True)  # 'dialog context'
             # print([knowledgeDB[idx] for idx in target_knowledge]) # target knowledge
 
-            dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, knowledge_index)
-            loss = criterion(dot_score, target_knowledge)
+            dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+            loss = (-torch.log_softmax(dot_score, dim=1).select(dim=1, index=0)).mean()
+            # loss = criterion(dot_score, target_knowledge)
             total_loss += loss.data.float()
 
             optimizer.zero_grad()

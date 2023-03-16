@@ -4,6 +4,12 @@ import torch
 from torch.utils.data import Dataset
 
 
+def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
+    truncate_size = max_length - len(prefix) - len(suffix)
+    input_ids = prefix + input_ids[-truncate_size:] + suffix
+    input_ids = input_ids + [0] * (max_length - len(input_ids))
+    return input_ids
+
 class KnowledgeDataset(Dataset):
     def __init__(self, args, knowledgeDB, tokenizer):
         super(Dataset, self).__init__()
@@ -28,21 +34,41 @@ class KnowledgeDataset(Dataset):
 
 
 class DialogDataset(Dataset):
-    def __init__(self, args, train_sample):
+    def __init__(self, args, train_sample, knowledgeDB, tokenizer):
         super(Dataset, self).__init__()
         self.train_sample = train_sample
         self.args = args
+        self.tokenizer = tokenizer
+        self.knowledgeDB = knowledgeDB
 
     def __getitem__(self, idx):
         data = self.train_sample[idx]
-        dialog_token = torch.LongTensor(data['dialog_token'])
-        dialog_mask = torch.LongTensor(data['dialog_mask'])
+
         target_knowledge = data['target_knowledge']
-        negative_knowledge = torch.LongTensor(self.negative_sampler(target_knowledge))
         response = data['response']
         goal_type = data['goal_type']
         topic = data['topic']
-        return dialog_token, dialog_mask, target_knowledge, goal_type, response, topic
+        dialog = data['dialog']
+        suffix = '<type>' + goal_type + '<topic>' + topic
+        negative_indice = self.negative_sampler(target_knowledge)
+        candidate_indice = [target_knowledge] + negative_indice
+
+        tokenized_dialog = self.tokenizer(dialog, add_special_tokens=False, max_length=self.args.max_length)
+        # tokenized_prefix = self.tokenizer(suffix, add_special_tokens=False, max_length=self.args.max_length)
+        dialog_token = truncationPadding(input_ids=tokenized_dialog.input_ids, suffix=[self.tokenizer.cls_token_id], max_length=self.args.max_length)
+        dialog_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, suffix=[1], max_length=self.args.max_length)
+        candidate_knowledge = self.tokenizer([self.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=self.args.max_length)
+        # target_knowledge = self.tokenizer
+
+        candidate_knowledge_token = candidate_knowledge.input_ids
+        candidate_knowledge_mask = candidate_knowledge.attention_mask
+
+        dialog_token = torch.LongTensor(dialog_token)
+        dialog_mask = torch.LongTensor(dialog_mask)
+        candidate_knowledge_token = torch.LongTensor(candidate_knowledge_token)
+        candidate_knowledge_mask = torch.LongTensor(candidate_knowledge_mask)
+
+        return dialog_token, dialog_mask, target_knowledge, goal_type, response, topic, candidate_knowledge_token, candidate_knowledge_mask
         # return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'target_knowledge': target_knowledge, 'goal_type': goal_type, 'response': response, 'topic': topic}
         # 0: dialog_token, 1: dialog_mask, 2: target_knowledge, 3: goal_type, 4: response, 5: topic
 
@@ -54,7 +80,6 @@ class DialogDataset(Dataset):
             if (negative_idx not in negative_indice) and (negative_idx != target_knowledge):
                 negative_indice.append(negative_idx)
         return negative_indice
-
 
     def __len__(self):
         return len(self.train_sample)
