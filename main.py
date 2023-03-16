@@ -71,7 +71,7 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
 
         print('LOSS:\t%.4f' % total_loss)
     torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
-
+    return knowledge_index
 
 def train_retriever_mlm(args, train_dataloader, knowledge_index, retriever):
     # For Pre-training Retriever-BERT
@@ -162,11 +162,11 @@ def main():
     retriever = retriever.to(args.device)
 
     if args.saved_model_path == '':
-        train_retriever_idx(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
+        knowledge_index = train_retriever_idx(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
     else:
         retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
 
-    eval_know(args, test_dataloader, retriever, knowledgeDB, tokenizer) # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer) # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
 if __name__ == "__main__":
