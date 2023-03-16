@@ -43,7 +43,7 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
     # knowledge_index = knowledge_index.to(args.device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(retriever.parameters(), lr=1e-5)
+    optimizer = optim.Adam(retriever.parameters(), lr=args.lr)
     for epoch in range(args.num_epochs):
         knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
         knowledge_index = knowledge_index.to(args.device)
