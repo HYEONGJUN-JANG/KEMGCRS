@@ -34,7 +34,7 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
     # knowledge_index = knowledge_index.to(args.device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(retriever.parameters(), lr=1e-5)
+    optimizer = optim.Adam(retriever.parameters(), lr=args.lr)
     for epoch in range(args.num_epochs):
         knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
         knowledge_index = knowledge_index.to(args.device)
@@ -59,7 +59,8 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            update_moving_average(retriever.key_bert, retriever.query_bert)
+            if args.momentum:
+                update_moving_average(retriever.key_bert, retriever.query_bert)
 
         print('LOSS:\t%.4f' % total_loss)
     torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
