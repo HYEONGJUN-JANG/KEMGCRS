@@ -105,7 +105,8 @@ def dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train'):
             write_pkl(knowledge_sample, cachename_know)
     data_sample = DialogDataset(args, knowledge_sample)
     batch_size = args.batch_size if 'train' == data_name else 1
-    dataloader = DataLoader(data_sample, batch_size=batch_size)
+    shuffle = True if 'train' == data_name else False
+    dataloader = DataLoader(data_sample, batch_size=batch_size, shuffle=shuffle)
     return dataloader
 
 
