@@ -3,41 +3,10 @@ from torch.utils.data import DataLoader
 from dataModel import KnowledgeDataset, DialogDataset
 import numpy as np
 import json
-
-from data_hj import dataset_reader_raw_hj
 from utils import *
 
 
-def knowledge_db_save(args, knowledgeDB, max_length, tokenizer, model):
-    knowledgeDataset = KnowledgeDataset(knowledgeDB, max_length, tokenizer)
-    knowledgeDataLoader = DataLoader(
-        knowledgeDataset,
-        batch_size=2
-    )
-    model = model.to(args.device)
-    knowledge_index = []
-    for batch in tqdm(knowledgeDataLoader):
-        input_ids = batch[0].to(args.device)
-        attention_mask = batch[1].to(args.device)
-        knowledge_emb = model(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]
-        # knowledge_index.append()
-        knowledge_index.extend(knowledge_emb.cpu().detach().numpy())
-    print('done')
-
-    # np.save('knowledge_index.npy', knowledge_index)
-    np.save(os.path.join(args.data_dir, args.k_idx_name), knowledge_index)
-
-
-def dataset_reader(args, tokenizer, knowledgeDB, data_name='train'):
-    if args.who=='TH':
-        return dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train')
-    elif args.who=="HJ":
-        return dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train')
-    else:
-        pass
-
-
-def dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train'):
+def dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train'):
     if not os.path.exists(os.path.join(args.data_dir, 'cache')): os.makedirs(os.path.join(args.data_dir, 'cache'))
     cachename = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}.pkl")
     cachename_know = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}_know.pkl")
