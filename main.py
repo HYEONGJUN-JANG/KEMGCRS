@@ -11,7 +11,7 @@ from config import bert_special_tokens_dict
 from dataModel import KnowledgeDataset
 from utils import *
 from models import *
-
+from data_util import readDic
 
 def knowledge_reindexing(args, knowledge_data, retriever):
     print('...knowledge indexing...')
@@ -59,17 +59,24 @@ def train_retriever_idx(args, train_dataloader, knowledge_index, retriever):
     torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
 
 def train_retriever_mlm(args, train_dataloader, knowledge_index, retriever):
+    """
+    Pre-training 에서 Knowledge들을 활용해서 MLM 및 [CLS}토큰에 대한 Classification training을 진행하기 위한 code (...ing)
+    :return:
+    """
     # For Pre-training Retriever-BERT
-
+    topic_idx_dict = readDic(os.path.join(args.data_dir, "topic2id.txt"), 'idx')
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(retriever.parameters(), lr=1e-5)
     for epoch in range(args.num_epochs):
         total_loss = 0
-        for batch in tqdm(train_dataloader):
+        for batch in tqdm(train_dataloader): # 0: dialog_token, 1: dialog_mask, 2: target_knowledge, 3: goal_type, 4: response, 5: topic
             batch_size = batch[0].size(0)
             dialog_token = batch[0].to(args.device)
             dialog_mask = batch[1].to(args.device)
             target_knowledge = batch[2].to(args.device)
+            topic = batch[5].to(args.device)
+            # dot_score = retriever.topic_selection()
+
 
 
 def eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer):
@@ -105,7 +112,6 @@ def eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, to
     # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
     write_pkl(obj=jsonlineSave, filename='jsonline.pkl')  # 입출력 저장
     save_json(args, f"{args.time}_inout", jsonlineSave)
-
     print('done')
 
 
@@ -132,14 +138,14 @@ def main():
 
     train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'train')
     test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'test')
-
+    topicDic, goalDic = readDic(os.path.join(args.data_dir, "topic2id.txt"),"idx"), readDic(os.path.join(args.data_dir, "goal2id.txt"),"idx")
     # knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name)))
     # knowledge_index = knowledge_index.to(args.device)
 
     # TODO: retriever 로 바꿔서 save 와 load
     # if args.model_load:
     #     bert_model.load_state_dict(torch.load(os.path.join(args.model_dir, args.pretrained_model)))  # state_dict를 불러 온 후, 모델에 저장`
-    retriever = Retriever(args, bert_model)
+    retriever = Retriever(args, bert_model, goalDic, topicDic)
     retriever = retriever.to(args.device)
     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     knowledge_index = knowledge_index.to(args.device)
