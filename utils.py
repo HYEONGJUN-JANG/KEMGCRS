@@ -53,6 +53,11 @@ def parseargs():
     parser.add_argument('--saved_model_path', default='', type=str, help="saved model file name")  # TH: model file directory
 
     parser.add_argument('--log_name', default='', type=str, help="log file name")  # HJ: log file name
+
+    # TH
+    parser.add_argument('--retrieve', default='negative', type=str, help="retrieve")
+    parser.add_argument('--input_prompt', default='dialog', type=str, help="input_prompt")
+
     args = parser.parse_args()
     args.device = f'cuda:{args.device}' if args.device else "cpu"
     checkPath(args.model_dir)

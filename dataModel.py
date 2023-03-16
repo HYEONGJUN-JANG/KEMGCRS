@@ -55,11 +55,14 @@ class DialogDataset(Dataset):
 
         tokenized_dialog = self.tokenizer(dialog, add_special_tokens=False, max_length=self.args.max_length)
         tokenized_prefix = self.tokenizer(suffix, add_special_tokens=False, max_length=self.args.max_length)
-        dialog_token = truncationPadding(input_ids=tokenized_dialog.input_ids, suffix=[self.tokenizer.cls_token_id], prefix=tokenized_prefix.input_ids, max_length=self.args.max_length)
-        dialog_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, suffix=[1],  prefix=tokenized_prefix.attention_mask,max_length=self.args.max_length)
+        if self.args.input_prompt == 'dialog':
+            dialog_token = truncationPadding(input_ids=tokenized_dialog.input_ids, suffix=[self.tokenizer.cls_token_id],max_length=self.args.max_length)
+            dialog_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, suffix=[1], max_length=self.args.max_length)
+        elif self.args.input_prompt == 'dialog_typetopic':
+            dialog_token = truncationPadding(input_ids=tokenized_dialog.input_ids, suffix=[self.tokenizer.cls_token_id], prefix=tokenized_prefix.input_ids, max_length=self.args.max_length)
+            dialog_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, suffix=[1],  prefix=tokenized_prefix.attention_mask,max_length=self.args.max_length)
         candidate_knowledge = self.tokenizer([self.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=self.args.max_length)
         # target_knowledge = self.tokenizer
-
         candidate_knowledge_token = candidate_knowledge.input_ids
         candidate_knowledge_mask = candidate_knowledge.attention_mask
 

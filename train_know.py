@@ -1,6 +1,8 @@
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from torch import optim
+
+from eval_know import knowledge_reindexing
 from utils import *
 from models import *
 
@@ -21,6 +23,11 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(retriever.parameters(), lr=args.lr)
+
+    if args.retrieve == 'freeze':
+        knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+        knowledge_index = knowledge_index.to(args.device)
+
     for epoch in range(args.num_epochs):
         print(f"[Epoch-{epoch}]")
         total_loss = 0
@@ -35,10 +42,16 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
 
             # tokenizer.batch_decode(dialog_token, skip_special_tokens=True)  # 'dialog context'
             # print([knowledgeDB[idx] for idx in target_knowledge]) # target knowledge
+            # logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+            # loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
 
-            logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
-            loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
-            # loss = criterion(dot_score, target_knowledge)
+            if args.retrieve == 'freeze':
+                dot_score = retriever.compute_score(dialog_token, dialog_mask, knowledge_index)
+                loss = criterion(dot_score, target_knowledge)
+            else:
+                logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+                loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
+
             total_loss += loss.data.float()
 
             optimizer.zero_grad()
