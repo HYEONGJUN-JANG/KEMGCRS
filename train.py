@@ -54,11 +54,11 @@ def main():
     retriever = retriever.to(args.device)
 
     if args.saved_model_path == '':
-        knowledge_index = train_retriever_idx(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
+        train_retriever_idx(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
     else:
         retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
 
-    eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    eval_know(args, test_dataloader, retriever, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
 if __name__ == "__main__":

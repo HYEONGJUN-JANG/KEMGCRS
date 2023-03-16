@@ -4,21 +4,7 @@ from torch import optim
 from utils import *
 from models import *
 
-def knowledge_reindexing(args, knowledge_data, retriever):
-    print('...knowledge indexing...')
-    knowledgeDataLoader = DataLoader(
-        knowledge_data,
-        batch_size=args.batch_size
-    )
-    knowledge_index = []
 
-    for batch in tqdm(knowledgeDataLoader):
-        input_ids = batch[0].to(args.device)
-        attention_mask = batch[1].to(args.device)
-        knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]
-        knowledge_index.extend(knowledge_emb.cpu().detach())
-    knowledge_index = torch.stack(knowledge_index, 0)
-    return knowledge_index
 
 
 def update_moving_average(ma_model, current_model):
@@ -62,8 +48,5 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
                 update_moving_average(retriever.key_bert, retriever.query_bert)
 
         print('LOSS:\t%.4f' % total_loss)
-    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
-    knowledge_index = knowledge_index.to(args.device)
 
     torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
-    return knowledge_index
