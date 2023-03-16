@@ -27,6 +27,15 @@ def knowledge_db_save(args, knowledgeDB, max_length, tokenizer, model):
 
 
 def dataset_reader(args, tokenizer, knowledgeDB, data_name='train'):
+    if args.who=='TH':
+        return dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train')
+    elif args.who=="HJ":
+        pass
+    else:
+        pass
+
+
+def dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train'):
     if not os.path.exists(os.path.join(args.data_dir, 'cache')): os.makedirs(os.path.join(args.data_dir, 'cache'))
     cachename = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}.pkl")
     cachename_know = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}_know.pkl")
@@ -90,7 +99,6 @@ def dataset_reader(args, tokenizer, knowledgeDB, data_name='train'):
         if args.data_cache:
             write_pkl(train_sample, cachename)
             write_pkl(knowledge_sample, cachename_know)
-
     data_sample = DialogDataset(args, knowledge_sample)
     batch_size = args.batch_size if 'train' == data_name else 1
     dataloader = DataLoader(data_sample, batch_size=batch_size)
