@@ -154,6 +154,7 @@ def main():
     # Read knowledge DB
     knowledgeDB = data.read_pkl(os.path.join(args.data_dir, args.k_DB_name))  # TODO: verbalize (TH)
     knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
+    args.knowledge_num = len(knowledgeDB)
 
     train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'train')
     test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'test')
