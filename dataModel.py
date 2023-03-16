@@ -58,3 +58,5 @@ class DialogDataset(Dataset):
 
     def __len__(self):
         return len(self.train_sample)
+
+# class GoalDataset(Dataset)
