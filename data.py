@@ -1,10 +1,10 @@
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from dataModel import KnowledgeDataset, DialogDataset
+from dataModel import KnowledgeDataset
 import numpy as np
 import json
 
-from data_hj import dataset_reader_raw_hj
+from data_hj import dataset_reader_raw_hj, DialogDataset
 from utils import *
 
 
@@ -28,11 +28,15 @@ def knowledge_db_save(args, knowledgeDB, max_length, tokenizer, model):
     np.save(os.path.join(args.data_dir, args.k_idx_name), knowledge_index)
 
 
-def dataset_reader(args, tokenizer, knowledgeDB, data_name='train'):
+def dataset_reader(args, tokenizer, knowledgeDB, data_name='train', goal_dict=None, topic_dict=None):
     if args.who=='TH':
-        return dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train')
+        return dataset_reader_raw(args, tokenizer, knowledgeDB, data_name=data_name)
     elif args.who=="HJ":
-        return dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train')
+        train_sample = dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name=data_name, goal_dict=goal_dict, topic_dict=topic_dict)
+        data_sample = DialogDataset(args, train_sample, goal_dict, topic_dict)
+        batch_size = args.batch_size # if 'train' == data_name else 1
+        dataloader = DataLoader(data_sample, batch_size=batch_size)
+        return dataloader
     else:
         pass
 

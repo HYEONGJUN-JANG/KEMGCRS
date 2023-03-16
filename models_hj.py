@@ -14,12 +14,14 @@ class Retriever(nn.Module):
             nn.Linear(args.hidden_size // 2, args.hidden_size)
         )
         self.pred_know = nn.Linear(args.hidden_size, args.knowledge_num)
-        self.topic_proj = nn.Sequential(
+
+        self.goal_proj = nn.Sequential(
             nn.Linear(args.hidden_size, args.hidden_size // 2),
             nn.ReLU(),
-            nn.Linear(args.hidden_size // 2, args.hidden_size)
+            nn.Linear(args.hidden_size // 2, args.hidden_size),
+            nn.ReLU(),
+            nn.Linear(args.hidden_size, args.goal_num)
         )
-
 
     def forward(self, token_seq, mask):
         dialog_emb = self.bert_model(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
@@ -35,11 +37,11 @@ class Retriever(nn.Module):
         # dot_score = self.pred_know(dialog_emb)
         return dot_score
 
-    def topic_selection(self, token_seq, mask, topic_idx):
+    def goal_selection(self, token_seq, mask):
         dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
-        dialog_emb = self.topic_proj(dialog_emb)
-        dot_score = torch.matmul(dialog_emb, topic_idx.transpose(1,0)) #[B, N_topic]
-        return dot_score
+        dialog_emb = self.goal_proj(dialog_emb)
+        # dot_score = torch.matmul(dialog_emb, goal_idx.transpose(1,0)) #[B, N_goal]
+        return dialog_emb
 
 
 class Model(nn.Module):

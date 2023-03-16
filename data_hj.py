@@ -1,16 +1,58 @@
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from dataModel import DialogDataset
+# from dataModel import DialogDataset
 import json
+
+from data_util import readDic
 from utils import *
+import random
+import torch
+from torch.utils.data import Dataset
 
+class DialogDataset(Dataset):
+    def __init__(self, args, train_sample, goal_dict, topic_dict):
+        super(Dataset, self).__init__()
+        self.train_sample = train_sample
+        self.args = args
+        self.goal_dic = goal_dict
+        self.topic_dic = topic_dict
 
-def dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train'):
-    if not os.path.exists(os.path.join(args.data_dir, 'cache')): os.makedirs(os.path.join(args.data_dir, 'cache'))
+    def __getitem__(self, idx): # 모든 getitem되는 길이가 늘 같아야함
+        data = self.train_sample[idx]
+        dialog_token = torch.LongTensor(data['dialog_token'])
+        dialog_mask = torch.LongTensor(data['dialog_mask'])
+        # target_knowledge = data['target_knowledge']
+        # negative_knowledge = torch.LongTensor(self.negative_sampler(target_knowledge))
+        response = data['response']
+        goal_type = data['goal_type']
+        topic = data['topic']
+        user_profile = data['user_profile']
+        situation = data['situation']
+        return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'goal_type': goal_type, 'topic': topic }
+        # return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'target_knowledge': target_knowledge, 'goal_type': goal_type, 'response': response, 'topic': topic, 'user_profile':user_profile, 'situation':situation}
+        # return dialog_token, dialog_mask, target_knowledge, goal_type, response, topic
+        # 0: dialog_token, 1: dialog_mask, 2: target_knowledge, 3: goal_type, 4: response, 5: topic
+
+    def negative_sampler(self, target_knowledge):
+        total_knowledge_num = self.args.knowledge_num
+        negative_indice = []
+        while len(negative_indice) < self.args.negative_num:
+            negative_idx = random.randint(0, total_knowledge_num)
+            if (negative_idx not in negative_indice) and (negative_idx != target_knowledge):
+                negative_indice.append(negative_idx)
+        return negative_indice
+
+    def __len__(self):
+        return len(self.train_sample)
+
+def dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train', goal_dict=None, topic_dict=None):
+    # if not os.path.exists(os.path.join(args.data_dir, 'cache')): os.makedirs(os.path.join(args.data_dir, 'cache'))
+    checkPath(os.path.join(args.data_dir, 'cache'))
     cachename = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}.pkl")
     cachename_know = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}_know.pkl")
 
     if args.data_cache and os.path.exists(cachename) and os.path.exists(cachename_know):
+        print(f"Read Pickle {cachename}")
         train_sample = read_pkl(cachename)
         knowledge_sample = read_pkl(cachename_know)
     else:
@@ -48,8 +90,8 @@ def dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train'):
                         train_sample.append({'dialog_token': input_ids,
                                              'dialog_mask': attention_mask,
                                              'response': conversation[i],
-                                             'goal_type': dialog['goal_type_list'][i],
-                                             'topic': dialog['goal_topic_list'][i],
+                                             'goal_type': goal_dict[dialog['goal_type_list'][i]],
+                                             'topic': topic_dict[dialog['goal_topic_list'][i]],
                                              'user_profile': user_profile,
                                              'situation': situation
                                              })
@@ -67,12 +109,12 @@ def dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train'):
             write_pkl(knowledge_sample, cachename_know)
     if args.who=='TH':
         data_sample = DialogDataset(args, knowledge_sample)
+        batch_size = args.batch_size if 'train' == data_name else 1
+        dataloader = DataLoader(data_sample, batch_size=batch_size)
+        return dataloader
     elif args.who=='HJ':
-        data_sample = DialogDataset(args, train_sample)
-        # return train_sample
-    batch_size = args.batch_size if 'train' == data_name else 1
-    dataloader = DataLoader(data_sample, batch_size=batch_size)
-    return dataloader
+        # data_sample = DialogDataset(args, train_sample)
+        return train_sample
 
 
 def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
@@ -91,4 +133,5 @@ if __name__ == "__main__":
     bert_model = AutoModel.from_pretrained(args.model_name, cache_dir=os.path.join("cache", args.model_name))
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     knowledgeDB = read_pkl("data/knowledgeDB.txt")
-    dataset_reader_raw_hj(args, tokenizer, knowledgeDB)
+    topicDic, goalDic = readDic(os.path.join(args.data_dir, "topic2id.txt"), "str"), readDic(os.path.join(args.data_dir, "goal2id.txt"), "str")
+    dataset_reader_raw_hj(args, tokenizer, knowledgeDB,  goal_dict=goalDic, topic_dict=topicDic)
