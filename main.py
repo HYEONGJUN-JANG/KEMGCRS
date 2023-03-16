@@ -36,19 +36,21 @@ def train_retriever_idx(args, train_dataloader, knowledge_index, retriever):
     # knowledge_index = knowledge_index.to(args.device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(retriever.parameters(), lr=1e-5)
+    optimizer = optim.Adam(retriever.parameters(), lr=args.lr)
     for epoch in range(args.num_epochs):
         total_loss = 0
         for batch in tqdm(train_dataloader):
-            batch_size = batch[0].size(0)
-            dialog_token = batch[0].to(args.device)
-            dialog_mask = batch[1].to(args.device)
-            target_knowledge = batch[2].to(args.device)
+            dialog_token, dialog_mask, target_knowledge, negative_knowledge, goal_type, response, topic = batch
+            batch_size = dialog_token.size(0)
+            dialog_token =dialog_token.to(args.device)
+            dialog_mask = dialog_mask.to(args.device)
+            # target_knowledge = target_knowledge.to(args.device)
+            # negative_knowledge = negative_knowledge.to(args.device)
 
             # tokenizer.batch_decode(dialog_token, skip_special_tokens=True)  # 'dialog context'
             # print([knowledgeDB[idx] for idx in target_knowledge]) # target knowledge
 
-            dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, knowledge_index)
+            dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, knowledge_index, target_knowledge, negative_knowledge)
             loss = criterion(dot_score, target_knowledge)
             total_loss += loss.data.float()
 
@@ -129,11 +131,12 @@ def main():
     # Read knowledge DB
     knowledgeDB = data.read_pkl(os.path.join(args.data_dir, args.k_DB_name))  # TODO: verbalize (TH)
     knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
+    args.knowledge_num = len(knowledgeDB)
 
     train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'train')
     test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'test')
 
-    # knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name)))
+    knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name)))
     # knowledge_index = knowledge_index.to(args.device)
 
     # TODO: retriever 로 바꿔서 save 와 load
@@ -141,7 +144,7 @@ def main():
     #     bert_model.load_state_dict(torch.load(os.path.join(args.model_dir, args.pretrained_model)))  # state_dict를 불러 온 후, 모델에 저장`
     retriever = Retriever(args, bert_model)
     retriever = retriever.to(args.device)
-    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+    # knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     knowledge_index = knowledge_index.to(args.device)
 
     if args.saved_model_path == '':
