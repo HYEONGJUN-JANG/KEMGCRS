@@ -19,6 +19,9 @@ class Retriever(nn.Module):
             nn.ReLU(),
             nn.Linear(args.hidden_size // 2, args.hidden_size)
         )
+        # Topic, Goal Dict (idx:topic , idx:goal)
+        self.goalDict = goal_dict
+        self.topicDict = topic_dict
 
     def forward(self, token_seq, mask):
         dialog_emb = self.bert_model(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
