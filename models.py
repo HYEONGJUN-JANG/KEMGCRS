@@ -20,7 +20,7 @@ class Retriever(nn.Module):
 
     def knowledge_retrieve(self, token_seq, mask, knowledge_index):
         dialog_emb = self.bert_model(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
-        dialog_emb = self.proj(dialog_emb)
+        # dialog_emb = self.proj(dialog_emb)
         # dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
         score = self.pred_know(dialog_emb)
         return score
