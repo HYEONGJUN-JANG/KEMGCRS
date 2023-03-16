@@ -72,7 +72,7 @@ def dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train'):
                         suffix = '<type>' + dialog['goal_type_list'][i] + '<topic>' + dialog['goal_topic_list'][i]  # [TH] 일단 임시로 넣어봄
 
                         # Truncate and padding
-                        tokenized_dialog = tokenizer(flatten_dialog, add_special_tokens=False)
+                        tokenized_dialog = tokenizer(flatten_dialog, add_special_tokens=False, max_length=args.max_length)
                         tokenized_prefix = tokenizer(suffix, add_special_tokens=False)
                         input_ids = truncationPadding(input_ids=tokenized_dialog.input_ids, prefix=[tokenizer.cls_token_id], suffix=tokenized_prefix.input_ids, max_length=args.max_length)
                         attention_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, prefix=[1], suffix=tokenized_prefix.attention_mask, max_length=args.max_length)

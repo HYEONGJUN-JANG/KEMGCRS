@@ -16,6 +16,8 @@ def main():
     args = parseargs()
     # args.data_cache = False
     args.who="TH"
+    args.log_name = 'LOG'
+
     checkPath(args.log_dir)
     checkPath(args.model_dir)
 
