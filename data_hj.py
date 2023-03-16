@@ -1,7 +1,6 @@
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from dataModel import KnowledgeDataset, DialogDataset
-import numpy as np
+from dataModel import DialogDataset
 import json
 from utils import *
 
@@ -19,7 +18,7 @@ def dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train'):
         knowledge_sample = []
         data_path = os.path.join(args.data_dir, f"en_{data_name}.txt")
         with open(data_path, 'r', encoding='UTF-8') as f:
-            for line in tqdm(f, desc="Dataset Read", bar_format=' {percentage:3.0f} % | {bar:23} {r_bar}'):
+            for line in tqdm(f, desc="Dataset Read", bar_format='{l_bar} {l_bar} % | {bar:23} {r_bar}'):
                 dialog = json.loads(line)
                 conversation = dialog['conversation']
                 role_seq = ["User", "System"] if dialog['goal_type_list'][0] != 'Greetings' else ["System", "User"]
@@ -46,19 +45,15 @@ def dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train'):
                         input_ids = truncationPadding(input_ids=tokenized_dialog.input_ids, prefix=[tokenizer.cls_token_id], suffix=tokenized_prefix.input_ids, max_length=args.max_length)
                         attention_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, prefix=[1], suffix=tokenized_prefix.attention_mask, max_length=args.max_length)
 
-                        # TODO: argument 받아서 처리하기
-                        # tokenized_dialog = tokenizer(flatten_dialog,
-                        #                              padding='max_length',
-                        #                              truncation=True,
-                        #                              add_special_tokens=True)
                         train_sample.append({'dialog_token': input_ids,
                                              'dialog_mask': attention_mask,
                                              'response': conversation[i],
                                              'goal_type': dialog['goal_type_list'][i],
-                                             'topic': dialog['goal_topic_list'][i]})
+                                             'topic': dialog['goal_topic_list'][i],
+                                             'user_profile': user_profile,
+                                             'situation': situation
+                                             })
                         if knowledge_seq[i] != '':
-                            # input_ids = truncationPadding(input_ids=tokenized_dialog.input_ids, suffix=[tokenizer.cls_token_id], max_length=args.max_length)
-                            # attention_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, suffix=[1], max_length=args.max_length)
                             knowledge_sample.append({'dialog_token': input_ids,
                                                      'dialog_mask': attention_mask,
                                                      'response': conversation[i],
@@ -70,7 +65,11 @@ def dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train'):
         if args.data_cache:
             write_pkl(train_sample, cachename)
             write_pkl(knowledge_sample, cachename_know)
-    data_sample = DialogDataset(args, knowledge_sample)
+    if args.who=='TH':
+        data_sample = DialogDataset(args, knowledge_sample)
+    elif args.who=='HJ':
+        data_sample = DialogDataset(args, train_sample)
+        # return train_sample
     batch_size = args.batch_size if 'train' == data_name else 1
     dataloader = DataLoader(data_sample, batch_size=batch_size)
     return dataloader
@@ -92,4 +91,4 @@ if __name__ == "__main__":
     bert_model = AutoModel.from_pretrained(args.model_name, cache_dir=os.path.join("cache", args.model_name))
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     knowledgeDB = read_pkl("data/knowledgeDB.txt")
-    dataset_reader(args, tokenizer, knowledgeDB)
+    dataset_reader_raw_hj(args, tokenizer, knowledgeDB)

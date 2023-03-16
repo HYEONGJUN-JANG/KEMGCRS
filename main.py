@@ -7,7 +7,7 @@ from dataModel import KnowledgeDataset
 from eval_know import eval_know
 from train_know import train_retriever_idx
 from utils import *
-from models import *
+from models_hj import *
 from data_util import readDic
 
 
@@ -15,7 +15,7 @@ def main():
     # HJ 작업 --> 형준 여기서만 작업
     args = parseargs()
     args.who="HJ"
-    # args.data_cache = False
+    args.data_cache = True
     checkPath(args.log_dir)
     checkPath(args.model_dir)
 
@@ -46,9 +46,7 @@ def main():
     # knowledge_index = knowledge_index.to(args.device)
 
     # TODO: retriever 로 바꿔서 save 와 load
-    # if args.model_load:
-    #     bert_model.load_state_dict(torch.load(os.path.join(args.model_dir, args.pretrained_model)))  # state_dict를 불러 온 후, 모델에 저장`
-
+    args.knowledge_num = len(knowledgeDB)
     retriever = Retriever(args, bert_model1, bert_model2)
     retriever = retriever.to(args.device)
 
