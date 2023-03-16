@@ -22,7 +22,7 @@ def knowledge_reindexing(args, knowledge_data, retriever):
 
 
 def update_moving_average(ma_model, current_model):
-    decay = 0.99
+    decay = 0.9
     for current_params, ma_params in zip(current_model.parameters(), ma_model.parameters()):
         old_weight, up_weight = ma_params.data, current_params.data
         ma_params.data = decay * old_weight + (1 - decay) * up_weight
