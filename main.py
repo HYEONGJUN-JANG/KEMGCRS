@@ -47,16 +47,17 @@ def main():
     knowledgeDB = data.read_pkl(os.path.join(args.data_dir, args.k_DB_name))  # TODO: verbalize (TH)
     # knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
 
-    topicDic, goalDic = readDic(os.path.join(args.data_dir, "topic2id.txt"),"str"), readDic(os.path.join(args.data_dir, "goal2id.txt"),"str")
-    train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, data_name='train', goal_dict=goalDic, topic_dict=topicDic)
-    test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, data_name='test', goal_dict=goalDic, topic_dict=topicDic)
+    topicDic_str, topicDic_int = readDic(os.path.join(args.data_dir, "topic2id.txt"))
+    goalDic_str, goalDic_int = readDic(os.path.join(args.data_dir, "goal2id.txt"))
+    train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, data_name='train', goal_dict=goalDic_str, topic_dict=topicDic_str)
+    test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, data_name='test', goal_dict=goalDic_str, topic_dict=topicDic_str)
     # knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name)))
     # knowledge_index = knowledge_index.to(args.device)
 
     # TODO: retriever 로 바꿔서 save 와 load
     args.knowledge_num = len(knowledgeDB)
-    args.topic_num = len(topicDic)
-    args.goal_num = len(goalDic)
+    args.topic_num = len(topicDic_str)
+    args.goal_num = len(goalDic_str)
     retriever = Retriever(args, bert_model1, bert_model2)
     retriever = retriever.to(args.device)
 
@@ -66,7 +67,7 @@ def main():
     #     retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
 
     # eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer) # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
-    train_goal(args, train_dataloader,test_dataloader, retriever, goalDic, tokenizer)
+    train_goal(args, train_dataloader,test_dataloader, retriever, goalDic_int, tokenizer)
 
 if __name__ == "__main__":
     main()
