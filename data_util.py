@@ -1,5 +1,5 @@
 
-def readDic(filename, out="str"):
+def readDic(filename, out=None):
     output_str_idx=dict()
     output_idx_str=dict()
     with open(filename, 'r', encoding='utf-8') as infile:
