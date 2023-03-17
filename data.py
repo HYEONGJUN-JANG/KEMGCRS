@@ -32,7 +32,7 @@ def dataset_reader(args, tokenizer, knowledgeDB, data_name='train', goal_dict=No
     if args.who=='TH':
         return dataset_reader_raw(args, tokenizer, knowledgeDB, data_name=data_name)
     elif args.who=="HJ":
-        train_sample = dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name=data_name, goal_dict=goal_dict, topic_dict=topic_dict)
+        train_sample = dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name=data_name, goal_dict=goal_dict, topic_dict=topic_dict, task='goal')
         data_sample = DialogDataset(args, train_sample, goal_dict, topic_dict)
         batch_size = args.batch_size # if 'train' == data_name else 1
         dataloader = DataLoader(data_sample, batch_size=batch_size)
@@ -40,7 +40,7 @@ def dataset_reader(args, tokenizer, knowledgeDB, data_name='train', goal_dict=No
     else:
         pass
 
-
+# HJ: Don't Touch
 def dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train'):
     if not os.path.exists(os.path.join(args.data_dir, 'cache')): os.makedirs(os.path.join(args.data_dir, 'cache'))
     cachename = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}.pkl")
