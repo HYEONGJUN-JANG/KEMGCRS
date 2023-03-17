@@ -16,6 +16,7 @@ def main():
     args.data_cache = True
     args.batch_size = 4
     args.bert_saved_model_path = os.path.join("cache", args.bert_name)
+    args.log_name = "loglog"
     if sysChecker() == 'Linux':
         home = '/home/work/CRSTEST/kemgcrs'
         args.data_dir = os.path.join(home,'data')
