@@ -45,10 +45,10 @@ class DialogDataset(Dataset):
     def __len__(self):
         return len(self.train_sample)
 
-def dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train', goal_dict=None, topic_dict=None):
+def dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train', goal_dict=None, topic_dict=None, task=None):
     # if not os.path.exists(os.path.join(args.data_dir, 'cache')): os.makedirs(os.path.join(args.data_dir, 'cache'))
     checkPath(os.path.join(args.data_dir, 'cache'))
-    cachename = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}.pkl")
+    cachename = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}_{task}.pkl")
     cachename_know = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}_know.pkl")
 
     if args.data_cache and os.path.exists(cachename) and os.path.exists(cachename_know):
@@ -79,8 +79,15 @@ def dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train', goal_
                     role = role_seq[i]
                     if role == 'System' and len(augmented_dialog) > 0:
                         flatten_dialog = tokenizer.sep_token.join(augmented_dialog)
-                        suffix = '<type>' + dialog['goal_type_list'][i] + '<topic>' + dialog['goal_topic_list'][i]  # [TH] 일단 임시로 넣어봄
-
+                        # HJ: suffix 에 따라서 goal, topic이 말려들어가느냐 마느냐가 결정되는게 있음 --> task별로 어찌 처리해줄 수 있을지 고민필요
+                        if task=="know":
+                            suffix = '<type>' + dialog['goal_type_list'][i] + '<topic>' + dialog['goal_topic_list'][i]  # [TH] 일단 임시로 넣어봄
+                        elif task=='goal':
+                            suffix = ''
+                        elif task=='topic':
+                            suffix = '<type>' + dialog['goal_type_list'][i]
+                        else: # Response
+                            suffix= '<type>' + dialog['goal_type_list'][i] + '<topic>' + dialog['goal_topic_list'][i]
                         # Truncate and padding
                         tokenized_dialog = tokenizer(flatten_dialog, add_special_tokens=False)
                         tokenized_prefix = tokenizer(suffix, add_special_tokens=False)
