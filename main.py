@@ -16,15 +16,18 @@ def main():
     args.data_cache = True
     args.batch_size = 4
     args.bert_saved_model_path = os.path.join("cache", args.bert_name)
-    args.log_name = "loglog"
+    args.log_name = "log_Topic PRF"
+    args.task = 'topic'
+    args.num_epochs = 1
     if sysChecker() == 'Linux':
-        home = '/home/work/CRSTEST/kemgcrs'
-        args.data_dir = os.path.join(home,'data')
+        args.home = '/home/work/CRSTEST/kemgcrs'
+        args.data_dir = os.path.join(args.home,'data')
         args.output_dir =  os.path.join(args.data_dir,'output')
-        args.log_dir =  os.path.join(home,'logs')
-        args.models =  os.path.join(home,'model_dir')
-        args.bert_saved_model_path = os.path.join(home, "cache", args.bert_name)
+        args.log_dir =  os.path.join(args.home,'logs')
+        args.models =  os.path.join(args.home,'model_dir')
+        args.bert_saved_model_path = os.path.join(args.home, "cache", args.bert_name)
         args.batch_size = 128
+        args.num_epochs = 10
         pass  # HJ KT-server
 
     checkPath(args.log_dir)
@@ -68,7 +71,8 @@ def main():
     #     retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
 
     # eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer) # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
-    train_goal(args, train_dataloader,test_dataloader, retriever, goalDic_int, tokenizer)
+    # train_goal(args, train_dataloader,test_dataloader, retriever, goalDic_int, tokenizer)
+    train_topic(args, train_dataloader,test_dataloader, retriever, goalDic_int, topicDic_int, tokenizer)
 
 if __name__ == "__main__":
     main()
