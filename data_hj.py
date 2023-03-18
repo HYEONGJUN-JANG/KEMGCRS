@@ -23,13 +23,13 @@ class DialogDataset(Dataset):
         dialog_mask = torch.LongTensor(data['dialog_mask'])
         # target_knowledge = data['target_knowledge']
         # negative_knowledge = torch.LongTensor(self.negative_sampler(target_knowledge))
-        response = data['response']
-        goal_type = data['goal_type']
-        topic = data['topic']
-        user_profile = data['user_profile']
-        situation = data['situation']
-        return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'goal_type': goal_type, 'topic': topic }
+        response = torch.LongTensor(data['response'])
+        goal_type = data['goal_type'] # goal idx
+        topic = data['topic'] # topic idx
+        # user_profile = data['user_profile']
+        # situation = data['situation']
         # return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'target_knowledge': target_knowledge, 'goal_type': goal_type, 'response': response, 'topic': topic, 'user_profile':user_profile, 'situation':situation}
+        return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'goal_type': goal_type, 'topic': topic ,'response':response} #,'user_profile':user_profile, 'situation':situation}
         # return dialog_token, dialog_mask, target_knowledge, goal_type, response, topic
         # 0: dialog_token, 1: dialog_mask, 2: target_knowledge, 3: goal_type, 4: response, 5: topic
 
@@ -68,7 +68,7 @@ def dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train', goal_
                     role_seq.append(role_seq[i % 2])
                 knowledge_seq = dialog['knowledge']
                 knowledge_seq = [' '.join(know) for know in knowledge_seq]
-                user_profile = dialog['user_profile']
+                user_profile = user_profile_setting(dialog['user_profile'])
                 situation = dialog['situation']
                 for i in range(len(conversation)):
                     conversation[i] = conversation[i] if conversation[i][0] != '[' else conversation[i][4:]
@@ -83,29 +83,34 @@ def dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train', goal_
                         if task=='goal':
                             suffix = ''
                         elif task=='topic':
-                            suffix = '<type>' + dialog['goal_type_list'][i]
+                            suffix = '<user_profile>' + user_profile +' <situation>'+situation + ' <type>' + dialog['goal_type_list'][i]
                         elif task=="know":
                             suffix = '<type>' + dialog['goal_type_list'][i] + '<topic>' + dialog['goal_topic_list'][i]  # [TH] 일단 임시로 넣어봄
                         else: # Response
                             suffix= '<type>' + dialog['goal_type_list'][i] + '<topic>' + dialog['goal_topic_list'][i]
                         # Truncate and padding
-                        tokenized_dialog = tokenizer(flatten_dialog, add_special_tokens=False)
-                        tokenized_prefix = tokenizer(suffix, add_special_tokens=False)
-                        input_ids = truncationPadding(input_ids=tokenized_dialog.input_ids, prefix=[tokenizer.cls_token_id], suffix=tokenized_prefix.input_ids, max_length=args.max_length)
-                        attention_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, prefix=[1], suffix=tokenized_prefix.attention_mask, max_length=args.max_length)
-
+                        # tokenized_dialog = tokenizer(flatten_dialog, add_special_tokens=False)
+                        # tokenized_input = tokenizer(suffix, padding='max_length', max_length=args.max_length, truncation=True)
+                        tokenized_dialog = tokenizer(suffix+flatten_dialog, padding='max_length', max_length=args.max_length, truncation=True)
+                        input_ids = tokenized_dialog['input_ids']
+                        attention_mask = tokenized_dialog['attention_mask']
+                        resp = tokenizer(conversation[i], padding='max_length', max_length=args.max_length, truncation=True)
+                        # input_ids = truncationPadding(input_ids=tokenized_dialog.input_ids, prefix=[tokenizer.cls_token_id], suffix=tokenized_prefix.input_ids, max_length=args.max_length)
+                        # attention_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, prefix=[1], suffix=tokenized_prefix.attention_mask, max_length=args.max_length)
+                        # user_prof= tokenizer.tokenize(user_profile, padding='max_length', max_length=args.max_length, truncation=True)
                         train_sample.append({'dialog_token': input_ids,
                                              'dialog_mask': attention_mask,
-                                             'response': conversation[i],
+                                             'response': resp['input_ids'],
                                              'goal_type': goal_dict[dialog['goal_type_list'][i]],
                                              'topic': topic_dict[dialog['goal_topic_list'][i]],
-                                             'user_profile': user_profile,
-                                             'situation': situation
+                                             # 'user_profile': user_prof,
+                                             # 'situation': situation
                                              })
                         if knowledge_seq[i] != '':
                             knowledge_sample.append({'dialog_token': input_ids,
                                                      'dialog_mask': attention_mask,
-                                                     'response': conversation[i],
+                                                     'response': resp,
+                                                     # 'response': conversation[i],
                                                      'goal_type': dialog['goal_type_list'][i],
                                                      'topic': dialog['goal_topic_list'][i],
                                                      'target_knowledge': knowledgeDB.index(knowledge_seq[i])})
@@ -129,6 +134,18 @@ def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
     input_ids = prefix + input_ids[-truncate_size:] + suffix
     input_ids = input_ids + [0] * (max_length - len(input_ids))
     return input_ids
+
+def user_profile_setting(ufDic:dict)->str:
+    uf=''
+    for i,key in enumerate(ufDic.keys()):
+        one=ufDic[key]
+        if i==0: pass
+        else: uf+=' | '
+        if type(one)==list:
+            uf += f"{key}: {', '.join(one)}"
+        else:
+            uf += f"{key}: {one}"
+    return uf
 
 
 if __name__ == "__main__":
