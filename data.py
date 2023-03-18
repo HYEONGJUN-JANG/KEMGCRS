@@ -32,7 +32,7 @@ def dataset_reader(args, tokenizer, knowledgeDB, data_name='train', goal_dict=No
     if args.who=='TH':
         return dataset_reader_raw(args, tokenizer, knowledgeDB, data_name=data_name)
     elif args.who=="HJ":
-        train_sample = dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name=data_name, goal_dict=goal_dict, topic_dict=topic_dict, task='goal')
+        train_sample = dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name=data_name, goal_dict=goal_dict, topic_dict=topic_dict, task=args.task)
         data_sample = DialogDataset(args, train_sample, goal_dict, topic_dict)
         batch_size = args.batch_size # if 'train' == data_name else 1
         dataloader = DataLoader(data_sample, batch_size=batch_size)
