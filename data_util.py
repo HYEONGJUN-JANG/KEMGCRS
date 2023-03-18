@@ -11,8 +11,8 @@ def readDic(filename, out=None):
                 k,idx=line.strip().split()
             output_str_idx[k]=int(idx)
             output_idx_str[int(idx)]=k
-        output_str_idx[len(output_str_idx)] = '<PAD>'
-        output_idx_str[len(output_idx_str)] = '<PAD>'
+        # output_str_idx[len(output_str_idx)] = '<PAD>'
+        # output_idx_str[len(output_idx_str)] = '<PAD>'
     if out=='str':
         return output_str_idx
     elif out=='idx':
