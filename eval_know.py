@@ -47,8 +47,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
 
         input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
-        target_knowledge_text = [knowledgeDB[idx][1] for idx in target_knowledge]  # target knowledge
-        retrieved_knowledge_text = [knowledgeDB[idx][1] for idx in top_candidate[0]]  # list
+        target_knowledge_text = [knowledgeDB[idx] for idx in target_knowledge]  # target knowledge
+        retrieved_knowledge_text = [knowledgeDB[idx] for idx in top_candidate[0]]  # list
         correct = target_knowledge_text[0] in retrieved_knowledge_text
 
         jsonlineSave.append({'goal_type': goal_type[0], 'topic': topic, 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response[0], "predict5": retrieved_knowledge_text})
