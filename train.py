@@ -1,9 +1,12 @@
 import sys
 import logging
+from collections import defaultdict
+
+from torch.utils.data import DataLoader
 from transformers import AutoModel, AutoTokenizer
 import data
 from config import bert_special_tokens_dict
-from dataModel import KnowledgeDataset
+from dataModel import KnowledgeDataset, DialogDataset
 from eval_know import eval_know
 from train_know import train_retriever_idx
 from utils import *
@@ -36,12 +39,25 @@ def main():
     args.hidden_size = bert_model1.config.hidden_size  # BERT large 쓸 때 대비
 
     # Read knowledge DB
-    knowledgeDB = data.read_pkl(os.path.join(args.data_dir, args.k_DB_name))  # TODO: verbalize (TH)
-    knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
-    args.knowledge_num = len(knowledgeDB)
+    # train_knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'train_knowledge_DB.pickle'))  # TODO: verbalize (TH)
+    all_knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'all_knowledge_DB.pickle'))  # TODO: verbalize (TH)
+    knowledgeDB_values = [k[1] for k in all_knowledgeDB]
+    knowledgeDB_entity_values = defaultdict(list)
+    for k in all_knowledgeDB:
+        knowledgeDB_entity_values[k[0]].append(knowledgeDB_values.index(k[1]))
 
-    train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'train')
-    test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'test')
+    knowledge_data = KnowledgeDataset(args, knowledgeDB_values, tokenizer)  # knowledge dataset class
+    args.knowledge_num = len(all_knowledgeDB)
+
+    train_dataset = data.dataset_reader(args, tokenizer, knowledgeDB_values, 'train')
+    test_dataset = data.dataset_reader(args, tokenizer, knowledgeDB_values, 'test')
+
+    train_datamodel = DialogDataset(args, train_dataset, all_knowledgeDB, knowledgeDB_entity_values, tokenizer)
+    test_datamodel = DialogDataset(args, test_dataset, all_knowledgeDB, knowledgeDB_entity_values, tokenizer)
+
+    train_dataloader = DataLoader(train_datamodel, batch_size=args.batch_size, shuffle=True)
+    test_dataloader = DataLoader(test_datamodel, batch_size=1, shuffle=False)
+
     topicDic, goalDic = readDic(os.path.join(args.data_dir, "topic2id.txt"), "idx"), readDic(os.path.join(args.data_dir, "goal2id.txt"), "idx")
     # knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name)))
     # knowledge_index = knowledge_index.to(args.device)
@@ -58,7 +74,7 @@ def main():
     else:
         retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
 
-    eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    eval_know(args, test_dataloader, retriever, knowledge_data, all_knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
 if __name__ == "__main__":

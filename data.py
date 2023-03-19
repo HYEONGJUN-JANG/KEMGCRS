@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from dataModel import KnowledgeDataset, DialogDataset
@@ -80,11 +82,8 @@ def dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train'):
         if args.data_cache:
             write_pkl(train_sample, cachename)
             write_pkl(knowledge_sample, cachename_know)
-    data_sample = DialogDataset(args, knowledge_sample, knowledgeDB, tokenizer)
-    batch_size = args.batch_size if 'train' == data_name else 1
-    shuffle = True if 'train' == data_name else False
-    dataloader = DataLoader(data_sample, batch_size=batch_size, shuffle=shuffle)
-    return dataloader
+
+    return knowledge_sample
 
 
 def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):

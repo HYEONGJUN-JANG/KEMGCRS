@@ -10,6 +10,7 @@ def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
     input_ids = input_ids + [0] * (max_length - len(input_ids))
     return input_ids
 
+
 class KnowledgeDataset(Dataset):
     def __init__(self, args, knowledgeDB, tokenizer):
         super(Dataset, self).__init__()
@@ -34,12 +35,13 @@ class KnowledgeDataset(Dataset):
 
 
 class DialogDataset(Dataset):
-    def __init__(self, args, train_sample, knowledgeDB, tokenizer):
+    def __init__(self, args, train_sample, knowledgeDB, knowledgeDB_entity_values, tokenizer):
         super(Dataset, self).__init__()
         self.train_sample = train_sample
         self.args = args
         self.tokenizer = tokenizer
         self.knowledgeDB = knowledgeDB
+        self.knowledgeDB_entity_values = knowledgeDB_entity_values
 
     def __getitem__(self, idx):
         data = self.train_sample[idx]
@@ -61,7 +63,7 @@ class DialogDataset(Dataset):
         elif self.args.input_prompt == 'dialog_typetopic':
             dialog_token = truncationPadding(input_ids=tokenized_dialog.input_ids, prefix=[self.tokenizer.cls_token_id], suffix=tokenized_suffix.input_ids, max_length=self.args.max_length)
             dialog_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, prefix=[1],  suffix=tokenized_suffix.attention_mask, max_length=self.args.max_length)
-        candidate_knowledge = self.tokenizer([self.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=self.args.max_length)
+        candidate_knowledge = self.tokenizer([self.knowledgeDB_values[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=self.args.max_length)
 
         # target_knowledge = self.tokenizer
         candidate_knowledge_token = candidate_knowledge.input_ids
@@ -77,8 +79,11 @@ class DialogDataset(Dataset):
         # 0: dialog_token, 1: dialog_mask, 2: target_knowledge, 3: goal_type, 4: response, 5: topic
 
     def negative_sampler(self, target_knowledge):
+        candidate_entity = self.knowledgeDB[target_knowledge][0]
+        candiate_all_list = self.knowledgeDB_entity_values[candidate_entity]
+        negative_indice = random.choices(candiate_all_list, k=self.args.negative_num if len(candiate_all_list) > self.args.negative_num else len(candiate_all_list))
         total_knowledge_num = self.args.knowledge_num
-        negative_indice = []
+        # negative_indice = []
         while len(negative_indice) < self.args.negative_num:
             negative_idx = random.randint(0, total_knowledge_num-1)
             if (negative_idx not in negative_indice) and (negative_idx != target_knowledge):
