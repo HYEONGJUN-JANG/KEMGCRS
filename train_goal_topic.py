@@ -6,7 +6,8 @@ import torch.nn.functional as F
 from utils import write_pkl, save_json
 import torch.optim as optim
 from sklearn.metrics import precision_score, recall_score, f1_score
-
+import logging
+logger = logging.getLogger(__name__)
 
 def train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, tokenizer):
     criterion = nn.CrossEntropyLoss().to(args.device)
@@ -102,6 +103,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int,
     TotalLoss = 0
     save_output_mode = False # True일 경우 해당 epoch에서의 batch들 모아서 output으로 save
     for epoch in range(args.num_epochs):
+        logger.info("train epoch: {}".format(epoch))
         torch.cuda.empty_cache()
         cnt = 0
         epoch_loss = 0
@@ -109,25 +111,26 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int,
         # TRAIN
         print("Train")
         #### return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'target_knowledge': target_knowledge, 'goal_type': goal_type, 'response': response, 'topic': topic, 'user_profile':user_profile, 'situation':situation}
-        # retriever.train()
-        # for batch in tqdm(train_dataloader, desc="Topic_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-        #     batch_size = batch['dialog_token'].size(0)
-        #     dialog_token = batch['dialog_token'].to(args.device)
-        #     dialog_mask = batch['dialog_mask'].to(args.device)
-        #     # target_goal_type = batch['goal_type']  #
-        #     # response = batch['response']
-        #     target_topic = batch['topic']
-        #     # user_profile = batch['user_profile']
-        #     # situation = batch['situation']
-        #
-        #     targets = torch.LongTensor(target_topic).to(args.device)
-        #     dot_score = retriever.topic_selection(dialog_token, dialog_mask)
-        #     loss = criterion(dot_score, targets)
-        #     epoch_loss += loss
-        #     optimizer.zero_grad()
-        #     loss.backward()
-        #     optimizer.step()
-        #     loss.detach()
+        if args.num_epochs>1:
+            retriever.train()
+            for batch in tqdm(train_dataloader, desc="Topic_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+                batch_size = batch['dialog_token'].size(0)
+                dialog_token = batch['dialog_token'].to(args.device)
+                dialog_mask = batch['dialog_mask'].to(args.device)
+                # target_goal_type = batch['goal_type']  #
+                # response = batch['response']
+                target_topic = batch['topic']
+                # user_profile = batch['user_profile']
+                # situation = batch['situation']
+
+                targets = torch.LongTensor(target_topic).to(args.device)
+                dot_score = retriever.topic_selection(dialog_token, dialog_mask)
+                loss = criterion(dot_score, targets)
+                epoch_loss += loss
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                loss.detach()
 
 
         # TEST
@@ -168,16 +171,21 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int,
                     input_text = tokenizer.batch_decode(dialog_token)
                     target_topic_text = [topicDic_int[idx] for idx in test_labels]  # target goal
                     pred_topic_text = [topicDic_int[idx] for idx in test_preds]
+                    pred_top5_texts = [[topicDic_int[idx] for idx in top5_idxs] for top5_idxs in test_pred_at5]
                     real_resp = tokenizer.batch_decode(response, skip_special_tokens=True)
                     for i in range(batch_size):
                         jsonlineSave.append(
-                            {'input':input_text[i], 'pred': pred_topic_text[i], 'target':target_topic_text[i], 'correct':correct[i], 'response': real_resp[i], 'goal_type': goal_type[i]}
+                            {'input':input_text[i], 'pred': pred_topic_text[i],'pred5': pred_top5_texts[i], 'target':target_topic_text[i], 'correct':correct[i], 'response': real_resp[i], 'goal_type': goal_type[i]}
                         )
-
+            p,r,f = round(precision_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(recall_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(f1_score(test_labels, test_preds, average='macro', zero_division=0), 3)
+            test_hit5 = round(test_pred_at5_tfs.count(True)/len(test_pred_at5_tfs),3)
             print(f"Epoch: {epoch}\nTrain Loss: {epoch_loss}")
             print(f"Test Loss: {test_loss}")
-            print(f"Test P/R/F1: {round(precision_score(test_labels, test_preds, average='macro', zero_division=0), 3)} / {round(recall_score(test_labels, test_preds, average='micro', zero_division=0), 3)} / {round(f1_score(test_labels, test_preds, average='micro', zero_division=0), 3)}")
-            print(f"Test Hit@5: {test_pred_at5_tfs.count(True)/len(test_pred_at5_tfs)}")
+            print(f"Test P/R/F1: {p} / {r} / {f}")
+            print(f"Test Hit@5: {test_hit5}")
+            logger.info("Epoch: {}, Training Loss: {}, Test Loss: {}".format(epoch, epoch_loss, test_loss))
+            logger.info("Test P/R/F1:\t {} / {} / {}".format(epoch, epoch_loss, test_loss))
+            logger.info("Test Hit@5: {}".format(test_hit5))
         TotalLoss += epoch_loss / len(train_dataloader)
 
         # pred_goal = dot_score.argmax(1) # dtype=torch.int64
@@ -217,8 +225,11 @@ def json2txt_topic(saved_jsonlines: list) -> list:
     txtlines = []
     for js in saved_jsonlines:  # TODO: Movie recommendation, Food recommendation, POI recommendation, Music recommendation, Q&A, Chat about stars
         # {'input':input_text[i], 'pred': pred_topic_text[i], 'target':target_topic_text[i], 'correct':correct[i], 'response': real_resp[i], 'goal_type': goal_type[i]}
-        dialog, pred, target, tf, response,goal_type = js['input'], js['pred'], js['target'], js['correct'], js['response'], js['goal_type']
-        txt = f"\n---------------------------\n[Goal]: {goal_type}\t[Target Topic]: {target}\t[Pred Topic]: {pred}\t[TF]: {tf}\n[Dialog]"
+        dialog, pred, pred5, target, tf, response,goal_type = js['input'], js['pred'],js['pred5'], js['target'], js['correct'], js['response'], js['goal_type']
+        txt = f"\n---------------------------\n[Goal]: {goal_type}\t[Target Topic]: {target}\t[Pred Topic]: {pred}\t[TF]: {tf}\n[pred_top5]\n"
+        for i in pred5:
+            txt+=f"{i}\n"
+        txt+='[Dialog]\n'
         for i in dialog.replace("user :", '||user :').replace("system :", "||system : ").split('||'):
             txt += f"{i}\n"
         txtlines.append(txt)
