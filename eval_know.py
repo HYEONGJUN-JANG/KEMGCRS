@@ -21,6 +21,23 @@ def knowledge_reindexing(args, knowledge_data, retriever):
     return knowledge_index
 
 
+def computing_score(args, knowledge_data, retriever):
+    print('...knowledge indexing...')
+    knowledgeDataLoader = DataLoader(
+        knowledge_data,
+        batch_size=args.batch_size
+    )
+    knowledge_index = []
+
+    for batch in tqdm(knowledgeDataLoader):
+        input_ids = batch[0].to(args.device)
+        attention_mask = batch[1].to(args.device)
+        knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]
+        knowledge_index.extend(knowledge_emb.cpu().detach())
+    knowledge_index = torch.stack(knowledge_index, 0)
+    return knowledge_index
+
+
 def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer):
 
     # Read knowledge DB

@@ -41,27 +41,27 @@ class Retriever(nn.Module):
         """
 
         batch_size = mask.size(0)
-        token_seq = token_seq.unsqueeze(1).repeat(1, candidate_knowledge_mask.size(1), 1)  # [B, K+1, L]
-        mask = mask.unsqueeze(1).repeat(1, candidate_knowledge_mask.size(1), 1)  # [B, K+1, L]
-        token_seq = torch.cat([token_seq, candidate_knowledge_token], dim=2)  # [B, K+1, 2L]
-        mask = torch.cat([mask, candidate_knowledge_mask], dim=2)  # [B, K+1, 2L]
-        token_len = mask.size(-1)
-        token_seq = token_seq.view(-1, token_len)  # [B * (K+1), 2L]
-        mask = mask.view(-1, token_len)  # [B * (K+1), 2L]
-
-        token_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B * (K+1), d]
-        token_emb = token_emb.view(batch_size, -1, token_emb.size(-1))  # [B, K+1, d]
-        logit = self.linear_weight(token_emb).squeeze(-1)  # [B, K+1]
+        # token_seq = token_seq.unsqueeze(1).repeat(1, candidate_knowledge_mask.size(1), 1)  # [B, K+1, L]
+        # mask = mask.unsqueeze(1).repeat(1, candidate_knowledge_mask.size(1), 1)  # [B, K+1, L]
+        # token_seq = torch.cat([token_seq, candidate_knowledge_token], dim=2)  # [B, K+1, 2L]
+        # mask = torch.cat([mask, candidate_knowledge_mask], dim=2)  # [B, K+1, 2L]
+        # token_len = mask.size(-1)
+        # token_seq = token_seq.view(-1, token_len)  # [B * (K+1), 2L]
+        # mask = mask.view(-1, token_len)  # [B * (K+1), 2L]
+        #
+        # token_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B * (K+1), d]
+        # token_emb = token_emb.view(batch_size, -1, token_emb.size(-1))  # [B, K+1, d]
+        # logit = self.linear_weight(token_emb).squeeze(-1)  # [B, K+1]
 
         # dot-product
-        # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
-        # # dialog_emb = self.proj(dialog_emb)
-        # candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B, K*L]
-        # candidate_knowledge_mask = candidate_knowledge_mask.view(-1, self.args.max_length)  # [B, K*L]
-        #
-        # knowledge_index = self.query_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask).last_hidden_state[:, 0, :]
-        # knowledge_index = knowledge_index.view(batch_size, -1, dialog_emb.size(-1))
-        # logit = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2) # [B, 1, d] * [B, K+1, d] = [B, K+1]
+        dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        # dialog_emb = self.proj(dialog_emb)
+        candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B, K*L]
+        candidate_knowledge_mask = candidate_knowledge_mask.view(-1, self.args.max_length)  # [B, K*L]
+
+        knowledge_index = self.query_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask).last_hidden_state[:, 0, :]
+        knowledge_index = knowledge_index.view(batch_size, -1, dialog_emb.size(-1))
+        logit = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2)  # [B, 1, d] * [B, K+1, d] = [B, K+1]
 
         return logit
 
