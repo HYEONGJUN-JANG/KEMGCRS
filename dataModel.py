@@ -51,12 +51,12 @@ class DialogDataset(Dataset):
         goal_type = data['goal_type']
         topic = data['topic']
         dialog = data['dialog']
-        suffix = '<type>' + goal_type + '<topic>' + topic
+        suffix = self.tokenizer.sep_token + '<type>' + goal_type + '<topic>' + topic
         negative_indice = self.negative_sampler(target_knowledge)
         candidate_indice = [target_knowledge] + negative_indice
 
-        tokenized_dialog = self.tokenizer(dialog, add_special_tokens=False, max_length=self.args.max_length, truncation=True)
-        tokenized_suffix = self.tokenizer(suffix, add_special_tokens=False, max_length=self.args.max_length, truncation=True)
+        tokenized_dialog = self.tokenizer(dialog, add_special_tokens=False)
+        tokenized_suffix = self.tokenizer(suffix, add_special_tokens=False)
         if self.args.input_prompt == 'dialog':
             dialog_token = truncationPadding(input_ids=tokenized_dialog.input_ids, prefix=[self.tokenizer.cls_token_id], max_length=self.args.max_length)
             dialog_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, prefix=[1], max_length=self.args.max_length)
