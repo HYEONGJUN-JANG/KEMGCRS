@@ -74,7 +74,11 @@ class DialogDataset(Dataset):
         candidate_knowledge_token = torch.LongTensor(candidate_knowledge_token)
         candidate_knowledge_mask = torch.LongTensor(candidate_knowledge_mask)
 
-        return dialog_token, dialog_mask, target_knowledge, goal_type, response, topic, candidate_knowledge_token, candidate_knowledge_mask, user_profile
+        response = self.tokenizer(response, add_special_token=True, max_length=self.max_length, padding='max_length', truncation=True, add_special_tokens=True)
+        response_token = torch.LongTensor(response.input_ids)
+        response_mask = torch.LongTensor(response.attention_mask)
+
+        return dialog_token, dialog_mask, target_knowledge, goal_type, response_token, response_mask, topic, candidate_knowledge_token, candidate_knowledge_mask, user_profile
         # return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'target_knowledge': target_knowledge, 'goal_type': goal_type, 'response': response, 'topic': topic}
         # 0: dialog_token, 1: dialog_mask, 2: target_knowledge, 3: goal_type, 4: response, 5: topic
 

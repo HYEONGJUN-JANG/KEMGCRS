@@ -32,7 +32,7 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
         print(f"[Epoch-{epoch}]")
         total_loss = 0
         for batch in tqdm(train_dataloader):
-            dialog_token, dialog_mask, target_knowledge, goal_type, response, topic, candidate_knowledge_token, candidate_knowledge_mask, user_profile = batch
+            dialog_token, dialog_mask, target_knowledge, goal_type, response, response_mask, topic, candidate_knowledge_token, candidate_knowledge_mask, user_profile = batch
             batch_size = dialog_token.size(0)
             dialog_token =dialog_token.to(args.device)
             dialog_mask = dialog_mask.to(args.device)
