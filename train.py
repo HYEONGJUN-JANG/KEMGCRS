@@ -44,6 +44,12 @@ def main():
     knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
     args.knowledge_num = len(knowledgeDB)
 
+    all_knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'all_knowledge_DB.pickle'))  # TODO: verbalize (TH)
+    knowledgeDB_values = [k[1] for k in all_knowledgeDB]
+    knowledgeDB_entity_values = defaultdict(list)
+    for k in all_knowledgeDB:
+        knowledgeDB_entity_values[k[0]].append(knowledgeDB_values.index(k[1]))
+
     train_dataset = data.dataset_reader(args, tokenizer, knowledgeDB, 'train')
     test_dataset = data.dataset_reader(args, tokenizer, knowledgeDB, 'test')
 

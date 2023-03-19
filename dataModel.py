@@ -47,6 +47,7 @@ class DialogDataset(Dataset):
 
         target_knowledge = data['target_knowledge']
         response = data['response']
+        user_profile = data['profile']
         goal_type = data['goal_type']
         topic = data['topic']
         dialog = data['dialog']
@@ -73,7 +74,7 @@ class DialogDataset(Dataset):
         candidate_knowledge_token = torch.LongTensor(candidate_knowledge_token)
         candidate_knowledge_mask = torch.LongTensor(candidate_knowledge_mask)
 
-        return dialog_token, dialog_mask, target_knowledge, goal_type, response, topic, candidate_knowledge_token, candidate_knowledge_mask
+        return dialog_token, dialog_mask, target_knowledge, goal_type, response, topic, candidate_knowledge_token, candidate_knowledge_mask, user_profile
         # return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'target_knowledge': target_knowledge, 'goal_type': goal_type, 'response': response, 'topic': topic}
         # 0: dialog_token, 1: dialog_mask, 2: target_knowledge, 3: goal_type, 4: response, 5: topic
 

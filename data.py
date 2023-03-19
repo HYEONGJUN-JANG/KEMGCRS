@@ -73,6 +73,7 @@ def dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train'):
                         flatten_dialog = tokenizer.sep_token.join(augmented_dialog)
                         if knowledge_seq[i] != '':
                             knowledge_sample.append({'dialog': flatten_dialog,
+                                                     'profile': user_profile,
                                                      'response': conversation[i],
                                                      'goal_type': dialog['goal_type_list'][i],
                                                      'topic': dialog['goal_topic_list'][i],
