@@ -63,7 +63,7 @@ class DialogDataset(Dataset):
         elif self.args.input_prompt == 'dialog_typetopic':
             dialog_token = truncationPadding(input_ids=tokenized_dialog.input_ids, prefix=[self.tokenizer.cls_token_id], suffix=tokenized_suffix.input_ids, max_length=self.args.max_length)
             dialog_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, prefix=[1],  suffix=tokenized_suffix.attention_mask, max_length=self.args.max_length)
-        candidate_knowledge = self.tokenizer([self.knowledgeDB_values[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=self.args.max_length)
+        candidate_knowledge = self.tokenizer([self.knowledgeDB[idx][1] for idx in candidate_indice], truncation=True, padding='max_length', max_length=self.args.max_length)
 
         # target_knowledge = self.tokenizer
         candidate_knowledge_token = candidate_knowledge.input_ids
