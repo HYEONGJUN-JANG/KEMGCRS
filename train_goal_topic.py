@@ -109,25 +109,25 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int,
         # TRAIN
         print("Train")
         #### return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'target_knowledge': target_knowledge, 'goal_type': goal_type, 'response': response, 'topic': topic, 'user_profile':user_profile, 'situation':situation}
-        retriever.train()
-        for batch in tqdm(train_dataloader, desc="Topic_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-            batch_size = batch['dialog_token'].size(0)
-            dialog_token = batch['dialog_token'].to(args.device)
-            dialog_mask = batch['dialog_mask'].to(args.device)
-            # target_goal_type = batch['goal_type']  #
-            # response = batch['response']
-            target_topic = batch['topic']
-            # user_profile = batch['user_profile']
-            # situation = batch['situation']
-
-            targets = torch.LongTensor(target_topic).to(args.device)
-            dot_score = retriever.topic_selection(dialog_token, dialog_mask)
-            loss = criterion(dot_score, targets)
-            epoch_loss += loss
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            loss.detach()
+        # retriever.train()
+        # for batch in tqdm(train_dataloader, desc="Topic_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+        #     batch_size = batch['dialog_token'].size(0)
+        #     dialog_token = batch['dialog_token'].to(args.device)
+        #     dialog_mask = batch['dialog_mask'].to(args.device)
+        #     # target_goal_type = batch['goal_type']  #
+        #     # response = batch['response']
+        #     target_topic = batch['topic']
+        #     # user_profile = batch['user_profile']
+        #     # situation = batch['situation']
+        #
+        #     targets = torch.LongTensor(target_topic).to(args.device)
+        #     dot_score = retriever.topic_selection(dialog_token, dialog_mask)
+        #     loss = criterion(dot_score, targets)
+        #     epoch_loss += loss
+        #     optimizer.zero_grad()
+        #     loss.backward()
+        #     optimizer.step()
+        #     loss.detach()
 
 
         # TEST
@@ -144,21 +144,25 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int,
                 batch_size = batch['dialog_token'].size(0)
                 dialog_token = batch['dialog_token'].to(args.device)
                 dialog_mask = batch['dialog_mask'].to(args.device)
-                targets = torch.LongTensor(batch['topic']).to(args.device)
                 response = batch['response']
-                # target_topic = batch['topic']
                 goal_type = [goalDic_int[int(i)] for i in batch['goal_type']]
+                target_topic = batch['topic']
+
+                targets = torch.LongTensor(target_topic).to(args.device)
+                test_label = list(map(int,target_topic))
+                test_labels.extend(test_label)
                 # user_profile = batch['user_profile']
 
                 dot_score = retriever.topic_selection(dialog_token, dialog_mask)
                 loss = criterion(dot_score, targets)
                 test_loss += loss
-                test_preds.extend(list(map(int, dot_score.argmax(1))))
+                # test_preds.extend(list(map(int, dot_score.argmax(1))))
+                test_pred= [int(i) for i in torch.topk(dot_score, k=1, dim=1).indices]
                 test_pred_at5 = [list(map(int, i)) for i in torch.topk(dot_score, k=5, dim=1).indices]
-                test_pred_at5s.extend([list(map(int, i)) for i in torch.topk(dot_score, k=5, dim=1).indices])
-                test_labels.extend(list(map(int, batch['topic'])))
-                correct = [p==l for p,l in zip(test_preds, test_labels)]
-                correct_at5 = [l in p for p,l in zip(test_pred_at5, test_labels)]
+                test_preds.extend(test_pred)
+                test_pred_at5s.extend(test_pred_at5)
+                correct = [p==l for p,l in zip(test_pred, test_label)]
+                correct_at5 = [l in p for p,l in zip(test_pred_at5, test_label)]
                 test_pred_at5_tfs.extend(correct_at5)
                 if save_output_mode:
                     input_text = tokenizer.batch_decode(dialog_token)
