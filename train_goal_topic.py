@@ -3,6 +3,8 @@ from torch import nn
 from tqdm import tqdm
 import os
 import torch.nn.functional as F
+
+from metric import EarlyStopping
 from utils import write_pkl, save_json
 import torch.optim as optim
 from sklearn.metrics import precision_score, recall_score, f1_score
@@ -16,6 +18,8 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, 
     TotalLoss = 0
     checkf1=0
     save_output_mode = False # True일 경우 해당 epoch에서의 batch들 모아서 output으로 save
+    modelpath = os.path.join(args.model_dir, 'goal_best_model.pt')
+    early_stopping = EarlyStopping(patience=4, path=modelpath, verbose=True)
     for epoch in range(args.num_epochs):
         epoch_loss = 0
         if args.num_epochs>1:
@@ -81,9 +85,14 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, 
         print(f"Test Loss: {test_loss}")
         print(f"P/R/F1: {p} / {r} / {f}")
         TotalLoss += epoch_loss / len(train_dataloader)
-        if f > checkf1:
-            modelpath=os.path.join(args.model_dir, 'goal_best_model.pt')
-            torch.save(retriever.state_dict(), modelpath)
+        early_stopping(f, retriever)
+        if early_stopping.early_stop:
+            print("Early stopping")
+            break
+        # if f > checkf1:
+        #     modelpath=os.path.join(args.model_dir, 'goal_best_model.pt')
+        #     print("Save Model in {modelpath}")
+        #     torch.save(retriever.state_dict(), modelpath)
 
 
     # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
@@ -97,11 +106,13 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int,
     jsonlineSave = []
     TotalLoss = 0
     save_output_mode = False # True일 경우 해당 epoch에서의 batch들 모아서 output으로 save
+    modelpath = os.path.join(args.model_dir, 'topic_best_model.pt')
+    early_stopping = EarlyStopping(patience=4, path=modelpath, verbose=True)
     for epoch in range(args.num_epochs):
         logger.info("train epoch: {}".format(epoch))
         torch.cuda.empty_cache()
         cnt = 0
-        epoch_loss = 0
+        train_epoch_loss = 0
         checkf1 = 0
         if epoch>=args.num_epochs-1: save_output_mode=True
         # TRAIN
@@ -122,7 +133,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int,
                 targets = torch.LongTensor(target_topic).to(args.device)
                 dot_score = retriever.topic_selection(dialog_token, dialog_mask)
                 loss = criterion(dot_score, targets)
-                epoch_loss += loss
+                train_epoch_loss += loss
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -173,19 +184,24 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int,
                         jsonlineSave.append(
                             {'input':input_text[i], 'pred': pred_topic_text[i],'pred5': pred_top5_texts[i], 'target':target_topic_text[i], 'correct':correct[i], 'response': real_resp[i], 'goal_type': goal_type[i]}
                         )
-            p,r,f = round(precision_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(recall_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(f1_score(test_labels, test_preds, average='macro', zero_division=0), 3)
-            test_hit5 = round(test_pred_at5_tfs.count(True)/len(test_pred_at5_tfs),3)
-            print(f"Epoch: {epoch}\nTrain Loss: {epoch_loss}")
-            print(f"Test Loss: {test_loss}")
-            print(f"Test P/R/F1: {p} / {r} / {f}")
-            print(f"Test Hit@5: {test_hit5}")
-            logger.info("Epoch: {}, Training Loss: {}, Test Loss: {}".format(epoch, epoch_loss, test_loss))
-            logger.info("Test P/R/F1:\t {} / {} / {}".format(epoch, epoch_loss, test_loss))
-            logger.info("Test Hit@5: {}".format(test_hit5))
-            if f > checkf1:
-                modelpath = os.path.join(args.model_dir, 'topic_best_model.pt')
-                torch.save(retriever.state_dict(), modelpath)
-        TotalLoss += epoch_loss / len(train_dataloader)
+        p,r,f = round(precision_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(recall_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(f1_score(test_labels, test_preds, average='macro', zero_division=0), 3)
+        test_hit5 = round(test_pred_at5_tfs.count(True)/len(test_pred_at5_tfs),3)
+        print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+        print(f"Test Loss: {test_loss}")
+        print(f"Test P/R/F1: {p} / {r} / {f}")
+        print(f"Test Hit@5: {test_hit5}")
+        logger.info("Epoch: {}, Training Loss: {}, Test Loss: {}".format(epoch, train_epoch_loss, test_loss))
+        logger.info("Test P/R/F1:\t {} / {} / {}".format(p, r, f))
+        logger.info("Test Hit@5: {}".format(test_hit5))
+        TotalLoss += train_epoch_loss / len(train_dataloader)
+        early_stopping(f, retriever)
+        if early_stopping.early_stop:
+            print("Early stopping")
+            break
+            # if f > checkf1:
+            #     modelpath = os.path.join(args.model_dir, 'topic_best_model.pt')
+            #     print("Save Model in {modelpath}")
+            #     torch.save(retriever.state_dict(), modelpath)
 
         # pred_goal = dot_score.argmax(1) # dtype=torch.int64
         # torch.tensor([goalDic[i] for i in target_goal_type])
