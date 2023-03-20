@@ -21,7 +21,7 @@ def read_pkl(filename: str) -> object:
 
 
 def parseargs():
-    parser = argparse.ArgumentParser(description="train.py")
+    parser = argparse.ArgumentParser(description="main.py")
     parser.add_argument("--data_cache", action='store_true', help="Whether to run finetune.")
     parser.add_argument("--model_load", action='store_true', help="Whether to load saved model.")
     parser.add_argument("--momentum", action='store_true', help="Whether to load saved model.")
@@ -48,6 +48,8 @@ def parseargs():
     parser.add_argument("--time", default='', type=str, help="Time for fileName")  # HJ : Log file middle Name
     parser.add_argument("--device", default='0', type=str, help="GPU Device")  # HJ : Log file middle Name
     parser.add_argument('--know_topk', default=3, type=int, help="Number of retrieval know text")  # HJ: Know_text retrieve Top-k
+    parser.add_argument('--topic_topk', default=5, type=int, help="Number of Top-k Topics")  # HJ: Topic Top-k
+    parser.add_argument('--home', default='', type=str, help="Project home directory")  # HJ: Project Home directory
     parser.add_argument('--log_dir', default='logs', type=str, help="logging file directory")  # HJ: log file directory
     parser.add_argument('--model_dir', default='models', type=str, help="saved model directory")  # TH: model file directory
     parser.add_argument('--saved_model_path', default='', type=str, help="saved model file name")  # TH: model file directory
@@ -60,7 +62,7 @@ def parseargs():
 
     args = parser.parse_args()
     args.device = f'cuda:{args.device}' if args.device else "cpu"
-    checkPath(args.model_dir)
+
     if args.time == '': args.time = get_time_kst()
     from platform import system as sysChecker
     if sysChecker() == 'Linux':

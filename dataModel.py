@@ -6,9 +6,12 @@ from torch.utils.data import Dataset
 
 def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
     truncate_size = max_length - len(prefix) - len(suffix)
-    input_ids = prefix + input_ids[-truncate_size:] + suffix
-    input_ids = input_ids + [0] * (max_length - len(input_ids))
-    return input_ids
+    # input_ids = prefix + input_ids[-truncate_size:] + suffix
+    # input_ids = input_ids + [0] * (max_length - len(input_ids))
+    # return input_ids
+    if truncate_size <= len(input_ids): input_ids = prefix + input_ids[len(input_ids) - truncate_size:] + suffix
+    else: input_ids = prefix + input_ids + suffix
+    return input_ids + [0] * (max_length - len(input_ids))
 
 
 class KnowledgeDataset(Dataset):
@@ -34,7 +37,7 @@ class KnowledgeDataset(Dataset):
         return len(self.knowledgeDB)
 
 
-class DialogDataset(Dataset):
+class KnowDialogDataset(Dataset): # knowledge용 데이터셋
     def __init__(self, args, train_sample, knowledgeDB, tokenizer):
         super(Dataset, self).__init__()
         self.train_sample = train_sample

@@ -2,11 +2,11 @@ from collections import defaultdict
 
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from dataModel import KnowledgeDataset
+from dataModel import KnowledgeDataset, KnowDialogDataset
 import numpy as np
 import json
-
-from data_hj import dataset_reader_raw_hj, DialogDataset
+import data_hj
+# from data_hj import dataset_reader_raw_hj, DialogDataset
 from utils import *
 
 
@@ -30,25 +30,28 @@ def knowledge_db_save(args, knowledgeDB, max_length, tokenizer, model):
     np.save(os.path.join(args.data_dir, args.k_idx_name), knowledge_index)
 
 
-def dataset_reader(args, tokenizer, knowledgeDB, data_name='train', goal_dict=None, topic_dict=None):
+def dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=None, topic_dict=None):
     if args.who=='TH':
-        return dataset_reader_raw(args, tokenizer, knowledgeDB, data_name=data_name)
+        data_sample = dataset_reader_th(args, tokenizer, knowledgeDB, mode)
+        data_datamodel = KnowDialogDataset(args, data_sample, knowledgeDB, tokenizer)
+        if mode == 'train': return DataLoader(data_datamodel, batch_size=args.batch_size, shuffle=True) # Train
+        else : return DataLoader(data_datamodel, batch_size=1, shuffle=False) # Test
     elif args.who=="HJ":
-        train_sample = dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name=data_name, goal_dict=goal_dict, topic_dict=topic_dict, task=args.task)
-        data_sample = DialogDataset(args, train_sample, goal_dict, topic_dict)
+        data_sample = data_hj.dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name=mode, goal_dict=goal_dict, topic_dict=topic_dict, task=args.task)
+        data_sample = data_hj.DialogDataset(args, data_sample, goal_dict, topic_dict)
         batch_size = args.batch_size # if 'train' == data_name else 1
-        dataloader = DataLoader(data_sample, batch_size=batch_size)
-        return dataloader
+        return DataLoader(data_sample, batch_size=batch_size)
     else:
         pass
 
 # HJ: Don't Touch
-def dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train'):
+def dataset_reader_th(args, tokenizer, knowledgeDB, data_name='train'):
     if not os.path.exists(os.path.join(args.data_dir, 'cache')): os.makedirs(os.path.join(args.data_dir, 'cache'))
     cachename = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}.pkl")
     cachename_know = os.path.join(args.data_dir, 'cache', f"cached_en_{data_name}_know.pkl")
 
     if args.data_cache and os.path.exists(cachename) and os.path.exists(cachename_know):
+        print(f"Read Pickle {cachename}")
         train_sample = read_pkl(cachename)
         knowledge_sample = read_pkl(cachename_know)
     else:
@@ -56,7 +59,7 @@ def dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train'):
         knowledge_sample = []
         data_path = os.path.join(args.data_dir, f"en_{data_name}.txt")
         with open(data_path, 'r', encoding='UTF-8') as f:
-            for line in tqdm(f, desc="Dataset Read", bar_format=' {percentage:3.0f} % | {bar:23} {r_bar}'):
+            for line in tqdm(f, desc="Dataset Read", bar_format='{l_bar} | {bar:23} {r_bar}'):
                 dialog = json.loads(line)
                 conversation = dialog['conversation']
                 role_seq = ["User", "System"] if dialog['goal_type_list'][0] != 'Greetings' else ["System", "User"]
@@ -64,7 +67,7 @@ def dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train'):
                     role_seq.append(role_seq[i % 2])
                 knowledge_seq = dialog['knowledge']
                 knowledge_seq = [' '.join(know) for know in knowledge_seq]
-                user_profile = dialog['user_profile']
+                user_profile = user_profile_setting(dialog['user_profile'])
                 situation = dialog['situation']
                 for i in range(len(conversation)):
                     conversation[i] = conversation[i] if conversation[i][0] != '[' else conversation[i][4:]
@@ -77,7 +80,7 @@ def dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train'):
                         flatten_dialog = tokenizer.sep_token.join(augmented_dialog)
                         if knowledge_seq[i] != '':
                             knowledge_sample.append({'dialog': flatten_dialog,
-                                                     'profile': str(user_profile),
+                                                     'profile': user_profile,
                                                      'response': conversation[i],
                                                      'goal_type': dialog['goal_type_list'][i],
                                                      'topic': dialog['goal_topic_list'][i],
@@ -97,6 +100,15 @@ def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
     input_ids = input_ids + [0] * (max_length - len(input_ids))
     return input_ids
 
+def user_profile_setting(ufDic:dict)->str:
+    uf=''
+    for i,key in enumerate(ufDic.keys()):
+        one=ufDic[key]
+        if i==0 or key[0].lower()!="a": pass
+        else: uf+=' | '
+        if type(one)==list: uf += f"{key}: {', '.join(one[:-5])}"
+        else: uf += f"{key}: {one}"
+    return uf
 
 if __name__ == "__main__":
     from transformers import AutoModel, AutoTokenizer

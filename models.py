@@ -31,7 +31,7 @@ class Retriever(nn.Module):
 
     def knowledge_retrieve(self, token_seq, mask, candidate_knowledge_token, candidate_knowledge_mask):
         """
-        Args:
+        Args: 뽑아준 negative에 대해서만 dot-product
             token_seq: [B, L]
             mask: [B, L]
             candidate_knowledge_token: [B, K+1, L]
@@ -66,6 +66,10 @@ class Retriever(nn.Module):
         return logit
 
     def compute_score(self, token_seq, mask, knowledge_index):
+        """
+        eval_know.computing_score에서
+        모든 key vector에서 올라온 벡터를 통해 계산처리
+        """
         dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
         return dot_score

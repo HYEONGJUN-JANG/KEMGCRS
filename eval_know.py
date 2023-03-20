@@ -5,6 +5,7 @@ from utils import write_pkl, save_json
 
 
 def knowledge_reindexing(args, knowledge_data, retriever):
+    # 모든 know_index를 버트에 태움
     print('...knowledge indexing...')
     knowledgeDataLoader = DataLoader(
         knowledge_data,
@@ -22,6 +23,7 @@ def knowledge_reindexing(args, knowledge_data, retriever):
 
 
 def computing_score(args, knowledge_data, retriever):
+    # know text를 emb로 바꿔주는 함수 (한번에 다 못올림 --> 그래서 batch 처리함)
     print('...knowledge indexing...')
     knowledgeDataLoader = DataLoader(
         knowledge_data,

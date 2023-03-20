@@ -8,14 +8,16 @@ from utils import *
 from models_hj import *
 from data_util import readDic
 from platform import system as sysChecker
+import dataModel
+from collections import defaultdict
+from train_know import train_retriever_idx
+from eval_know import eval_know
 
 def main():
     # HJ 작업 --> 형준 여기서만 작업
     args = parseargs()
-    args.who="HJ"
     args.data_cache = True
     args.batch_size = 4
-    args.bert_saved_model_path = os.path.join("cache", args.bert_name)
     args.log_name = "log_Topic PRF"
     args.task = 'topic'
     args.num_epochs = 1
@@ -24,11 +26,12 @@ def main():
         args.data_dir = os.path.join(args.home,'data')
         args.output_dir =  os.path.join(args.data_dir,'output')
         args.log_dir =  os.path.join(args.home,'logs')
-        args.models =  os.path.join(args.home,'model_dir')
+        args.model_dir =  os.path.join(args.home,'models')
         args.bert_saved_model_path = os.path.join(args.home, "cache", args.bert_name)
         args.batch_size = 128
         args.num_epochs = 10
         pass  # HJ KT-server
+    args.bert_cache_name = os.path.join(args.home, "cache", args.bert_name)
 
     checkPath(args.log_dir)
     checkPath(args.model_dir)
@@ -37,9 +40,9 @@ def main():
     logging.info('Commend: {}'.format(', '.join(map(str, sys.argv))))
 
     # Model cached load
-    checkPath(args.bert_saved_model_path)
-    bert_model1 = AutoModel.from_pretrained(args.bert_name, cache_dir=args.bert_saved_model_path)
-    bert_model2 = AutoModel.from_pretrained(args.bert_name, cache_dir=args.bert_saved_model_path)
+    checkPath(args.bert_cache_name)
+    bert_model1 = AutoModel.from_pretrained(args.bert_name, cache_dir=args.bert_cache_name)
+    bert_model2 = AutoModel.from_pretrained(args.bert_name, cache_dir=args.bert_cache_name)
 
     tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
     tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
@@ -48,31 +51,57 @@ def main():
     args.hidden_size = bert_model1.config.hidden_size  # BERT large 쓸 때 대비
 
     # Read knowledge DB
-    knowledgeDB = data.read_pkl(os.path.join(args.data_dir, args.k_DB_name))  # TODO: verbalize (TH)
-    # knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
+    knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'knowledgeDB.txt'))  # TODO: verbalize (TH)
+    knowledge_data = dataModel.KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
+    args.knowledge_num = len(knowledgeDB)
+
+    all_knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'all_knowledge_DB.pickle'))  # TODO: verbalize (TH)
+    knowledgeDB_values = [k[1] for k in all_knowledgeDB]
+    knowledgeDB_entity_values = defaultdict(list)
+    for k in all_knowledgeDB:
+        knowledgeDB_entity_values[k[0]].append(knowledgeDB_values.index(k[1]))
+
 
     topicDic_str, topicDic_int = readDic(os.path.join(args.data_dir, "topic2id.txt"))
     goalDic_str, goalDic_int = readDic(os.path.join(args.data_dir, "goal2id.txt"))
-    train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, data_name='train', goal_dict=goalDic_str, topic_dict=topicDic_str)
-    test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, data_name='test', goal_dict=goalDic_str, topic_dict=topicDic_str)
-    # knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name)))
-    # knowledge_index = knowledge_index.to(args.device)
-
-    # TODO: retriever 로 바꿔서 save 와 load
-    args.knowledge_num = len(knowledgeDB)
     args.topic_num = len(topicDic_str)
     args.goal_num = len(goalDic_str)
+
+    # TODO: retriever 로 바꿔서 save 와 load
     retriever = Retriever(args, bert_model1, bert_model2)
     retriever = retriever.to(args.device)
 
-    # if args.saved_model_path == '':
-    #     knowledge_index = train_retriever_idx(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
-    # else:
-    #     retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
+    # HJ Task (Type, Topic)
+    args.who = "HJ"
+    train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=goalDic_str, topic_dict=topicDic_str)
+    test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test', goal_dict=goalDic_str, topic_dict=topicDic_str)
+    train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, tokenizer)
+    train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int, topicDic_int, tokenizer)
 
-    # eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer) # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
-    # train_goal(args, train_dataloader,test_dataloader, retriever, goalDic_int, tokenizer)
-    train_topic(args, train_dataloader,test_dataloader, retriever, goalDic_int, topicDic_int, tokenizer)
+    # TH Task (Know)
+    args.who = "TH"
+    trainKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train')
+    testKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test')
+
+    # Just Fine_tune on Golden Target
+    train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, tokenizer)
+    train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int, topicDic_int, tokenizer)
+    if args.saved_model_path == '':
+        train_retriever_idx(args, trainKnow_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
+    else:
+        retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
+    eval_know(args, testKnow_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+
+    # Pipeline Fine-tune
+    # for batch in train_dataloader:
+        # batch...............
+        # goalpreds=retriever.goal_selection()
+        # topicpreds=retriever.topic_selection()
+        # knowledges=retriever.knowledge_retrieve()
+        # Generator.generate(asdfasdfasdf)
+
+
+
 
 if __name__ == "__main__":
     main()

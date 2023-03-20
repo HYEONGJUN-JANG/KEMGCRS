@@ -125,14 +125,7 @@ def dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train', goal_
         if args.data_cache:
             write_pkl(train_sample, cachename)
             write_pkl(knowledge_sample, cachename_know)
-    if args.who=='TH':
-        data_sample = DialogDataset(args, knowledge_sample)
-        batch_size = args.batch_size if 'train' == data_name else 1
-        dataloader = DataLoader(data_sample, batch_size=batch_size)
-        return dataloader
-    elif args.who=='HJ':
-        # data_sample = DialogDataset(args, train_sample)
-        return train_sample
+    return train_sample
 
 
 def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
@@ -147,10 +140,8 @@ def user_profile_setting(ufDic:dict)->str:
         one=ufDic[key]
         if i==0 or key[0].lower()!="a": pass
         else: uf+=' | '
-        if type(one)==list:
-            uf += f"{key}: {', '.join(one[:-5])}"
-        else:
-            uf += f"{key}: {one}"
+        if type(one)==list: uf += f"{key}: {', '.join(one[:-5])}"
+        else: uf += f"{key}: {one}"
     return uf
 
 
