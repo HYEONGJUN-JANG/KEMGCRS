@@ -3,6 +3,7 @@ from tqdm import tqdm
 from torch import optim
 
 from eval_know import knowledge_reindexing
+from metric import EarlyStopping
 from utils import *
 from models import *
 
@@ -20,7 +21,8 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(retriever.parameters(), lr=args.lr)
-
+    modelpath = os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt")
+    early_stopping = EarlyStopping(patience=4, delta=10,path=modelpath, verbose=True)
     if args.retrieve == 'freeze':
         knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
         knowledge_index = knowledge_index.to(args.device)
@@ -56,7 +58,7 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
             optimizer.step()
             if args.momentum:
                 update_moving_average(retriever.key_bert, retriever.query_bert)
-
         print('LOSS:\t%.4f' % total_loss)
+        early_stopping(100000 - total_loss, retriever)
 
     torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식

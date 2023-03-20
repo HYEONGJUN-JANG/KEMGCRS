@@ -84,11 +84,11 @@ def main():
     train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int, topicDic_int, tokenizer)
 
     # # TH Task (Know)
-    # args.who = "TH"
-    # args.task = 'know'
-    # trainKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train')
-    # testKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test')
-    #
+    args.who = "TH"
+    args.task = 'know'
+    trainKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train')
+    testKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test')
+    train_retriever_idx(args, trainKnow_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
     # # Just Fine_tune on Golden Target
     # train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, tokenizer)
     # train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int, topicDic_int, tokenizer)
