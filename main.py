@@ -22,7 +22,7 @@ def main():
     args.task = 'topic'
     args.num_epochs = 1
     if sysChecker() == 'Linux':
-        args.home = '/home/work/CRSTEST/kemgcrs'
+        args.home = '/home/work/CRSTEST/KEMGCRS'
         args.data_dir = os.path.join(args.home,'data')
         args.output_dir =  os.path.join(args.data_dir,'output')
         args.log_dir =  os.path.join(args.home,'logs')
