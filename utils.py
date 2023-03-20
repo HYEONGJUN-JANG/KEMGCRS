@@ -24,10 +24,11 @@ def parseargs():
     parser = argparse.ArgumentParser(description="train.py")
     parser.add_argument("--data_cache", action='store_true', help="Whether to run finetune.")
     parser.add_argument("--model_load", action='store_true', help="Whether to load saved model.")
+    parser.add_argument("--momentum", action='store_true', help="Whether to load saved model.")
 
     parser.add_argument("--data_dir", default='data', type=str, help="The data directory.")
     # parser.add_argument('--data_name', default='en_test.txt', type=str, help="dataset name")
-    parser.add_argument('--k_DB_name', default='knowledgeDB.txt', type=str, help="knowledge DB file name in data_dir")
+    parser.add_argument('--k_DB_name', default='all_knowledge_DB.pickle', type=str, help="knowledge DB file name in data_dir")
     parser.add_argument('--k_idx_name', default='knowledge_index.npy', type=str, help="knowledge index file name in data_dir")
 
     parser.add_argument('--bert_name', default='bert-base-uncased', type=str, help="BERT Model Name")
@@ -52,6 +53,11 @@ def parseargs():
     parser.add_argument('--saved_model_path', default='', type=str, help="saved model file name")  # TH: model file directory
 
     parser.add_argument('--log_name', default='', type=str, help="log file name")  # HJ: log file name
+
+    # TH
+    parser.add_argument('--retrieve', default='negative', type=str, help="retrieve")
+    parser.add_argument('--input_prompt', default='dialog', type=str, help="input_prompt")
+
     args = parser.parse_args()
     args.device = f'cuda:{args.device}' if args.device else "cpu"
     checkPath(args.model_dir)
@@ -79,12 +85,13 @@ def save_json(args, filename, saved_jsonlines):
     def json2txt(saved_jsonlines: list) -> list:
         txtlines = []
         for js in saved_jsonlines:  # TODO: Movie recommendation, Food recommendation, POI recommendation, Music recommendation, Q&A, Chat about stars
-            goal, topic, tf, dialog, targetkg, resp, pred5 = js['goal_type'], js['topic'], js['tf'], js['dialog'], js['target'], js['response'], js["predict5"]
+            goal, topic, tf, dialog, targetkg, resp, pred5, profile = js['goal_type'], js['topic'], js['tf'], js['dialog'], js['target'], js['response'], js["predict5"], js["profile"]
             if goal == 'Movie recommendation' or goal=='Food recommendation' or goal=='POI recommendation' or goal=='Music recommendation' or goal=='Q&A' or goal=='Chat about stars':
                 pred_txt = "\n".join(pred5)
-                txt = f"\n---------------------------\n[Goal]: {goal}\t[Topic]: {topic[0]}\t[TF]: {tf}\n[Target Know_text]: {targetkg}\n[PRED_KnowText]\n{pred_txt}\n[Dialog]"
+                txt = f"\n---------------------------\n[Goal]: {goal}\t[Topic]: {topic[0]}\t[TF]: {tf}\n[Profle]: {profile}\n[Target Know_text]: {targetkg}\n[PRED_KnowText]\n{pred_txt}\n[Dialog]"
                 for i in dialog.replace("user :", '|user :').replace("system :", "|system : ").split('|'):
                     txt += f"{i}\n"
+                txt += f"[Response]: {resp}\n"
                 txtlines.append(txt)
         return txtlines
 

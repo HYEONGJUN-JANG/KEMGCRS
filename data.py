@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from dataModel import KnowledgeDataset
@@ -73,29 +75,9 @@ def dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train'):
                     role = role_seq[i]
                     if role == 'System' and len(augmented_dialog) > 0:
                         flatten_dialog = tokenizer.sep_token.join(augmented_dialog)
-                        suffix = '<type>' + dialog['goal_type_list'][i] + '<topic>' + dialog['goal_topic_list'][i]  # [TH] 일단 임시로 넣어봄
-
-                        # Truncate and padding
-                        tokenized_dialog = tokenizer(flatten_dialog, add_special_tokens=False)
-                        tokenized_prefix = tokenizer(suffix, add_special_tokens=False)
-                        input_ids = truncationPadding(input_ids=tokenized_dialog.input_ids, prefix=[tokenizer.cls_token_id], suffix=tokenized_prefix.input_ids, max_length=args.max_length)
-                        attention_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, prefix=[1], suffix=tokenized_prefix.attention_mask, max_length=args.max_length)
-
-                        # TODO: argument 받아서 처리하기
-                        # tokenized_dialog = tokenizer(flatten_dialog,
-                        #                              padding='max_length',
-                        #                              truncation=True,
-                        #                              add_special_tokens=True)
-                        train_sample.append({'dialog_token': input_ids,
-                                             'dialog_mask': attention_mask,
-                                             'response': conversation[i],
-                                             'goal_type': dialog['goal_type_list'][i],
-                                             'topic': dialog['goal_topic_list'][i]})
                         if knowledge_seq[i] != '':
-                            # input_ids = truncationPadding(input_ids=tokenized_dialog.input_ids, suffix=[tokenizer.cls_token_id], max_length=args.max_length)
-                            # attention_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, suffix=[1], max_length=args.max_length)
-                            knowledge_sample.append({'dialog_token': input_ids,
-                                                     'dialog_mask': attention_mask,
+                            knowledge_sample.append({'dialog': flatten_dialog,
+                                                     'profile': str(user_profile),
                                                      'response': conversation[i],
                                                      'goal_type': dialog['goal_type_list'][i],
                                                      'topic': dialog['goal_topic_list'][i],
@@ -105,10 +87,8 @@ def dataset_reader_raw(args, tokenizer, knowledgeDB, data_name='train'):
         if args.data_cache:
             write_pkl(train_sample, cachename)
             write_pkl(knowledge_sample, cachename_know)
-    data_sample = DialogDataset(args, knowledge_sample)
-    batch_size = args.batch_size if 'train' == data_name else 1
-    dataloader = DataLoader(data_sample, batch_size=batch_size)
-    return dataloader
+
+    return knowledge_sample
 
 
 def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
