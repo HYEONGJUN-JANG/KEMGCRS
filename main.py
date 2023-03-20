@@ -3,19 +3,33 @@ import logging
 from transformers import AutoModel, AutoTokenizer
 import data
 from config import bert_special_tokens_dict
-from dataModel import KnowledgeDataset
-from eval_know import eval_know
-from train_know import train_retriever_idx
+from train_goal_topic import train_topic, train_goal
 from utils import *
-from models import *
+from models_hj import *
 from data_util import readDic
-
+from platform import system as sysChecker
 
 def main():
     # HJ 작업 --> 형준 여기서만 작업
     args = parseargs()
     args.who="HJ"
-    # args.data_cache = False
+    args.data_cache = True
+    args.batch_size = 4
+    args.bert_saved_model_path = os.path.join("cache", args.bert_name)
+    args.log_name = "log_Topic PRF"
+    args.task = 'topic'
+    args.num_epochs = 1
+    if sysChecker() == 'Linux':
+        args.home = '/home/work/CRSTEST/kemgcrs'
+        args.data_dir = os.path.join(args.home,'data')
+        args.output_dir =  os.path.join(args.data_dir,'output')
+        args.log_dir =  os.path.join(args.home,'logs')
+        args.models =  os.path.join(args.home,'model_dir')
+        args.bert_saved_model_path = os.path.join(args.home, "cache", args.bert_name)
+        args.batch_size = 128
+        args.num_epochs = 10
+        pass  # HJ KT-server
+
     checkPath(args.log_dir)
     checkPath(args.model_dir)
 
@@ -23,11 +37,9 @@ def main():
     logging.info('Commend: {}'.format(', '.join(map(str, sys.argv))))
 
     # Model cached load
-    checkPath(os.path.join("cache", args.bert_name))
-
-
-    bert_model1 = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
-    bert_model2 = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
+    checkPath(args.bert_saved_model_path)
+    bert_model1 = AutoModel.from_pretrained(args.bert_name, cache_dir=args.bert_saved_model_path)
+    bert_model2 = AutoModel.from_pretrained(args.bert_name, cache_dir=args.bert_saved_model_path)
 
     tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
     tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
@@ -37,28 +49,30 @@ def main():
 
     # Read knowledge DB
     knowledgeDB = data.read_pkl(os.path.join(args.data_dir, args.k_DB_name))  # TODO: verbalize (TH)
-    knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
+    # knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
 
-    train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'train')
-    test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, 'test')
-    topicDic, goalDic = readDic(os.path.join(args.data_dir, "topic2id.txt"),"idx"), readDic(os.path.join(args.data_dir, "goal2id.txt"),"idx")
+    topicDic_str, topicDic_int = readDic(os.path.join(args.data_dir, "topic2id.txt"))
+    goalDic_str, goalDic_int = readDic(os.path.join(args.data_dir, "goal2id.txt"))
+    train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, data_name='train', goal_dict=goalDic_str, topic_dict=topicDic_str)
+    test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, data_name='test', goal_dict=goalDic_str, topic_dict=topicDic_str)
     # knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name)))
     # knowledge_index = knowledge_index.to(args.device)
 
     # TODO: retriever 로 바꿔서 save 와 load
-    # if args.model_load:
-    #     bert_model.load_state_dict(torch.load(os.path.join(args.model_dir, args.pretrained_model)))  # state_dict를 불러 온 후, 모델에 저장`
-
+    args.knowledge_num = len(knowledgeDB)
+    args.topic_num = len(topicDic_str)
+    args.goal_num = len(goalDic_str)
     retriever = Retriever(args, bert_model1, bert_model2)
     retriever = retriever.to(args.device)
 
-    if args.saved_model_path == '':
-        knowledge_index = train_retriever_idx(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
-    else:
-        retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
+    # if args.saved_model_path == '':
+    #     knowledge_index = train_retriever_idx(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
+    # else:
+    #     retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
 
-    eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer) # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
-
+    # eval_know(args, test_dataloader, retriever, knowledge_index, knowledgeDB, tokenizer) # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    # train_goal(args, train_dataloader,test_dataloader, retriever, goalDic_int, tokenizer)
+    train_topic(args, train_dataloader,test_dataloader, retriever, goalDic_int, topicDic_int, tokenizer)
 
 if __name__ == "__main__":
     main()
