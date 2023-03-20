@@ -43,7 +43,7 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
             # loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
 
             if args.retrieve == 'freeze':
-                dot_score = retriever.compute_score(dialog_token, dialog_mask, knowledge_index)
+                dot_score = retriever.compute__know_score(dialog_token, dialog_mask, knowledge_index)
                 loss = criterion(dot_score, target_knowledge)
             else:
                 logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)

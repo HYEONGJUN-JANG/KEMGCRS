@@ -22,22 +22,22 @@ def knowledge_reindexing(args, knowledge_data, retriever):
     return knowledge_index
 
 
-def computing_score(args, knowledge_data, retriever):
-    # know text를 emb로 바꿔주는 함수 (한번에 다 못올림 --> 그래서 batch 처리함)
-    print('...knowledge indexing...')
-    knowledgeDataLoader = DataLoader(
-        knowledge_data,
-        batch_size=args.batch_size
-    )
-    knowledge_index = []
-
-    for batch in tqdm(knowledgeDataLoader):
-        input_ids = batch[0].to(args.device)
-        attention_mask = batch[1].to(args.device)
-        knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]
-        knowledge_index.extend(knowledge_emb.cpu().detach())
-    knowledge_index = torch.stack(knowledge_index, 0)
-    return knowledge_index
+# def computing_score(args, knowledge_data, retriever):
+#     # know text를 emb로 바꿔주는 함수 (한번에 다 못올림 --> 그래서 batch 처리함)
+#     print('...knowledge indexing...')
+#     knowledgeDataLoader = DataLoader(
+#         knowledge_data,
+#         batch_size=args.batch_size
+#     )
+#     knowledge_index = []
+#
+#     for batch in tqdm(knowledgeDataLoader):
+#         input_ids = batch[0].to(args.device)
+#         attention_mask = batch[1].to(args.device)
+#         knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]
+#         knowledge_index.extend(knowledge_emb.cpu().detach())
+#     knowledge_index = torch.stack(knowledge_index, 0)
+#     return knowledge_index
 
 
 def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer):
@@ -62,7 +62,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         # print([knowledgeDB[idx] for idx in target_knowledge]) # target knowledge
 
         # dot_score = retriever.compute_score(response_token, response_mask, knowledge_index)
-        dot_score = retriever.compute_score(response_token, response_mask, knowledge_index)
+        dot_score = retriever.compute__know_score(response_token, response_mask, knowledge_index)
 
         top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
 

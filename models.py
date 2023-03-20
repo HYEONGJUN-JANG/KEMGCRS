@@ -65,7 +65,7 @@ class Retriever(nn.Module):
 
         return logit
 
-    def compute_score(self, token_seq, mask, knowledge_index):
+    def compute__know_score(self, token_seq, mask, knowledge_index):
         """
         eval_know.computing_score에서
         모든 key vector에서 올라온 벡터를 통해 계산처리
