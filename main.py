@@ -73,24 +73,30 @@ def main():
 
     # HJ Task (Type, Topic)
     args.who = "HJ"
+    args.task = 'goal'
     train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=goalDic_str, topic_dict=topicDic_str)
     test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test', goal_dict=goalDic_str, topic_dict=topicDic_str)
     train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, tokenizer)
+
+    args.task = 'topic'
+    train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=goalDic_str, topic_dict=topicDic_str)
+    test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test', goal_dict=goalDic_str, topic_dict=topicDic_str)
     train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int, topicDic_int, tokenizer)
 
-    # TH Task (Know)
-    args.who = "TH"
-    trainKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train')
-    testKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test')
-
-    # Just Fine_tune on Golden Target
-    train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, tokenizer)
-    train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int, topicDic_int, tokenizer)
-    if args.saved_model_path == '':
-        train_retriever_idx(args, trainKnow_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
-    else:
-        retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
-    eval_know(args, testKnow_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    # # TH Task (Know)
+    # args.who = "TH"
+    # args.task = 'know'
+    # trainKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train')
+    # testKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test')
+    #
+    # # Just Fine_tune on Golden Target
+    # train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, tokenizer)
+    # train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int, topicDic_int, tokenizer)
+    # if args.saved_model_path == '':
+    #     train_retriever_idx(args, trainKnow_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
+    # else:
+    #     retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
+    # eval_know(args, testKnow_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
     # Pipeline Fine-tune
     # for batch in train_dataloader:
