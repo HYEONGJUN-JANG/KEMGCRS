@@ -29,7 +29,7 @@ def main():
         args.model_dir =  os.path.join(args.home,'models')
         args.bert_saved_model_path = os.path.join(args.home, "cache", args.bert_name)
         args.batch_size = 128
-        args.num_epochs = 10
+        args.num_epochs = 25
         pass  # HJ KT-server
     args.bert_cache_name = os.path.join(args.home, "cache", args.bert_name)
 
