@@ -1,5 +1,5 @@
-import numpy as np
-import torch
+from numpy import Inf
+from torch import save as saveTorch
 
 class EarlyStopping:
     """주어진 patience 이후로 validation loss가 개선되지 않으면 학습을 조기 중지"""
@@ -16,7 +16,7 @@ class EarlyStopping:
         self.counter = 0
         self.best_score = None
         self.early_stop = False
-        self.val_loss_min = np.Inf
+        self.val_loss_min = Inf
         self.delta = delta
         self.path = path
 
@@ -37,5 +37,5 @@ class EarlyStopping:
     def save_checkpoint(self, val_loss, model):
         '''validation loss가 감소하면 모델을 저장한다.'''
         if self.verbose: print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ... in {self.path}')
-        torch.save(model.state_dict(), self.path)
+        saveTorch(model.state_dict(), self.path)
         self.val_loss_min = val_loss
