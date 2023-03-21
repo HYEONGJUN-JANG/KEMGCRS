@@ -39,11 +39,6 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
             candidate_knowledge_token = candidate_knowledge_token.to(args.device)
             candidate_knowledge_mask = candidate_knowledge_mask.to(args.device)
 
-            # tokenizer.batch_decode(dialog_token, skip_special_tokens=True)  # 'dialog context'
-            # print([knowledgeDB[idx] for idx in target_knowledge]) # target knowledge
-            # logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
-            # loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
-
             if args.retrieve == 'freeze':
                 dot_score = retriever.compute__know_score(dialog_token, dialog_mask, knowledge_index)
                 loss = criterion(dot_score, target_knowledge)
@@ -61,4 +56,4 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
         print('LOSS:\t%.4f' % total_loss)
         early_stopping(100000 - total_loss, retriever)
 
-    torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
+    # torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식

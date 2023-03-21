@@ -15,13 +15,22 @@ class Retriever(nn.Module):
             nn.Linear(args.hidden_size // 2, args.hidden_size)
         )
         self.pred_know = nn.Linear(args.hidden_size, args.knowledge_num)
+
+        self.linear_weight = nn.Linear(args.hidden_size, 1)
+        self.goal_proj = nn.Sequential(
+            nn.Linear(args.hidden_size, args.hidden_size // 2),
+            nn.ReLU(),
+            nn.Linear(args.hidden_size // 2, args.hidden_size),
+            nn.ReLU(),
+            nn.Linear(args.hidden_size, args.goal_num)
+        )
         self.topic_proj = nn.Sequential(
             nn.Linear(args.hidden_size, args.hidden_size // 2),
             nn.ReLU(),
-            nn.Linear(args.hidden_size // 2, args.hidden_size)
+            nn.Linear(args.hidden_size // 2, args.hidden_size),
+            nn.ReLU(),
+            nn.Linear(args.hidden_size, args.topic_num)
         )
-        self.linear_weight = nn.Linear(args.hidden_size, 1)
-
 
 
     def forward(self, token_seq, mask):
@@ -36,22 +45,9 @@ class Retriever(nn.Module):
             mask: [B, L]
             candidate_knowledge_token: [B, K+1, L]
             candidate_knowledge_mask: [B, K+1, L]
-
         Returns:
         """
-
         batch_size = mask.size(0)
-        # token_seq = token_seq.unsqueeze(1).repeat(1, candidate_knowledge_mask.size(1), 1)  # [B, K+1, L]
-        # mask = mask.unsqueeze(1).repeat(1, candidate_knowledge_mask.size(1), 1)  # [B, K+1, L]
-        # token_seq = torch.cat([token_seq, candidate_knowledge_token], dim=2)  # [B, K+1, 2L]
-        # mask = torch.cat([mask, candidate_knowledge_mask], dim=2)  # [B, K+1, 2L]
-        # token_len = mask.size(-1)
-        # token_seq = token_seq.view(-1, token_len)  # [B * (K+1), 2L]
-        # mask = mask.view(-1, token_len)  # [B * (K+1), 2L]
-        #
-        # token_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B * (K+1), d]
-        # token_emb = token_emb.view(batch_size, -1, token_emb.size(-1))  # [B, K+1, d]
-        # logit = self.linear_weight(token_emb).squeeze(-1)  # [B, K+1]
 
         # dot-product
         dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
@@ -74,11 +70,16 @@ class Retriever(nn.Module):
         dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
         return dot_score
 
-    def topic_selection(self, token_seq, mask, topic_idx):
+    def goal_selection(self, token_seq, mask):
+        dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        dialog_emb = self.goal_proj(dialog_emb)
+        # dot_score = torch.matmul(dialog_emb, goal_idx.transpose(1,0)) #[B, N_goal]
+        return dialog_emb
+    def topic_selection(self, token_seq, mask):
         dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         dialog_emb = self.topic_proj(dialog_emb)
-        dot_score = torch.matmul(dialog_emb, topic_idx.transpose(1,0)) #[B, N_topic]
-        return dot_score
+        # dot_score = torch.matmul(dialog_emb, goal_idx.transpose(1,0)) #[B, N_goal]
+        return dialog_emb
 
 
 class Model(nn.Module):

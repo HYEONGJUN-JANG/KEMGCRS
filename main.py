@@ -5,13 +5,13 @@ import data
 from config import bert_special_tokens_dict
 from train_goal_topic import train_topic, train_goal
 from utils import *
-from models_hj import *
+import models
+# from models_hj import *
 from data_util import readDic
 from platform import system as sysChecker
 import dataModel
 from collections import defaultdict
 from train_know import train_retriever_idx
-from eval_know import eval_know
 
 def main():
     # HJ 작업 --> 형준 여기서만 작업
@@ -68,17 +68,19 @@ def main():
     args.goal_num = len(goalDic_str)
 
     # TODO: retriever 로 바꿔서 save 와 load
-    retriever = Retriever(args, bert_model1, bert_model2)
+    retriever = models.Retriever(args, bert_model1, bert_model2)
     retriever = retriever.to(args.device)
 
     # HJ Task (Type, Topic)
     args.who = "HJ"
     args.task = 'goal'
+    print(f"Training {args.task} Task")
     train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=goalDic_str, topic_dict=topicDic_str)
     test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test', goal_dict=goalDic_str, topic_dict=topicDic_str)
     train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, tokenizer)
 
     args.task = 'topic'
+    print(f"Training {args.task} Task")
     train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=goalDic_str, topic_dict=topicDic_str)
     test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test', goal_dict=goalDic_str, topic_dict=topicDic_str)
     train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int, topicDic_int, tokenizer)
@@ -86,6 +88,7 @@ def main():
     # # TH Task (Know)
     args.who = "TH"
     args.task = 'know'
+    print(f"Training {args.task} Task")
     trainKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train')
     testKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test')
     train_retriever_idx(args, trainKnow_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
