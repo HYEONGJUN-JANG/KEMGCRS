@@ -3,12 +3,12 @@ import torch
 
 class EarlyStopping:
     """주어진 patience 이후로 validation loss가 개선되지 않으면 학습을 조기 중지"""
-    def __init__(self, patience=6, verbose=False, delta=0.004, path='checkpoint.pt'):
+    def __init__(self, patience=6, verbose=False, delta=0.05, path='checkpoint.pt'):
         """
         Args:
             patience (int): validation loss가 개선된 후 기다리는 기간 | Default: 7
             verbose (bool): True일 경우 각 validation loss의 개선 사항 메세지 출력 | Default: False
-            delta (float): 개선되었다고 인정되는 monitered quantity의 최소 변화 | Default: 0
+            delta (float): delta % 만큼 개선되었을때, 인정 | Default: 0.05
             path (str): checkpoint저장 경로 | Default: 'checkpoint.pt'
         """
         self.patience = patience
@@ -25,7 +25,7 @@ class EarlyStopping:
         if self.best_score is None:
             self.best_score = score
             self.save_checkpoint(val_loss, model)
-        elif score < self.best_score + self.delta:
+        elif score < self.best_score * (1+self.delta):
             self.counter += 1
             print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
             if self.counter >= self.patience: self.early_stop = True

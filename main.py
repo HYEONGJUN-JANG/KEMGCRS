@@ -89,6 +89,7 @@ def main():
     args.who = "TH"
     args.task = 'know'
     print(f"Training {args.task} Task")
+    args.batch_size = args.batch_size//2
     trainKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train')
     testKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test')
     train_retriever_idx(args, trainKnow_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습

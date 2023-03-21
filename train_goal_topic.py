@@ -19,7 +19,7 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, 
     checkf1=0
     save_output_mode = False # True일 경우 해당 epoch에서의 batch들 모아서 output으로 save
     modelpath = os.path.join(args.model_dir, 'goal_best_model.pt')
-    early_stopping = EarlyStopping(patience=4, path=modelpath, verbose=True)
+    early_stopping = EarlyStopping(patience=7, path=modelpath, verbose=True)
     for epoch in range(args.num_epochs):
         epoch_loss = 0
         if args.num_epochs>1:
@@ -107,7 +107,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int,
     TotalLoss = 0
     save_output_mode = False # True일 경우 해당 epoch에서의 batch들 모아서 output으로 save
     modelpath = os.path.join(args.model_dir, 'topic_best_model.pt')
-    early_stopping = EarlyStopping(patience=4, path=modelpath, verbose=True)
+    early_stopping = EarlyStopping(patience=7, path=modelpath, verbose=True)
     for epoch in range(args.num_epochs):
         logger.info("train epoch: {}".format(epoch))
         torch.cuda.empty_cache()
