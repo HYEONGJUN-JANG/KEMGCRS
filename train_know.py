@@ -6,7 +6,8 @@ from eval_know import knowledge_reindexing
 from metric import EarlyStopping
 from utils import *
 from models import *
-
+import logging
+logger = logging.getLogger(__name__)
 
 def update_moving_average(ma_model, current_model):
     decay = 0.9
@@ -15,6 +16,7 @@ def update_moving_average(ma_model, current_model):
         ma_params.data = decay * old_weight + (1 - decay) * up_weight
 
 def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
+    logger.info("Train Retriever Index")
     # For training BERT indexing
     # train_dataloader = data_pre.dataset_reader(args, tokenizer, knowledgeDB)
     # knowledge_index = knowledge_index.to(args.device)
@@ -29,6 +31,7 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
 
     for epoch in range(args.num_epochs):
         print(f"[Epoch-{epoch}]")
+        logger.info(f"Train Retriever Epoch: {epoch}")
         total_loss = 0
         for batch in tqdm(train_dataloader):
             dialog_token, dialog_mask, target_knowledge, goal_type, response, response_mask, topic, candidate_knowledge_token, candidate_knowledge_mask, user_profile = batch
@@ -54,6 +57,7 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever):
             if args.momentum:
                 update_moving_average(retriever.key_bert, retriever.query_bert)
         print('LOSS:\t%.4f' % total_loss)
-        early_stopping(100000 - total_loss, retriever)
+        logger.info('LOSS:\t%.4f' % total_loss)
+        early_stopping(round(10000 - total_loss, 3), retriever)
 
     # torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식

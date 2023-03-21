@@ -20,8 +20,9 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, 
     save_output_mode = False # True일 경우 해당 epoch에서의 batch들 모아서 output으로 save
     modelpath = os.path.join(args.model_dir, 'goal_best_model.pt')
     early_stopping = EarlyStopping(patience=7, path=modelpath, verbose=True)
+    logger.info("Train_Goal")
     for epoch in range(args.num_epochs):
-        epoch_loss = 0
+        train_epoch_loss = 0
         if args.num_epochs>1:
             torch.cuda.empty_cache()
             cnt = 0
@@ -35,7 +36,7 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, 
                 dialog_token = batch['dialog_token'].to(args.device)
                 dialog_mask = batch['dialog_mask'].to(args.device)
                 target_goal_type = batch['goal_type']  #
-                # response = batch['response']
+                # response = batch['response_token']
                 # target_topic = batch['topic']
                 # user_profile = batch['user_profile']
                 # situation = batch['situation']
@@ -43,7 +44,7 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, 
 
                 dot_score = retriever.goal_selection(dialog_token, dialog_mask)
                 loss = criterion(dot_score, targets)
-                epoch_loss += loss
+                train_epoch_loss += loss
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -81,22 +82,19 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, 
                     for i in range(batch_size):
                         jsonlineSave.append({'input':input_text[i], 'pred_goal': pred_goal_text[i], 'target_goal':target_goal_text[i], 'correct':correct[i]})
         p, r, f = round(precision_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(recall_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(f1_score(test_labels, test_preds, average='macro', zero_division=0), 3)
-        print(f"Epoch: {epoch}\nTrain Loss: {epoch_loss}")
+        print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
         print(f"Test Loss: {test_loss}")
         print(f"P/R/F1: {p} / {r} / {f}")
-        TotalLoss += epoch_loss / len(train_dataloader)
+        logger.info("Epoch: {}, Train Loss: {}, Test Loss: {}, P/R/F: {}/{}/{}".format(epoch, train_epoch_loss, test_loss, p, r, f))
+        TotalLoss += train_epoch_loss / len(train_dataloader)
         early_stopping(f, retriever)
         if early_stopping.early_stop:
             print("Early stopping")
+            logger.info("Early Stopping on Epoch {}, Path: {}".format(epoch, modelpath))
             break
-        # if f > checkf1:
-        #     modelpath=os.path.join(args.model_dir, 'goal_best_model.pt')
-        #     print("Save Model in {modelpath}")
-        #     torch.save(retriever.state_dict(), modelpath)
-
 
     # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
-    write_pkl(obj=jsonlineSave, filename=os.path.join(args.data_dir,'print','jsonline.pkl'))  # 입출력 저장
+    write_pkl(obj=jsonlineSave, filename=os.path.join(args.data_dir,'print','goal_jsonline_test_output.pkl'))  # 입출력 저장
     save_json_hj(args, f"{args.time}_inout", jsonlineSave, "goal")
     print('done')
 
@@ -125,7 +123,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int,
                 dialog_token = batch['dialog_token'].to(args.device)
                 dialog_mask = batch['dialog_mask'].to(args.device)
                 # target_goal_type = batch['goal_type']  #
-                # response = batch['response']
+                # response = batch['response_token']
                 target_topic = batch['topic']
                 # user_profile = batch['user_profile']
                 # situation = batch['situation']
@@ -154,7 +152,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int,
                 batch_size = batch['dialog_token'].size(0)
                 dialog_token = batch['dialog_token'].to(args.device)
                 dialog_mask = batch['dialog_mask'].to(args.device)
-                response = batch['response']
+                response = batch['response_token']
                 goal_type = [goalDic_int[int(i)] for i in batch['goal_type']]
                 target_topic = batch['topic']
 
@@ -197,27 +195,11 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int,
         early_stopping(f, retriever)
         if early_stopping.early_stop:
             print("Early stopping")
+            logger.info("Early Stopping on Epoch {}, Path: {}".format(epoch, modelpath))
             break
-            # if f > checkf1:
-            #     modelpath = os.path.join(args.model_dir, 'topic_best_model.pt')
-            #     print("Save Model in {modelpath}")
-            #     torch.save(retriever.state_dict(), modelpath)
-
-        # pred_goal = dot_score.argmax(1) # dtype=torch.int64
-        # torch.tensor([goalDic[i] for i in target_goal_type])
-        # dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, knowledge_index) # topic_selection(self, token_seq, mask, topic_idx)
-        # top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
-
-        # input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
-        # target_knowledge_text = [knowledgeDB[idx] for idx in target_topic]  # target knowledge
-        # retrieved_knowledge_text = [knowledgeDB[idx] for idx in top_candidate[0]]  # list
-        # correct = target_knowledge_text[0] in retrieved_knowledge_text
-        #
-        # jsonlineSave.append({'goal_type': goal_type[0], 'topic': topic, 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response[0], "predict5": retrieved_knowledge_text})
-        # cnt += 1
 
     # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
-    write_pkl(obj=jsonlineSave, filename=os.path.join(args.data_dir,'print','jsonline.pkl'))  # 입출력 저장
+    write_pkl(obj=jsonlineSave, filename=os.path.join(args.data_dir,'print','topic_jsonline_test_output.pkl'))  # 입출력 저장
     save_json_hj(args, f"{args.time}_inout", jsonlineSave, 'topic')
     print('done')
 

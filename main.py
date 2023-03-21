@@ -6,7 +6,6 @@ from config import bert_special_tokens_dict
 from train_goal_topic import train_topic, train_goal
 from utils import *
 import models
-# from models_hj import *
 from data_util import readDic
 from platform import system as sysChecker
 import dataModel
@@ -19,8 +18,10 @@ def main():
     args.data_cache = True
     args.batch_size = 4
     args.log_name = "log_Topic PRF"
-    args.task = 'topic'
+    args.task = 'goal'
     args.num_epochs = 1
+    # args.do_finetune = True
+    args.do_pipeline = True
     if sysChecker() == 'Linux':
         args.home = '/home/work/CRSTEST/KEMGCRS'
         args.data_dir = os.path.join(args.home,'data')
@@ -71,28 +72,30 @@ def main():
     retriever = models.Retriever(args, bert_model1, bert_model2)
     retriever = retriever.to(args.device)
 
-    # HJ Task (Type, Topic)
-    args.who = "HJ"
-    args.task = 'goal'
-    print(f"Training {args.task} Task")
-    train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=goalDic_str, topic_dict=topicDic_str)
-    test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test', goal_dict=goalDic_str, topic_dict=topicDic_str)
-    train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, tokenizer)
+    if args.do_finetune:
+        # # HJ Task (Type, Topic)
+        args.who = "HJ"
+        args.task = 'goal'
+        print(f"Training {args.task} Task")
+        train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=goalDic_str, topic_dict=topicDic_str)
+        test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test', goal_dict=goalDic_str, topic_dict=topicDic_str)
+        train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, tokenizer)
 
-    args.task = 'topic'
-    print(f"Training {args.task} Task")
-    train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=goalDic_str, topic_dict=topicDic_str)
-    test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test', goal_dict=goalDic_str, topic_dict=topicDic_str)
-    train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int, topicDic_int, tokenizer)
+        args.task = 'topic'
+        print(f"Training {args.task} Task")
+        train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=goalDic_str, topic_dict=topicDic_str)
+        test_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test', goal_dict=goalDic_str, topic_dict=topicDic_str)
+        train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int, topicDic_int, tokenizer)
 
-    # # TH Task (Know)
-    args.who = "TH"
-    args.task = 'know'
-    print(f"Training {args.task} Task")
-    args.batch_size = args.batch_size//2
-    trainKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train')
-    testKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test')
-    train_retriever_idx(args, trainKnow_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
+        # # TH Task (Know) -- Fine_tune on Golden Target
+        args.who = "TH"
+        args.task = 'know'
+        print(f"Training {args.task} Task")
+        args.batch_size = args.batch_size//2
+        trainKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train')
+        testKnow_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test')
+        train_retriever_idx(args, trainKnow_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
+
     # # Just Fine_tune on Golden Target
     # train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, tokenizer)
     # train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int, topicDic_int, tokenizer)
@@ -102,13 +105,21 @@ def main():
     #     retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
     # eval_know(args, testKnow_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
-    # Pipeline Fine-tune
-    # for batch in train_dataloader:
-        # batch...............
-        # goalpreds=retriever.goal_selection()
-        # topicpreds=retriever.topic_selection()
-        # knowledges=retriever.knowledge_retrieve()
-        # Generator.generate(asdfasdfasdf)
+    if args.do_pipeline:
+        # Pipeline Fine-tune
+        for epoch in range(args.num_epochs):
+            pred_dict={}
+            loss_dict={}
+            for task in ['goal','topic','know']:
+                args.task=task
+                train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=goalDic_str, topic_dict=topicDic_str)
+                for batch in train_dataloader:
+                    # batch
+                    pass
+                    # goalpreds=retriever.goal_selection()
+                    # topicpreds=retriever.topic_selection()
+                    # knowledges=retriever.knowledge_retrieve()
+                    # Generator.generate(asdfasdfasdf)
 
 
 

@@ -50,11 +50,12 @@ class KnowDialogDataset(Dataset): # knowledge용 데이터셋
 
         target_knowledge = data['target_knowledge']
         response = data['response']
-        user_profile = data['profile']
+        user_profile = data['user_profile']
         goal_type = data['goal_type']
         topic = data['topic']
         dialog = data['dialog']
-        suffix = self.tokenizer.sep_token + '<type>' + goal_type + '<topic>' + topic
+        situation = data['situation']
+        suffix = self.tokenizer.sep_token + '<type>' + goal_type + '<topic>' + topic + '<situation>' + situation
         negative_indice = self.negative_sampler(target_knowledge)
         candidate_indice = [target_knowledge] + negative_indice
 

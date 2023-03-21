@@ -8,7 +8,8 @@ import json
 import data_hj
 # from data_hj import dataset_reader_raw_hj, DialogDataset
 from utils import *
-
+import logging
+logger = logging.getLogger(__name__)
 
 def knowledge_db_save(args, knowledgeDB, max_length, tokenizer, model):
     knowledgeDataset = KnowledgeDataset(knowledgeDB, max_length, tokenizer)
@@ -31,14 +32,15 @@ def knowledge_db_save(args, knowledgeDB, max_length, tokenizer, model):
 
 
 def dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=None, topic_dict=None):
-    if args.who=='TH':
+    logger.info("Dataset For Task: {}".format(args.task))
+    if args.task=='know':
         data_sample = dataset_reader_th(args, tokenizer, knowledgeDB, mode)
         data_datamodel = KnowDialogDataset(args, data_sample, knowledgeDB, tokenizer)
         if mode == 'train': return DataLoader(data_datamodel, batch_size=args.batch_size, shuffle=True) # Train
         else : return DataLoader(data_datamodel, batch_size=1, shuffle=False) # Test
-    elif args.who=="HJ":
-        data_sample = data_hj.dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name=mode, goal_dict=goal_dict, topic_dict=topic_dict, task=args.task)
-        data_sample = data_hj.DialogDataset(args, data_sample, goal_dict, topic_dict)
+    elif args.task in ['goal','topic']:
+        data_sample = data_hj.dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name=mode, goal_dict=goal_dict, topic_dict=topic_dict)
+        data_sample = data_hj.DialogDataset(args, data_sample, goal_dict=goal_dict, topic_dict=topic_dict, knowledgeDB=knowledgeDB, tokenizer = tokenizer)
         batch_size = args.batch_size # if 'train' == data_name else 1
         return DataLoader(data_sample, batch_size=batch_size)
     else:
@@ -55,7 +57,7 @@ def dataset_reader_th(args, tokenizer, knowledgeDB, data_name='train'):
         train_sample = read_pkl(cachename)
         knowledge_sample = read_pkl(cachename_know)
     else:
-        train_sample = []
+        # train_sample = []
         knowledge_sample = []
         data_path = os.path.join(args.data_dir, f"en_{data_name}.txt")
         with open(data_path, 'r', encoding='UTF-8') as f:
@@ -80,15 +82,16 @@ def dataset_reader_th(args, tokenizer, knowledgeDB, data_name='train'):
                         flatten_dialog = tokenizer.sep_token.join(augmented_dialog)
                         if knowledge_seq[i] != '':
                             knowledge_sample.append({'dialog': flatten_dialog,
-                                                     'profile': user_profile,
+                                                     'user_profile': user_profile,
                                                      'response': conversation[i],
                                                      'goal_type': dialog['goal_type_list'][i],
                                                      'topic': dialog['goal_topic_list'][i],
+                                                     'situation': situation,
                                                      'target_knowledge': knowledgeDB.index(knowledge_seq[i])})
                     augmented_dialog.append(conversation[i])
 
         if args.data_cache:
-            write_pkl(train_sample, cachename)
+            # write_pkl(train_sample, cachename)
             write_pkl(knowledge_sample, cachename_know)
 
     return knowledge_sample
