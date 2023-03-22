@@ -40,11 +40,12 @@ class KnowledgeDataset(Dataset):
 class KnowDialogDataset(Dataset): # knowledge용 데이터셋
     def __init__(self, args, train_sample, knowledgeDB, tokenizer):
         super(Dataset, self).__init__()
-        self.train_sample = train_sample
+        #self.raw_data= real_linebyline
+        self.train_sample = self.process_dataset(train_sample)
         self.args = args
         self.tokenizer = tokenizer
         self.knowledgeDB = knowledgeDB
-
+    def process_dataset(self, raw_data): pass
     def __getitem__(self, idx):
         data = self.train_sample[idx]
 

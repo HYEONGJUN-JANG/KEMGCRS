@@ -31,16 +31,16 @@ def knowledge_db_save(args, knowledgeDB, max_length, tokenizer, model):
     np.save(os.path.join(args.data_dir, args.k_idx_name), knowledge_index)
 
 
-def dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=None, topic_dict=None):
+def dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=None, topic_dict=None, pred_dict=None):
     logger.info("Dataset For Task: {}".format(args.task))
     if args.task=='know':
         data_sample = dataset_reader_th(args, tokenizer, knowledgeDB, mode)
         data_datamodel = KnowDialogDataset(args, data_sample, knowledgeDB, tokenizer)
         if mode == 'train': return DataLoader(data_datamodel, batch_size=args.batch_size, shuffle=True) # Train
         else : return DataLoader(data_datamodel, batch_size=1, shuffle=False) # Test
-    elif args.task in ['goal','topic']:
+    elif args.task in ['goal','topic', 'goal_pipe','topic_pipe','know_pipe', 'resp_pipe']:
         data_sample = data_hj.dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name=mode, goal_dict=goal_dict, topic_dict=topic_dict)
-        data_sample = data_hj.DialogDataset(args, data_sample, goal_dict=goal_dict, topic_dict=topic_dict, knowledgeDB=knowledgeDB, tokenizer = tokenizer)
+        data_sample = data_hj.DialogDataset(args, data_sample, pred_dict=pred_dict, mode=mode, goal_dict=goal_dict, topic_dict=topic_dict, knowledgeDB=knowledgeDB, tokenizer = tokenizer)
         batch_size = args.batch_size # if 'train' == data_name else 1
         return DataLoader(data_sample, batch_size=batch_size)
     else:

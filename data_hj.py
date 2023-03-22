@@ -10,7 +10,7 @@ import torch
 from torch.utils.data import Dataset
 
 class DialogDataset(Dataset):
-    def __init__(self, args, train_sample, goal_dict=None, topic_dict=None, knowledgeDB=None, tokenizer = None):
+    def __init__(self, args, train_sample, mode=None, goal_dict=None, topic_dict=None, knowledgeDB=None, tokenizer = None, pred_dict=None):
         super(Dataset, self).__init__()
         self.train_sample = train_sample
         self.args = args
@@ -18,25 +18,42 @@ class DialogDataset(Dataset):
         self.topic_dic = topic_dict
         self.knowledgeDB = knowledgeDB
         self.tokenizer = tokenizer
-        self.pred_dict = None
+        # HJ: Belows are For Pipeline
+        self.pred_dict = pred_dict
         self.task = args.task
+        self.mode = mode
 
     def __getitem__(self, idx): # 모든 getitem되는 길이가 늘 같아야함
         data = self.train_sample[idx]
-
         # HJ : data_reader역할분리 --> 순수 데이터만 관리 , DialogDataset에서 직접 tensor로 만들고 truc처리
         dialog = data['dialog']
         response = data['response']
-        goal = data['goal']
-        topic = data['topic']
+        goal = data['goal'] # int key
+        topic = data['topic'] # int key
         user_profile = data['user_profile']
         situation = data['situation']
         target_know = data['target_knowledge'] if data['target_knowledge'] else -10
+        # return self.tokenizer(dialog, max_lenasdasdsad), asdf,asdf,asdf,asdf,asdf,asdf,asd,f
+        # For pipeline Datset
+        if self.task in ['goal_pipe','topic_pipe','know_pipe','resp_pipe']: # Pipeline Mode
+            if self.task=='goal_pipe': pass
+            elif self.task == 'topic_pipe' :
+                goal = self.pred_dict['goal_pipe'][self.mode][idx]
+            elif self.task == 'know_pipe':
+                goal = self.pred_dict['goal_pipe'][self.mode][idx]
+                topic = self.pred_dict['topic_pipe'][self.mode][idx]
+            else: # 'resp_pipe'
+                goal = self.pred_dict['goal_pipe'][self.mode][idx]
+                topic = self.pred_dict['topic_pipe'][self.mode][idx]
+                knows = self.pred_dict['topic_pipe'][self.mode][idx]
 
-        if self.args.task=='goal': suffix = ""
-        elif self.args.task == 'topic': suffix = '<situation>'+situation +' <user_profile>' + user_profile + ' <type>' + goal
-        elif self.args.task == 'know': suffix = self.tokenizer.sep_token + '<type>' + goal + '<topic>' + topic
-        else : suffix = "" # TODO Response 시 suffix
+
+
+        if 'goal' in self.args.task : suffix = ""
+        elif 'topic' in self.args.task : suffix = self.tokenizer.sep_token + '<situation>' + situation +' <type>' + goal + ' <user_profile>' + user_profile
+        elif 'know' in self.args.task : suffix = self.tokenizer.sep_token + '<type>' + goal + '<topic>' + topic
+        else : suffix = self.tokenizer.sep_token + "<type>" + goal + '<topic>' + topic # TODO Response 시 suffix
+
         toked_dialog = self.tokenizer(dialog, add_special_tokens=False)
         toked_suffix = self.tokenizer(suffix, add_special_tokens=False, max_length=self.args.max_length//4)
         goal_idx = self.goal_dic[goal]
@@ -156,7 +173,7 @@ def dataset_reader_raw_hj(args, tokenizer, knowledgeDB, data_name='train', goal_
 
 def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
     truncate_size = max_length - len(prefix) - len(suffix)
-    if truncate_size <= len(input_ids): input_ids = prefix + input_ids[len(input_ids) - truncate_size:] + suffix
+    if truncate_size <= len(input_ids): input_ids = prefix + input_ids[len(input_ids) - truncate_size : ] + suffix
     else: input_ids = prefix + input_ids + suffix
     return input_ids + [0] * (max_length - len(input_ids))
 

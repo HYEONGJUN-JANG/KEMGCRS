@@ -6,11 +6,16 @@ from config import bert_special_tokens_dict
 from train_goal_topic import train_topic, train_goal
 from utils import *
 import models
-from data_util import readDic
+from data_util import readDic, batchify
 from platform import system as sysChecker
 import dataModel
 from collections import defaultdict
 from train_know import train_retriever_idx
+import torch
+import data_temp
+from tqdm import tqdm
+from torch.utils.data import DataLoader
+
 
 def main():
     # HJ 작업 --> 형준 여기서만 작업
@@ -21,7 +26,7 @@ def main():
     args.task = 'goal'
     args.num_epochs = 1
     # args.do_finetune = True
-    args.do_pipeline = True
+    # args.do_pipeline = True
     if sysChecker() == 'Linux':
         args.home = '/home/work/CRSTEST/KEMGCRS'
         args.data_dir = os.path.join(args.home,'data')
@@ -52,9 +57,12 @@ def main():
     args.hidden_size = bert_model1.config.hidden_size  # BERT large 쓸 때 대비
 
     # Read knowledge DB
-    knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'knowledgeDB.txt'))  # TODO: verbalize (TH)
+    knowledgeDB = [''] + data.read_pkl(os.path.join(args.data_dir, 'knowledgeDB.txt'))  # TODO: verbalize (TH)
+
+    # knowledgeDB[len(knowledgeDB)] = 0
     knowledge_data = dataModel.KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
     args.knowledge_num = len(knowledgeDB)
+
 
     all_knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'all_knowledge_DB.pickle'))  # TODO: verbalize (TH)
     knowledgeDB_values = [k[1] for k in all_knowledgeDB]
@@ -68,10 +76,40 @@ def main():
     args.topic_num = len(topicDic_str)
     args.goal_num = len(goalDic_str)
 
+    ###### TODO : TEMPTEMPTEMPTEMP
+    conversation_train_sample = data_temp.dataset_reader_raw_temp(args, tokenizer, knowledgeDB, data_name='train')
+    conversation_test_sample = data_temp.dataset_reader_raw_temp(args, tokenizer, knowledgeDB, data_name='test')
+
+    train_type_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, tokenizer, task='type')
+    train_type_DataLoader = DataLoader(train_type_DataModel, batch_size=args.batch_size, shuffle=True)
+    test_type_DataModel = data_temp.DialogDataset_TEMP(args, conversation_test_sample, knowledgeDB, tokenizer, task='type')
+
+    # train_topic_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, tokenizer, task='topic')
+    # test_topic_DataModel = data_temp.DialogDataset_TEMP(args, conversation_test_sample, knowledgeDB, tokenizer, task='topic')
+
+    train_know_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, tokenizer, task='know')
+    train_know_DataLoader = DataLoader(train_know_DataModel, batch_size=args.batch_size, shuffle=True)
+    test_know_DataModel = data_temp.DialogDataset_TEMP(args, conversation_test_sample, knowledgeDB, tokenizer, task='know')
+
+    # TODO : type, topic , get_item 에서 dialog, type, topic, situation, profile, 각각 batchify
+
+    # for batch in tqdm(train_type_DataLoader, desc="Type_Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+    #     # dialog, user_profile, response, type, topic, situation, target_knowledge = [batch[i] for i in ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge']]
+    #     context_batch = batchify(args, batch, tokenizer, goalDic_str, topicDic_str, task='type')
+    for batch in tqdm(train_know_DataLoader, desc="Know_Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+        context_batch = batchify(args, batch, tokenizer, goalDic_str, topicDic_str, task='know')
+
+
+    ## Pipeline
+    # for batch in tqdm(train_know_DataLoader, desc="Know_Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+    #     batch['type'] = new_pred_goal
+    #     batch['topic'] = new_pred_topic
+
+
     # TODO: retriever 로 바꿔서 save 와 load
     retriever = models.Retriever(args, bert_model1, bert_model2)
     retriever = retriever.to(args.device)
-
+    ################################################################################################################
     if args.do_finetune:
         # # HJ Task (Type, Topic)
         args.who = "HJ"
@@ -107,18 +145,41 @@ def main():
 
     if args.do_pipeline:
         # Pipeline Fine-tune
-        for epoch in range(args.num_epochs):
-            pred_dict={}
-            loss_dict={}
-            for task in ['goal','topic','know']:
-                args.task=task
-                train_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=goalDic_str, topic_dict=topicDic_str)
-                for batch in train_dataloader:
-                    # batch
-                    pass
-                    # goalpreds=retriever.goal_selection()
+
+        pred_dict={'goal_pipe':{'train':[],'test':[]}, 'topic_pipe':{'train':[],'test':[]}, 'know_pipe':{'train':[],'test':[]}}
+        loss_dict={'goal_pipe':{'train':0,'test':0}, 'topic_pipe':{'train':0,'test':0}, 'know_pipe':{'train':0,'test':0}}
+
+        # for task in ['goal_pipe','topic_pipe','know_pipe', 'resp_pipe']:
+
+        args.mode = 'train'
+        # train_goal_topic_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=goalDic_str, topic_dict=topicDic_str, pred_dict=pred_dict)
+        test_goal_topic_dataloader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train', goal_dict=goalDic_str, topic_dict=topicDic_str, pred_dict=pred_dict)
+        test_knowledge_dataloader = data.dataset_reader()
+        for batch in train_goal_topic_dataloader:
+            # batch
+            batch_size = batch['dialog_token'].size(0)
+            dialog_token = batch['dialog_token'].to(args.device)
+            dialog_mask = batch['dialog_mask'].to(args.device)
+            response = batch['response_token']
+            golden_goal = batch['goal_type']
+            golden_topic = batch['topic']
+            # targets = torch.LongTensor(golden_topic).to(args.device)
+            # test_label = list(map(int, golden_topic))
+            ### TODO 수도코드
+            type_score = retriever.goal_selection(dialog_token, dialog_mask)
+            pred_goal_batch = [int(i) for i in torch.topk(type_score, k=1, dim=1).indices]
+            # topic용 dialog_token 입력 처리해줘야하는부분
+            topic_score = retriever.topic_selection(dialog_token, dialog_mask)# [B]
+            pred_topic_batch = [int(i) for i in torch.topk(topic_score, k=1, dim=1).indices]
+            # pred_dict[task][args.mode].extend(pred)
+            break
+
+
+                    # goalpreds.topk()
                     # topicpreds=retriever.topic_selection()
+                    # topicpreds.topk()
                     # knowledges=retriever.knowledge_retrieve()
+                    # knowledges.topk()
                     # Generator.generate(asdfasdfasdf)
 
 
