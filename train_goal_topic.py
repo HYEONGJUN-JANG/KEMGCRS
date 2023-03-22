@@ -4,6 +4,7 @@ from tqdm import tqdm
 import os
 import torch.nn.functional as F
 
+from data_util import batchify
 from metric import EarlyStopping
 from utils import write_pkl, save_json
 import torch.optim as optim
@@ -11,7 +12,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 import logging
 logger = logging.getLogger(__name__)
 
-def train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, tokenizer):
+def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
     criterion = nn.CrossEntropyLoss().to(args.device)
     optimizer = optim.Adam(retriever.parameters(), lr=args.lr)
     jsonlineSave = []
@@ -32,15 +33,20 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, 
             #### return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'target_knowledge': target_knowledge, 'goal_type': goal_type, 'response': response, 'topic': topic, 'user_profile':user_profile, 'situation':situation}
             for batch in tqdm(train_dataloader, desc="Topic_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
                 retriever.train()
-                batch_size = batch['dialog_token'].size(0)
-                dialog_token = batch['dialog_token'].to(args.device)
-                dialog_mask = batch['dialog_mask'].to(args.device)
-                target_goal_type = batch['goal_type']  #
-                # response = batch['response_token']
-                # target_topic = batch['topic']
-                # user_profile = batch['user_profile']
-                # situation = batch['situation']
-                targets = torch.LongTensor(target_goal_type).to(args.device)
+                # batch_size = batch['dialog_token'].size(0)
+                # dialog_token = batch['dialog_token'].to(args.device)
+                # dialog_mask = batch['dialog_mask'].to(args.device)
+                # target_goal_type = batch['goal_type']  #
+                # # response = batch['response_token']
+                # # target_topic = batch['topic']
+                # # user_profile = batch['user_profile']
+                # # situation = batch['situation']
+                # targets = torch.LongTensor(target_goal_type).to(args.device)
+                cbdicKeys = ['dialog_token', 'dialog_mask', 'response', 'type', 'topic']
+                if args.task == 'know': cbdicKeys += ['candidate_indice']
+                context_batch = batchify(args, batch, tokenizer, task=args.task)
+                dialog_token, dialog_mask, response, type, topic = [context_batch[i] for i in cbdicKeys]
+                targets = type
 
                 dot_score = retriever.goal_selection(dialog_token, dialog_mask)
                 loss = criterion(dot_score, targets)
@@ -60,24 +66,29 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, 
         retriever.eval()
         with torch.no_grad():
             for batch in tqdm(test_dataloader, desc="Topic_Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-                batch_size = batch['dialog_token'].size(0)
-                dialog_token = batch['dialog_token'].to(args.device)
-                dialog_mask = batch['dialog_mask'].to(args.device)
-                targets = torch.LongTensor(batch['goal_type']).to(args.device)
+                cbdicKeys = ['dialog_token', 'dialog_mask', 'response', 'type', 'topic']
+                if args.task == 'know': cbdicKeys += ['candidate_indice']
+                context_batch = batchify(args, batch, tokenizer, task=args.task)
+                dialog_token, dialog_mask, response, type, topic = [context_batch[i] for i in cbdicKeys]
+                batch_size = dialog_token.size(0)
+                targets = type
+                # dialog_token = batch['dialog_token'].to(args.device)
+                # dialog_mask = batch['dialog_mask'].to(args.device)
+                # targets = torch.LongTensor(batch['goal_type']).to(args.device)
 
                 dot_score = retriever.goal_selection(dialog_token, dialog_mask)
                 loss = criterion(dot_score, targets)
                 test_loss += loss
                 test_pred, test_label=[],[]
                 test_pred.extend(list(map(int, dot_score.argmax(1))))
-                test_label.extend(list(map(int, batch['goal_type'])))
+                test_label.extend(list(map(int, type)))
                 test_labels.extend(test_label)
                 test_preds.extend(test_pred)
 
                 if save_output_mode:
                     input_text = tokenizer.batch_decode(dialog_token, skip_special_tokens=True)
-                    target_goal_text = [goalDic_int[idx] for idx in test_label]  # target goal
-                    pred_goal_text = [goalDic_int[idx] for idx in test_pred]
+                    target_goal_text = [args.goalDic['int'][idx] for idx in test_label]  # target goal
+                    pred_goal_text = [args.goalDic['int'][idx] for idx in test_pred]
                     correct = [p==l for p,l in zip(test_pred, test_label)]
                     for i in range(batch_size):
                         jsonlineSave.append({'input':input_text[i], 'pred_goal': pred_goal_text[i], 'target_goal':target_goal_text[i], 'correct':correct[i]})
@@ -98,7 +109,7 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, 
     save_json_hj(args, f"{args.time}_inout", jsonlineSave, "goal")
     print('done')
 
-def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int, topicDic_int, tokenizer):
+def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
     criterion = nn.CrossEntropyLoss().to(args.device)
     optimizer = optim.Adam(retriever.parameters(), lr=args.lr)
     jsonlineSave = []
@@ -127,8 +138,14 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int,
                 target_topic = batch['topic']
                 # user_profile = batch['user_profile']
                 # situation = batch['situation']
+                cbdicKeys = ['dialog_token', 'dialog_mask', 'response', 'type', 'topic']
+                if args.task == 'know': cbdicKeys += ['candidate_indice']
+                context_batch = batchify(args, batch, tokenizer, task=args.task)
+                dialog_token, dialog_mask, response, type, topic = [context_batch[i] for i in cbdicKeys]
+                batch_size = dialog_token.size(0)
+                targets = topic
 
-                targets = torch.LongTensor(target_topic).to(args.device)
+
                 dot_score = retriever.topic_selection(dialog_token, dialog_mask)
                 loss = criterion(dot_score, targets)
                 train_epoch_loss += loss
@@ -149,15 +166,27 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int,
         retriever.eval()
         with torch.no_grad():
             for batch in tqdm(test_dataloader, desc="Topic_Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-                batch_size = batch['dialog_token'].size(0)
-                dialog_token = batch['dialog_token'].to(args.device)
-                dialog_mask = batch['dialog_mask'].to(args.device)
-                response = batch['response_token']
-                goal_type = [goalDic_int[int(i)] for i in batch['goal_type']]
-                target_topic = batch['topic']
+                # batch_size = batch['dialog_token'].size(0)
+                # dialog_token = batch['dialog_token'].to(args.device)
+                # dialog_mask = batch['dialog_mask'].to(args.device)
+                # response = batch['response_token']
+                # goal_type = [args.goalDic['int'][int(i)] for i in batch['goal_type']]
+                # target_topic = batch['topic']
+                # targets = torch.LongTensor(target_topic).to(args.device)
 
-                targets = torch.LongTensor(target_topic).to(args.device)
-                test_label = list(map(int,target_topic))
+
+                cbdicKeys = ['dialog_token', 'dialog_mask', 'response', 'type', 'topic']
+                context_batch = batchify(args, batch, tokenizer, task=args.task)
+                if args.task == 'know':
+                    cbdicKeys += ['candidate_indice']
+                    dialog_token, dialog_mask, response, type, topic, candidate_indice = [context_batch[i] for i in cbdicKeys]
+                else: dialog_token, dialog_mask, response, type, topic = [context_batch[i] for i in cbdicKeys]
+                batch_size = dialog_token.size(0)
+                goal_type = [args.goalDic['int'][int(i)] for i in type]
+                targets = topic
+
+
+                test_label = list(map(int,targets))
                 test_labels.extend(test_label)
                 # user_profile = batch['user_profile']
 
@@ -174,9 +203,9 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, goalDic_int,
                 test_pred_at5_tfs.extend(correct_at5)
                 if save_output_mode:
                     input_text = tokenizer.batch_decode(dialog_token)
-                    target_topic_text = [topicDic_int[idx] for idx in test_labels]  # target goal
-                    pred_topic_text = [topicDic_int[idx] for idx in test_preds]
-                    pred_top5_texts = [[topicDic_int[idx] for idx in top5_idxs] for top5_idxs in test_pred_at5]
+                    target_topic_text = [args.topicDic['int'][idx] for idx in test_labels]  # target goal
+                    pred_topic_text = [args.topicDic['int'][idx] for idx in test_preds]
+                    pred_top5_texts = [[args.topicDic['int'][idx] for idx in top5_idxs] for top5_idxs in test_pred_at5]
                     real_resp = tokenizer.batch_decode(response, skip_special_tokens=True)
                     for i in range(batch_size):
                         jsonlineSave.append(

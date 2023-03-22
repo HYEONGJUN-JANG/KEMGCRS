@@ -21,7 +21,7 @@ def readDic(filename, out=None):
     elif out=='idx':
         return output_idx_int
     else:
-        return output_idx_str, output_idx_int
+        return {'str':output_idx_str, 'int':output_idx_int}
 
 def v2conv(conv, istopic=True, isgoal=True, iskg=True):
     """
@@ -52,12 +52,19 @@ def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
     return input_ids + [0] * (max_length - len(input_ids))
 
 # TODO: 나중에 data loader 를 직접 만들어서 쓸 수도 있을 듯
-def batchify(args, batch, tokenizer, goalDic_str, topicDic_str, knowledgeDB=None, task=''):
+def batchify(args, batch, tokenizer, task=''):
+    """
+    :param args: args
+    :param batch: batch
+    :param tokenizer: tokenizer
+    :param task: task {'type','topic','know'}
+    :return: Tensor[ dialog_token, dialog_mask, response, type, topic, candidate_indice(Optional) ]
+    """
     # Input batches are all string
     dialog, user_profile, response, type, topic, situation, target_knowledge = [batch[i] for i in ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge']]
     context_batch = defaultdict()
     suffix_list=[]
-    for i in range(len(dialog)):
+    for i in range(len(dialog)): # batch 수 만큼
         suffix = ' '
         if task == 'type': suffix = tokenizer.sep_token
         elif task == 'topic': suffix = tokenizer.sep_token + '<type>' + type[i] + '<user_profile>' + user_profile[i]
@@ -68,15 +75,11 @@ def batchify(args, batch, tokenizer, goalDic_str, topicDic_str, knowledgeDB=None
     tokenized_dialog = tokenizer(dialog, add_special_tokens=False)
     tokenized_suffix = tokenizer(suffix_list, add_special_tokens=False, max_length=args.max_length//4, truncation=True)
 
-    # tokenized_dialog = [truncationPadding(input_ids=dialoginputids, prefix=[tokenizer.cls_token_id], suffix=tokenized_suffix.input_ids, max_length=args.max_length) for dialoginputids in tokenized_dialog.input_ids]
-    # [truncationPadding(input_ids=dialoginputids, prefix=[tokenizer.cls_token_id], suffix=tokenized_suffix.input_ids, max_length=args.max_length) for dialoginputids in tokenized_dialog.input_ids]
+    context_batch['response'] = tokenizer(response, add_special_tokens=True, max_length=args.max_length, padding='max_length', truncation=True).input_ids
     context_batch['dialog_token'] = [truncationPadding(input_ids=dialog_inputids, prefix=[tokenizer.cls_token_id], suffix=suffix_inputids, max_length=args.max_length) for dialog_inputids, suffix_inputids in zip(tokenized_dialog.input_ids, tokenized_suffix.input_ids)]
     context_batch['dialog_mask'] = [truncationPadding(input_ids=dialoginputids, prefix=[1], suffix=suffix_inputids, max_length=args.max_length) for dialoginputids, suffix_inputids in zip(tokenized_dialog.attention_mask, tokenized_suffix.attention_mask)]
-                                    # [truncationPadding(input_ids=dialoginputids, prefix=[1], suffix=tokenized_suffix.attention_mask, max_length=args.max_length) for dialoginputids in tokenized_dialog.attention_mask]
-    context_batch['response'] = tokenizer(response, add_special_tokens=True, max_length=args.max_length, padding='max_length', truncation=True).input_ids
-
-    context_batch['type'] = [goalDic_str[i] for i in type]  # index로 바꿈
-    context_batch['topic'] = [topicDic_str[i] for i in topic]  # index로 바꿈
+    context_batch['type'] = [args.goalDic['str'][i] for i in type]  # index로 바꿈
+    context_batch['topic'] = [args.topicDic['str'][i] for i in topic]  # index로 바꿈
 
     if task == 'know':
         target_knowledge = target_knowledge.tolist()
@@ -88,6 +91,7 @@ def batchify(args, batch, tokenizer, goalDic_str, topicDic_str, knowledgeDB=None
         if not isinstance(v, torch.Tensor):
             context_batch[k] = torch.as_tensor(v, device=args.device)
     return context_batch
+    # Tensor[dialog_token, dialog_mask, response, type, topic, candidate_indice(Optional)]
 
 
 def negative_sampler(args, target_knowledge):

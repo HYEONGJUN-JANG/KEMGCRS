@@ -6,6 +6,7 @@ from utils import *
 import random
 import torch
 from torch.utils.data import Dataset
+from collections import defaultdict
 
 class DialogDataset_TEMP(Dataset): # knowledge용 데이터셋
     # << Conversation Sample Keys >>
@@ -16,23 +17,33 @@ class DialogDataset_TEMP(Dataset): # knowledge용 데이터셋
     # 'situation': situation,
     # 'user_profile': user_profile,
     # 'knowledge_seq': knowledge_seq
-    def __init__(self, args, conversation_sample, knowledgeDB, tokenizer, task):
+    def __init__(self, args, conversation_sample, knowledgeDB, tokenizer, task, mode):
         super(Dataset, self).__init__()
-        self.raw_data= conversation_sample
         self.args = args
+        self.raw_data= conversation_sample
         self.tokenizer = tokenizer
         self.knowledgeDB = knowledgeDB
         self.task = task
-        self.train_sample = self.process_dataset(conversation_sample)
+        self.mode = mode
+        self.augmented_raw_sample = self.augment_raw_dataset(conversation_sample)
+        # self.toked_sample = self.tokenize_train_sample(self.augmented_raw_sample)
 
-    def process_dataset(self, raw_data):
-        # if not os.path.exists(os.path.join(self.args.data_dir, 'cache')): os.makedirs(os.path.join(self.args.data_dir, 'cache'))
-        # cachename = os.path.join(self.args.data_dir, 'cache', f"cached_en_{self.task}.pkl")
-        # cachename_know = os.path.join(self.args.data_dir, 'cache', f"cached_en_{self.task}_know.pkl")
-        # if self.args.data_cache and os.path.exists(cachename) and os.path.exists(cachename_know):
+    def tokenize_train_sample(self, augmented_raw_sample): # Should be use with collate_fn
+        output = list()
+        for conv in augmented_raw_sample:
+            samples = defaultdict(list)
+            dialog, user_profile, response, type, topic, situation, target_knowledge = [conv[i] for i in ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge']]
+            for k in ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation'] : #, 'target_knowledge'
+                samples[k].extend(self.tokenizer(conv[k], add_special_tokens=False).input_ids)
+            samples['target_knowledge'].append(conv['target_knowledge'])
+            output.append(samples)
+        return output
+    def augment_raw_dataset(self, raw_data):
+        # checkPath(os.path.join(self.args.data_dir,'cache'))
+        # cachename = os.path.join(self.args.data_dir, 'cache', f"cached_{self.task}_{self.mode}.pkl")
+        # if self.args.data_cache and os.path.exists(cachename):
         #     print(f"Read Pickle {cachename}")
         #     train_sample = read_pkl(cachename)
-        #     # knowledge_sample = read_pkl(cachename_know)
         # else:
         train_sample = []
         for ij in range(len(raw_data)):
@@ -67,53 +78,11 @@ class DialogDataset_TEMP(Dataset): # knowledge용 데이터셋
 
 
     def __getitem__(self, idx): # TODO 구현 전
-        data = self.train_sample[idx]
-        return data
-        # dialog = data['dialog']
-        # response = data['response']
-        # user_profile = data['user_profile']
-        # goal_type = data['goal_type']
-        # topic = data['topic']
-        # situation = data['situation']
-        # target_knowledge = data['target_knowledge']
-        # return {'dialog':dialog,
-        #         'response':response,
-        #         'user_profile':user_profile,
-        #         'goal_type':goal_type,
-        #         'topic':topic,
-        #         'situation':situation,
-        #         'target_knowledge':target_knowledge
-        #         }
-        # suffix = self.tokenizer.sep_token + '<type>' + goal_type + '<topic>' + topic + '<situation>' + situation
-        # negative_indice = self.negative_sampler(target_knowledge)
-        # candidate_indice = [target_knowledge] + negative_indice
-        #
-        # tokenized_dialog = self.tokenizer(dialog, add_special_tokens=False)
-        # tokenized_suffix = self.tokenizer(suffix, add_special_tokens=False)
-        # if self.args.input_prompt == 'dialog':
-        #     dialog_token = truncationPadding(input_ids=tokenized_dialog.input_ids, prefix=[self.tokenizer.cls_token_id], max_length=self.args.max_length)
-        #     dialog_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, prefix=[1], max_length=self.args.max_length)
-        # elif self.args.input_prompt == 'dialog_typetopic':
-        #     dialog_token = truncationPadding(input_ids=tokenized_dialog.input_ids, prefix=[self.tokenizer.cls_token_id], suffix=tokenized_suffix.input_ids, max_length=self.args.max_length)
-        #     dialog_mask = truncationPadding(input_ids=tokenized_dialog.attention_mask, prefix=[1],  suffix=tokenized_suffix.attention_mask, max_length=self.args.max_length)
-        # candidate_knowledge = self.tokenizer([self.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=self.args.max_length)
-        #
-        # # target_knowledge = self.tokenizer
-        # candidate_knowledge_token = candidate_knowledge.input_ids
-        # candidate_knowledge_mask = candidate_knowledge.attention_mask
-        #
-        # dialog_token = torch.LongTensor(dialog_token)
-        # dialog_mask = torch.LongTensor(dialog_mask)
-        # candidate_knowledge_token = torch.LongTensor(candidate_knowledge_token)
-        # candidate_knowledge_mask = torch.LongTensor(candidate_knowledge_mask)
-        #
-        # response = self.tokenizer(response, add_special_tokens=True, max_length=self.args.max_length, padding='max_length', truncation=True)
-        # response_token = torch.LongTensor(response.input_ids).to(self.args.device)
-        # response_mask = torch.LongTensor(response.attention_mask).to(self.args.device)
+        return self.augmented_raw_sample[idx]
+        # return self.toked_sample[idx]
 
-        # return dialog_token, dialog_mask, target_knowledge, goal_type, response_token, response_mask, topic, candidate_knowledge_token, candidate_knowledge_mask, user_profile
-        # return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'target_knowledge': target_knowledge, 'goal_type': goal_type, 'response': response, 'topic': topic}
-        # 0: dialog_token, 1: dialog_mask, 2: target_knowledge, 3: goal_type, 4: response, 5: topic
+    def __len__(self):
+        return len(self.augmented_raw_sample)
 
     def negative_sampler(self, target_knowledge):
         # candidate_entity = self.knowledgeDB[target_knowledge][0]
@@ -128,7 +97,7 @@ class DialogDataset_TEMP(Dataset): # knowledge용 데이터셋
         return negative_indice
 
     def __len__(self):
-        return len(self.train_sample)
+        return len(self.augmented_raw_sample)
 
 def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
     truncate_size = max_length - len(prefix) - len(suffix)
