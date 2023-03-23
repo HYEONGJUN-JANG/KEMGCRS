@@ -24,7 +24,7 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever, token
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(retriever.parameters(), lr=args.lr)
-    modelpath = os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt")
+    modelpath = os.path.join(args.model_dir, f"{args.task}_best_model.pt")
     early_stopping = EarlyStopping(patience=4, delta=10,path=modelpath, verbose=True)
     if args.retrieve == 'freeze':
         knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)

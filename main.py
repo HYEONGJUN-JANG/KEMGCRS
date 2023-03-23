@@ -138,7 +138,7 @@ def main():
         # args.who = "TH"
         args.task = 'know'
         print(f"Training {args.task} Task")
-        args.batch_size = args.batch_size//2
+        args.batch_size = 32
 
         # # TH 기존
         # train_know_DataLoader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train')
