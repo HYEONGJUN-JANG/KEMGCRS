@@ -24,8 +24,8 @@ def main():
     args.batch_size = 4
     args.log_name = "log_Topic PRF"
     args.task = 'goal'
-    args.num_epochs = 2
-    # args.do_finetune = True
+    args.num_epochs = 1
+    args.do_finetune = True
     args.do_pipeline = True
     if sysChecker() == 'Linux':
         args.home = '/home/work/CRSTEST/KEMGCRS'
@@ -62,12 +62,12 @@ def main():
     knowledge_data = dataModel.KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
     args.knowledge_num = len(knowledgeDB)
 
-
-    all_knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'all_knowledge_DB.pickle'))  # TODO: verbalize (TH)
-    knowledgeDB_values = [k[1] for k in all_knowledgeDB]
-    knowledgeDB_entity_values = defaultdict(list)
-    for k in all_knowledgeDB:
-        knowledgeDB_entity_values[k[0]].append(knowledgeDB_values.index(k[1]))
+    #
+    # all_knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'all_knowledge_DB.pickle'))  # TODO: verbalize (TH)
+    # knowledgeDB_values = [k[1] for k in all_knowledgeDB]
+    # knowledgeDB_entity_values = defaultdict(list)
+    # for k in all_knowledgeDB:
+    #     knowledgeDB_entity_values[k[0]].append(knowledgeDB_values.index(k[1]))
 
 
     topicDic = readDic(os.path.join(args.data_dir, "topic2id.txt"))
@@ -138,7 +138,7 @@ def main():
         # args.who = "TH"
         args.task = 'know'
         print(f"Training {args.task} Task")
-        args.batch_size = 32
+        args.batch_size = 32 if sysChecker() == 'Linux' else args.batch_size
 
         # # TH 기존
         # train_know_DataLoader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train')
