@@ -52,8 +52,8 @@ class Retriever(nn.Module):
         # dot-product
         dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         # dialog_emb = self.proj(dialog_emb)
-        candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B, K*L]
-        candidate_knowledge_mask = candidate_knowledge_mask.view(-1, self.args.max_length)  # [B, K*L]
+        candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B*(K+1), L]
+        candidate_knowledge_mask = candidate_knowledge_mask.view(-1, self.args.max_length)  # [B*(K+1), L]
 
         knowledge_index = self.query_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask).last_hidden_state[:, 0, :]
         knowledge_index = knowledge_index.view(batch_size, -1, dialog_emb.size(-1))

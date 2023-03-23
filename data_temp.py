@@ -28,16 +28,16 @@ class DialogDataset_TEMP(Dataset): # knowledge용 데이터셋
         self.augmented_raw_sample = self.augment_raw_dataset(conversation_sample)
         # self.toked_sample = self.tokenize_train_sample(self.augmented_raw_sample)
 
-    def tokenize_train_sample(self, augmented_raw_sample): # Should be use with collate_fn
-        output = list()
-        for conv in augmented_raw_sample:
-            samples = defaultdict(list)
-            dialog, user_profile, response, type, topic, situation, target_knowledge = [conv[i] for i in ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge']]
-            for k in ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation'] : #, 'target_knowledge'
-                samples[k].extend(self.tokenizer(conv[k], add_special_tokens=False).input_ids)
-            samples['target_knowledge'].append(conv['target_knowledge'])
-            output.append(samples)
-        return output
+    # def tokenize_train_sample(self, augmented_raw_sample): # Should be use with collate_fn
+    #     output = list()
+    #     for conv in augmented_raw_sample:
+    #         samples = defaultdict(list)
+    #         dialog, user_profile, response, type, topic, situation, target_knowledge = [conv[i] for i in ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge']]
+    #         for k in ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation'] : #, 'target_knowledge'
+    #             samples[k].extend(self.tokenizer(conv[k], add_special_tokens=False).input_ids)
+    #         samples['target_knowledge'].append(conv['target_knowledge'])
+    #         output.append(samples)
+    #     return output
     def augment_raw_dataset(self, raw_data):
         # checkPath(os.path.join(self.args.data_dir,'cache'))
         # cachename = os.path.join(self.args.data_dir, 'cache', f"cached_{self.task}_{self.mode}.pkl")

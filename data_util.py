@@ -52,7 +52,7 @@ def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
     return input_ids + [0] * (max_length - len(input_ids))
 
 # TODO: 나중에 data loader 를 직접 만들어서 쓸 수도 있을 듯
-def batchify(args, batch, tokenizer, task=''):
+def batchify(args, batch, tokenizer=None, task=''):
     """
     :param args: args
     :param batch: batch
@@ -84,7 +84,12 @@ def batchify(args, batch, tokenizer, task=''):
     if task == 'know':
         target_knowledge = target_knowledge.tolist()
         candidate_indice = [[know] + negative_sampler(args, know) for know in target_knowledge]
+        # candidate_knowledge = tokenizer([args.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=args.max_length)
+        candidate_knowledge_token = [[tokenizer(args.knowledgeDB[i], truncation=True, padding='max_length', max_length=args.max_length).input_ids for i in idx] for idx in candidate_indice]
+        candidate_knowledge_mask = [[tokenizer(args.knowledgeDB[i], truncation=True, padding='max_length', max_length=args.max_length).attention_mask for i in idx] for idx in candidate_indice]
         context_batch['candidate_indice'] = candidate_indice  # 이미 Tensor로 받음
+        context_batch['candidate_knowledge_token']=candidate_knowledge_token
+        context_batch['candidate_knowledge_mask']=candidate_knowledge_mask
         # [target, cand1, cand2, cand3, cand4]
 
     for k, v in context_batch.items():
