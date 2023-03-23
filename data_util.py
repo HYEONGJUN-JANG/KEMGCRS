@@ -68,7 +68,9 @@ def batchify(args, batch, tokenizer=None, task=''):
         suffix = ' '
         if task == 'type': suffix = tokenizer.sep_token
         elif task == 'topic': suffix = tokenizer.sep_token + '<type>' + type[i] + '<user_profile>' + user_profile[i]
-        elif task == 'know' : suffix = tokenizer.sep_token + '<situation>' + situation[i] + '<type>' + type[i] + '<topic>' + topic[i]
+        elif task == 'know' :
+            if isinstance(topic[i], list): topic[i] = ','.join(topic[i])
+            suffix = tokenizer.sep_token + '<situation>' + situation[i] + '<type>' + type[i] + '<topic>' + topic[i]
         else : pass
         suffix_list.append(suffix)
 
