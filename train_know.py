@@ -70,6 +70,6 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever, token
                 update_moving_average(retriever.key_bert, retriever.query_bert)
         print('LOSS:\t%.4f' % total_loss)
         logger.info('LOSS:\t%.4f' % total_loss)
-        early_stopping(round(10000 - total_loss, 3), retriever)
+        early_stopping(round(10000 - int(total_loss), 3), retriever)
 
     # torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
