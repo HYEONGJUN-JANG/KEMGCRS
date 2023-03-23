@@ -19,7 +19,7 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
     TotalLoss = 0
     checkf1=0
     save_output_mode = False # True일 경우 해당 epoch에서의 batch들 모아서 output으로 save
-    modelpath = os.path.join(args.model_dir, 'goal_best_model.pt')
+    modelpath = os.path.join(args.model_dir, 'type_best_model.pt')
     early_stopping = EarlyStopping(patience=7, path=modelpath, verbose=True)
     logger.info("Train_Goal")
     for epoch in range(args.num_epochs):
@@ -192,7 +192,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
         logger.info("Test P/R/F1:\t {} / {} / {}".format(p, r, f))
         logger.info("Test Hit@5: {}".format(test_hit5))
         TotalLoss += train_epoch_loss / len(train_dataloader)
-        early_stopping(f, retriever)
+        early_stopping(test_hit5, retriever)
         if early_stopping.early_stop:
             print("Early stopping")
             logger.info("Early Stopping on Epoch {}, Path: {}".format(epoch, modelpath))

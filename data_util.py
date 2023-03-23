@@ -71,7 +71,8 @@ def batchify(args, batch, tokenizer=None, task=''):
         elif task == 'know' :
             if isinstance(topic[i], list): topic[i] = ','.join(topic[i])
             suffix = tokenizer.sep_token + '<situation>' + situation[i] + '<type>' + type[i] + '<topic>' + topic[i]
-        else : pass
+        else : # Rescponse
+            pass
         suffix_list.append(suffix)
 
     tokenized_dialog = tokenizer(dialog, add_special_tokens=False)

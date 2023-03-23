@@ -60,7 +60,7 @@ def main():
     test_dataloader = DataLoader(test_datamodel, batch_size=1, shuffle=False)
 
     topicDic, goalDic = readDic(os.path.join(args.data_dir, "topic2id.txt"), "idx"), readDic(os.path.join(args.data_dir, "goal2id.txt"), "idx")
-    # knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name)))
+    # knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name))).to(args.device)
     # knowledge_index = knowledge_index.to(args.device)
 
     # TODO: retriever 로 바꿔서 save 와 load

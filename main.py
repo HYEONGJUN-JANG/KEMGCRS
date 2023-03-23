@@ -9,13 +9,13 @@ import models
 from data_util import readDic, batchify
 from platform import system as sysChecker
 import dataModel
-from collections import defaultdict
+import numpy as np
 from train_know import train_retriever_idx
 import torch
 import data_temp
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-
+import eval_know
 
 def main():
     # HJ 작업 --> 형준 여기서만 작업
@@ -25,7 +25,7 @@ def main():
     args.log_name = "log_Topic PRF"
     args.task = 'goal'
     args.num_epochs = 1
-    args.do_finetune = True
+    # args.do_finetune = True
     args.do_pipeline = True
     if sysChecker() == 'Linux':
         args.home = '/home/work/CRSTEST/KEMGCRS'
@@ -138,8 +138,7 @@ def main():
         # args.who = "TH"
         args.task = 'know'
         print(f"Training {args.task} Task")
-        args.batch_size = 32 if sysChecker() == 'Linux' else args.batch_size
-
+        # 32 if sysChecker() == 'Linux' else args.batch_size
         # # TH 기존
         # train_know_DataLoader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train')
         # test_know_DataLoader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test')
@@ -147,9 +146,11 @@ def main():
         # HJ New DataLoader
         train_know_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, tokenizer, task='know', mode='train')
         test_know_DataModel = data_temp.DialogDataset_TEMP(args, conversation_test_sample, knowledgeDB, tokenizer, task='know', mode='test')
-        train_know_DataLoader = DataLoader(train_know_DataModel, batch_size=args.batch_size, shuffle=True)
+        train_know_DataLoader = DataLoader(train_know_DataModel, batch_size=32 if sysChecker() == 'Linux' else args.batch_size , shuffle=True)
         test_know_DataLoader = DataLoader(test_know_DataModel, batch_size=1, shuffle=False)
         train_retriever_idx(args, train_know_DataLoader, knowledge_data, retriever, tokenizer)  # [TH] <topic> 추가됐으니까 재학습
+        knowledge_index = eval_know.knowledge_reindexing(args, knowledge_data, retriever)
+        knowledge_index = knowledge_index.to(args.device)
 
     # # Just Fine_tune on Golden Target
     # train_goal(args, train_dataloader, test_dataloader, retriever, goalDic_int, tokenizer)
@@ -166,7 +167,9 @@ def main():
         args.mode = 'test'
         # train_type_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, tokenizer, task='type')
         test_type_DataModel = data_temp.DialogDataset_TEMP(args, conversation_test_sample, knowledgeDB, tokenizer, task='type', mode=args.mode)
-        test_pipe_DataLoader = DataLoader(test_type_DataModel, batch_size=args.batch_size, shuffle=True)
+        test_pipe_DataLoader = DataLoader(test_type_DataModel, batch_size=args.batch_size, shuffle=False)
+
+        knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name))).to(args.device)
 
         for batch in tqdm(test_pipe_DataLoader, desc="Topic_Test", bar_format=' {l_bar} | {bar:23} {r_bar}'): #train_goal_topic_dataloader:
             args.task = 'type'
@@ -187,12 +190,15 @@ def main():
             context_batch = batchify(args, batch, tokenizer, task=args.task)
             topic_score = retriever.topic_selection(context_batch['dialog_token'], context_batch['dialog_mask'])
             pred_topic_batch = [topicDic['int'][int(i)] for i in torch.topk(topic_score, k=1, dim=1).indices]
+            pred_topic5_batch = [[topicDic['int'][int(j)] for j in i] for i in torch.topk(topic_score, k=5, dim=1).indices]
 
             args.task = 'know'
+            # args.batch_size = 32 if sysChecker() == 'Linux' else args.batch_size
             batch['topic'] = pred_topic_batch
-            retriever.load_state_dict(torch.load(f"{os.path.join(args.model_dir, args.task)}_best_model.pt"))
+            try: retriever.load_state_dict(torch.load(f"{os.path.join(args.model_dir, args.task)}_best_model.pt"))
+            except: pass
             context_batch = batchify(args, batch, tokenizer, task=args.task)
-            know_score = retriever.compute__know_score(context_batch['dialog_token'], context_batch['dialog_mask'], knowledgeDB)
+            know_score = retriever.compute__know_score(context_batch['dialog_token'], context_batch['dialog_mask'], knowledge_index)
 
             # targets = torch.LongTensor(golden_topic).to(args.device)
             # test_label = list(map(int, golden_topic))
@@ -200,7 +206,8 @@ def main():
             # pred_goal_batch = [int(i) for i in torch.topk(type_score, k=1, dim=1).indices]
             # topic용 dialog_token 입력 처리해줘야하는부분
             # pred_dict[task][args.mode].extend(pred)
-            top5_knowledge_text = [knowledgeDB[i] for i in torch.topk(know_score, k=5, dim=1).indices]
+            top5_knowledge_text = [[knowledgeDB[int(j)] for j in i] for i in torch.topk(know_score, k=5, dim=1).indices]
+
             break
 
 
