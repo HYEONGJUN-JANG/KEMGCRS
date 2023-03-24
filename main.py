@@ -16,6 +16,7 @@ import data_temp
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 import eval_know
+import metric
 
 def main():
     # HJ 작업 --> 형준 여기서만 작업
@@ -170,8 +171,10 @@ def main():
         test_pipe_DataLoader = DataLoader(test_type_DataModel, batch_size=args.batch_size, shuffle=False)
 
         knowledge_index = torch.tensor(np.load(os.path.join(args.data_dir, args.k_idx_name))).to(args.device)
-
-        for batch in tqdm(test_pipe_DataLoader, desc="Topic_Test", bar_format=' {l_bar} | {bar:23} {r_bar}'): #train_goal_topic_dataloader:
+        label_dict = {'type':[],'topic':[],'topic5':[],'know5':[]}
+        pred_dict = {'type':[],'topic':[],'topic5':[],'know5':[]}
+        cnt=0
+        for batch in tqdm(test_pipe_DataLoader, desc="Pipeline_Test", bar_format=' {l_bar} | {bar:23} {r_bar}'): #train_goal_topic_dataloader:
             args.task = 'type'
             context_batch = batchify(args, batch, tokenizer, task=args.task)
             # cbdicKeys = ['dialog_token', 'dialog_mask', 'response', 'type', 'topic']
@@ -182,34 +185,55 @@ def main():
             #     dialog_token, dialog_mask, response, type, topic = [context_batch[i] for i in cbdicKeys]
             retriever.load_state_dict(torch.load(f"{os.path.join(args.model_dir, args.task)}_best_model.pt"))
             type_score = retriever.goal_selection(context_batch['dialog_token'], context_batch['dialog_mask'])
-            pred_goal_batch = [goalDic['int'][int(i)] for i in torch.topk(type_score, k=1, dim=1).indices]
+            top1type_batch = torch.topk(type_score, k=1, dim=1).indices
+
+            label_dict['type'].extend([args.goalDic['str'][i] for i in batch['type']])
+            pred_dict['type'].extend([int(i) for i in top1type_batch])
+            pred_goal_text_batch = [goalDic['int'][int(i)] for i in top1type_batch]
 
             args.task = 'topic'
-            batch['type'] = pred_goal_batch
+            batch['type'] = pred_goal_text_batch
             retriever.load_state_dict(torch.load(f"{os.path.join(args.model_dir, args.task)}_best_model.pt"))
             context_batch = batchify(args, batch, tokenizer, task=args.task)
             topic_score = retriever.topic_selection(context_batch['dialog_token'], context_batch['dialog_mask'])
-            pred_topic_batch = [topicDic['int'][int(i)] for i in torch.topk(topic_score, k=1, dim=1).indices]
-            pred_topic5_batch = [[topicDic['int'][int(j)] for j in i] for i in torch.topk(topic_score, k=5, dim=1).indices]
+            pred_topic_text_batch = [topicDic['int'][int(i)] for i in torch.topk(topic_score, k=1, dim=1).indices]
+            pred_topic5_text_batch = [[topicDic['int'][int(j)] for j in i] for i in torch.topk(topic_score, k=5, dim=1).indices]
+
+            label_dict['topic'].extend([args.topicDic['str'][i] for i in batch['topic']])
+            pred_dict['topic'].extend([int(i) for i in torch.topk(topic_score, k=1, dim=1).indices])
+            pred_dict['topic5'].extend([[int(j) for j in i] for i in torch.topk(topic_score, k=5, dim=1).indices])
 
             args.task = 'know'
             # args.batch_size = 32 if sysChecker() == 'Linux' else args.batch_size
-            batch['topic'] = pred_topic_batch
+            batch['topic'] = pred_topic_text_batch
+            # batch['topic'] = pred_topic5_text_batch
             try: retriever.load_state_dict(torch.load(f"{os.path.join(args.model_dir, args.task)}_best_model.pt"))
             except: pass
             context_batch = batchify(args, batch, tokenizer, task=args.task)
             know_score = retriever.compute__know_score(context_batch['dialog_token'], context_batch['dialog_mask'], knowledge_index)
 
+            top5_knowledge_text = [[knowledgeDB[int(j)] for j in i] for i in torch.topk(know_score, k=5, dim=1).indices]
+
+            pred_dict['know5'].extend([[int(j) for j in i] for i in torch.topk(know_score, k=5, dim=1).indices])
+            label_dict['know5'].extend([int(i) for i in batch['target_knowledge']])
             # targets = torch.LongTensor(golden_topic).to(args.device)
             # test_label = list(map(int, golden_topic))
             ### TODO 수도코드
             # pred_goal_batch = [int(i) for i in torch.topk(type_score, k=1, dim=1).indices]
             # topic용 dialog_token 입력 처리해줘야하는부분
             # pred_dict[task][args.mode].extend(pred)
-            top5_knowledge_text = [[knowledgeDB[int(j)] for j in i] for i in torch.topk(know_score, k=5, dim=1).indices]
+            cnt+=1
+            if cnt>=5: break
+        ## HJ Scoring # {'type':[],'topic':[],'topic5':[],'know5':[]}
+        print("Scroing Code")
 
-            break
-
+        for t in ['type', 'topic', 'topic5','know5']:
+            if t=='know' or t=='topic5':
+                hit = metric.scoring(pred_dict[t], label_dict[t])
+                print(f'Pipe {t} -- hit ratio: {hit}')
+            else:
+                p,r,f = metric.scoring(pred_dict[t], label_dict[t])
+                print(f'Pipe {t} -- P/R/F: {p}/{r}/{f}')
 
                     # goalpreds.topk()
                     # topicpreds=retriever.topic_selection()

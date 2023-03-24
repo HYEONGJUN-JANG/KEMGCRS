@@ -39,3 +39,12 @@ class EarlyStopping:
         if self.verbose: print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {score:.6f}).  Saving model ... in {self.path}')
         saveTorch(model.state_dict(), self.path)
         self.val_loss_min = score
+
+def scroing(test_preds, test_labels):
+    from sklearn.metrics import precision_score, recall_score, f1_score
+    if isinstance(test_preds[0], list): # Top5의 경우
+        correct=[1 if label in preds else 0 for preds, label in zip(test_preds, test_labels)]
+        return round(sum(correct)/len(correct), 3)
+    else:
+        p,r,f = round(precision_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(recall_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(f1_score(test_labels, test_preds, average='macro', zero_division=0), 3)
+        return p,r,f
