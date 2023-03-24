@@ -69,6 +69,7 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever, token
                 update_moving_average(retriever.key_bert, retriever.query_bert)
         print('LOSS:\t%.4f' % total_loss)
         logger.info('LOSS:\t%.4f' % total_loss)
+        logger.info('{} LOSS:\t{}'.format(args.task, round(total_loss,4)))
         early_stopping(round(1000 - int(total_loss), 3), retriever)
         if early_stopping.early_stop:
             print("Early stopping")

@@ -89,7 +89,7 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
         print(f"Test Loss: {test_loss}")
         print(f"P/R/F1: {p} / {r} / {f}")
-        logger.info("Epoch: {}, Train Loss: {}, Test Loss: {}, P/R/F: {}/{}/{}".format(epoch, train_epoch_loss, test_loss, p, r, f))
+        logger.info("{} Epoch: {}, Train Loss: {}, Test Loss: {}, P/R/F: {}/{}/{}".format(args.task, epoch, train_epoch_loss, test_loss, p, r, f))
         TotalLoss += train_epoch_loss / len(train_dataloader)
         early_stopping(f, retriever)
         if early_stopping.early_stop:
@@ -198,7 +198,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
         print(f"Test Loss: {test_loss}")
         print(f"Test P/R/F1: {p} / {r} / {f}")
         print(f"Test Hit@5: {test_hit5}")
-        logger.info("Epoch: {}, Training Loss: {}, Test Loss: {}".format(epoch, train_epoch_loss, test_loss))
+        logger.info("{} Epoch: {}, Training Loss: {}, Test Loss: {}".format(args.task, epoch, train_epoch_loss, test_loss))
         logger.info("Test P/R/F1:\t {} / {} / {}".format(p, r, f))
         logger.info("Test Hit@5: {}".format(test_hit5))
         TotalLoss += train_epoch_loss / len(train_dataloader)

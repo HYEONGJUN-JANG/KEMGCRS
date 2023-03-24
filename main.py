@@ -28,7 +28,7 @@ def main():
     args.num_epochs = 2
     args.do_finetune = True
     # args.do_pipeline = True
-    args.ft_type, args.ft_topic, args.ft_know = True, True, True
+    # args.ft_type, args.ft_topic, args.ft_know = True, True, True
     if sysChecker() == 'Linux':
         args.home = '/home/work/CRSTEST/KEMGCRS'
         args.data_dir = os.path.join(args.home,'data')
