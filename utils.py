@@ -30,6 +30,7 @@ def parseargs():
     parser.add_argument("--ft_type", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument("--ft_topic", action='store_true', help="Whether to Fine-tune on topic.")
     parser.add_argument("--ft_know", action='store_true', help="Whether to Fine-tune on know.")
+    parser.add_argument("--earlystop", action='store_true', help="Whether to Use EarlyStopping.")
 
     parser.add_argument("--data_dir", default='data', type=str, help="The data directory.")
     # parser.add_argument('--data_name', default='en_test.txt', type=str, help="dataset name")
