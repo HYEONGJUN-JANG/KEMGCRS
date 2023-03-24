@@ -26,8 +26,9 @@ def main():
     args.log_name = "log_Topic PRF"
     args.task = 'goal'
     args.num_epochs = 1
-    # args.do_finetune = True
+    args.do_finetune = True
     args.do_pipeline = True
+    args.ft_type, args.ft_topic, args.ft_know = True, True, True
     if sysChecker() == 'Linux':
         args.home = '/home/work/CRSTEST/KEMGCRS'
         args.data_dir = os.path.join(args.home,'data')
@@ -101,40 +102,43 @@ def main():
     ################################################################################################################
     if args.do_finetune:
         # # # HJ Task (Type, Topic)
-        print(f"Fine-tune {args.task} Task")
-        args.task = 'type'
-        logging.info('Fine-tune: {} Task'.format(args.task))
-        train_type_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, tokenizer, task=args.task, mode='train')
-        test_type_DataModel = data_temp.DialogDataset_TEMP(args, conversation_test_sample, knowledgeDB, tokenizer, task=args.task, mode='test')
-        train_type_DataLoader = DataLoader(train_type_DataModel, batch_size=args.batch_size, shuffle=True)
-        test_type_DataLoader = DataLoader(test_type_DataModel, batch_size=args.batch_size, shuffle=True)
-        train_goal(args, train_type_DataLoader, test_type_DataLoader, retriever, tokenizer)
+        if args.ft_type :
+            print(f"Fine-tune {args.task} Task")
+            args.task = 'type'
+            logging.info('Fine-tune: {} Task'.format(args.task))
+            train_type_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, tokenizer, task=args.task, mode='train')
+            test_type_DataModel = data_temp.DialogDataset_TEMP(args, conversation_test_sample, knowledgeDB, tokenizer, task=args.task, mode='test')
+            train_type_DataLoader = DataLoader(train_type_DataModel, batch_size=args.batch_size, shuffle=True)
+            test_type_DataLoader = DataLoader(test_type_DataModel, batch_size=args.batch_size, shuffle=True)
+            train_goal(args, train_type_DataLoader, test_type_DataLoader, retriever, tokenizer)
 
-        print(f"Fine-tune {args.task} Task")
-        args.task = 'topic'
-        logging.info('Fine-tune: {} Task'.format(args.task))
-        train_topic_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, tokenizer, task=args.task, mode='train')
-        test_topic_DataModel = data_temp.DialogDataset_TEMP(args, conversation_test_sample, knowledgeDB, tokenizer, task=args.task, mode='test')
-        train_topic_DataLoader = DataLoader(train_topic_DataModel, batch_size=args.batch_size, shuffle=True)
-        test_topic_DataLoader = DataLoader(test_topic_DataModel, batch_size=args.batch_size, shuffle=True)
-        train_topic(args, train_topic_DataLoader, test_topic_DataLoader, retriever, tokenizer)
+        if args.ft_topic:
+            print(f"Fine-tune {args.task} Task")
+            args.task = 'topic'
+            logging.info('Fine-tune: {} Task'.format(args.task))
+            train_topic_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, tokenizer, task=args.task, mode='train')
+            test_topic_DataModel = data_temp.DialogDataset_TEMP(args, conversation_test_sample, knowledgeDB, tokenizer, task=args.task, mode='test')
+            train_topic_DataLoader = DataLoader(train_topic_DataModel, batch_size=args.batch_size, shuffle=True)
+            test_topic_DataLoader = DataLoader(test_topic_DataModel, batch_size=args.batch_size, shuffle=True)
+            train_topic(args, train_topic_DataLoader, test_topic_DataLoader, retriever, tokenizer)
 
-        # # # TH Task (Know) -- Fine_tune on Golden Target
-        # args.who = "TH"
-        args.task = 'know'
-        logging.info('Fine-tune: {} Task'.format(args.task))
-        print(f"Fine-tune {args.task} Task")
-        # 32 if sysChecker() == 'Linux' else args.batch_size
-        # # TH 기존
-        # train_know_DataLoader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train')
-        # test_know_DataLoader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test')
-        # HJ New DataLoader
-        train_know_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, tokenizer, task='know', mode='train')
-        test_know_DataModel = data_temp.DialogDataset_TEMP(args, conversation_test_sample, knowledgeDB, tokenizer, task='know', mode='test')
-        train_know_DataLoader = DataLoader(train_know_DataModel, batch_size=32 if sysChecker() == 'Linux' else args.batch_size , shuffle=True)
-        test_know_DataLoader = DataLoader(test_know_DataModel, batch_size=1, shuffle=False)
-        train_retriever_idx(args, train_know_DataLoader, knowledge_data, retriever, tokenizer)  # [TH] <topic> 추가됐으니까 재학습
-        knowledge_index = eval_know.knowledge_reindexing(args, knowledge_data, retriever).to(args.device)
+        if args.ft_know:
+            # # # TH Task (Know) -- Fine_tune on Golden Target
+            # args.who = "TH"
+            args.task = 'know'
+            logging.info('Fine-tune: {} Task'.format(args.task))
+            print(f"Fine-tune {args.task} Task")
+            # 32 if sysChecker() == 'Linux' else args.batch_size
+            # # TH 기존
+            # train_know_DataLoader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='train')
+            # test_know_DataLoader = data.dataset_reader(args, tokenizer, knowledgeDB, mode='test')
+            # HJ New DataLoader
+            train_know_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, tokenizer, task='know', mode='train')
+            test_know_DataModel = data_temp.DialogDataset_TEMP(args, conversation_test_sample, knowledgeDB, tokenizer, task='know', mode='test')
+            train_know_DataLoader = DataLoader(train_know_DataModel, batch_size=16 if sysChecker() == 'Linux' else args.batch_size , shuffle=True)
+            test_know_DataLoader = DataLoader(test_know_DataModel, batch_size=1, shuffle=False)
+            train_retriever_idx(args, train_know_DataLoader, knowledge_data, retriever, tokenizer)  # [TH] <topic> 추가됐으니까 재학습
+            knowledge_index = eval_know.knowledge_reindexing(args, knowledge_data, retriever).to(args.device)
 
 
     if args.do_pipeline:

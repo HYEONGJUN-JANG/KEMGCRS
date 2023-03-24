@@ -96,6 +96,8 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
     # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
     write_pkl(obj=jsonlineSave, filename=os.path.join(args.data_dir,'print','goal_jsonline_test_output.pkl'))  # 입출력 저장
     save_json_hj(args, f"{args.time}_inout", jsonlineSave, "goal")
+    del optimizer
+    torch.cuda.empty_cache()
     print('done')
 
 def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
@@ -203,6 +205,8 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
     # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
     write_pkl(obj=jsonlineSave, filename=os.path.join(args.data_dir,'print','topic_jsonline_test_output.pkl'))  # 입출력 저장
     save_json_hj(args, f"{args.time}_inout", jsonlineSave, 'topic')
+    del optimizer
+    torch.cuda.empty_cache()
     print('done')
 
 def convertDic2Tensor(dic):
