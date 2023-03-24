@@ -26,9 +26,9 @@ def main():
     args.log_name = "log_Topic PRF"
     args.task = 'goal'
     args.num_epochs = 1
-    args.do_finetune = True
-    args.do_pipeline = True
-    args.ft_type, args.ft_topic, args.ft_know = True, True, True
+    # args.do_finetune = True
+    # args.do_pipeline = True
+    # args.ft_type, args.ft_topic, args.ft_know = True, True, True
     if sysChecker() == 'Linux':
         args.home = '/home/work/CRSTEST/KEMGCRS'
         args.data_dir = os.path.join(args.home,'data')
