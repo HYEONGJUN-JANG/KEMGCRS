@@ -64,7 +64,7 @@ def parseargs():
 
     args = parser.parse_args()
     args.device = f'cuda:{args.device}' if args.device else "cpu"
-
+    args.model_dir = os.path.join(args.model_dir, args.device)
     if args.time == '': args.time = get_time_kst()
     from platform import system as sysChecker
     if sysChecker() == 'Linux':

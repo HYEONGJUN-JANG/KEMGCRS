@@ -33,7 +33,7 @@ def main():
         args.data_dir = os.path.join(args.home,'data')
         args.output_dir =  os.path.join(args.data_dir,'output')
         args.log_dir =  os.path.join(args.home,'logs')
-        args.model_dir =  os.path.join(args.home,'models')
+        args.model_dir =  os.path.join(args.home,'models',args.device)
         args.bert_saved_model_path = os.path.join(args.home, "cache", args.bert_name)
         args.batch_size = 128
         args.num_epochs = 25

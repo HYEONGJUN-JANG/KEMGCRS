@@ -20,8 +20,6 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever, token
     assert args.task == 'know'
     logger.info("Train Retriever Index")
     # For training BERT indexing
-    # train_dataloader = data_pre.dataset_reader(args, tokenizer, knowledgeDB)
-    # knowledge_index = knowledge_index.to(args.device)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(retriever.parameters(), lr=args.lr)
