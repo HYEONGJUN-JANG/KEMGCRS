@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 from data_util import batchify
 from metric import EarlyStopping
-from utils import write_pkl, save_json
+from utils import write_pkl, save_json, checkGPU
 import torch.optim as optim
 from sklearn.metrics import precision_score, recall_score, f1_score
 import logging
@@ -23,6 +23,7 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
     modelpath = os.path.join(args.model_dir, f"{args.task}_best_model.pt")
     early_stopping = EarlyStopping(patience=7, path=modelpath, verbose=True)
     logger.info("Train_Goal")
+    gpucheck=True
     for epoch in range(args.num_epochs):
         train_epoch_loss = 0
         if args.num_epochs>1:
@@ -47,6 +48,7 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
                 loss.backward()
                 optimizer.step()
                 loss.detach()
+                if gpucheck: gpucheck = checkGPU(args, logger)
 
 
         # TEST
@@ -73,6 +75,8 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
                 test_label.extend(list(map(int, type)))
                 test_labels.extend(test_label)
                 test_preds.extend(test_pred)
+
+
 
                 if save_output_mode:
                     input_text = tokenizer.batch_decode(dialog_token, skip_special_tokens=True)
@@ -109,6 +113,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
     save_output_mode = False # True일 경우 해당 epoch에서의 batch들 모아서 output으로 save
     modelpath = os.path.join(args.model_dir, f"{args.task}_best_model.pt")
     early_stopping = EarlyStopping(patience=7, path=modelpath, verbose=True)
+    gpucheck=True
     for epoch in range(args.num_epochs):
         logger.info("train epoch: {}".format(epoch))
         torch.cuda.empty_cache()
@@ -137,6 +142,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
                 loss.backward()
                 optimizer.step()
                 loss.detach()
+                if gpucheck: gpucheck = checkGPU(args, logger)
 
 
         # TEST
@@ -209,8 +215,6 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
     torch.cuda.empty_cache()
     print('done')
 
-def convertDic2Tensor(dic):
-    pass
 
 def json2txt_goal(saved_jsonlines: list) -> list:
     txtlines = []

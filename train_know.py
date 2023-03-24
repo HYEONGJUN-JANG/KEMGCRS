@@ -28,7 +28,7 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever, token
     if args.retrieve == 'freeze':
         knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
         knowledge_index = knowledge_index.to(args.device)
-
+    gpucheck=True
     for epoch in range(args.num_epochs):
         print(f"[Epoch-{epoch}]")
         logger.info(f"Train Retriever Epoch: {epoch}")
@@ -74,6 +74,7 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever, token
             print("Early stopping")
             logger.info("Early Stopping on Epoch {}, Path: {}".format(epoch, modelpath))
             break
+        if gpucheck: gpucheck = checkGPU(args, logger)
     del optimizer
     torch.cuda.empty_cache()
     # 혹시모르니까 한번 더 저장

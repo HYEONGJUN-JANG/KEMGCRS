@@ -51,7 +51,9 @@ def parseargs():
     parser.add_argument("--output_dir", default='output', type=str, help="The output directory where the model predictions and checkpoints will be written.")
     parser.add_argument("--usekg", action='store_true', help="use know_text for response")  # HJ: Know_text 를 사용하는지 여부
     parser.add_argument("--time", default='', type=str, help="Time for fileName")  # HJ : Log file middle Name
+
     parser.add_argument("--device", default='0', type=str, help="GPU Device")  # HJ : Log file middle Name
+
     parser.add_argument('--know_topk', default=3, type=int, help="Number of retrieval know text")  # HJ: Know_text retrieve Top-k
     parser.add_argument('--topic_topk', default=5, type=int, help="Number of Top-k Topics")  # HJ: Topic Top-k
     parser.add_argument('--home', default='', type=str, help="Project home directory")  # HJ: Project Home directory
@@ -66,8 +68,8 @@ def parseargs():
     parser.add_argument('--input_prompt', default='dialog', type=str, help="input_prompt")
 
     args = parser.parse_args()
-    args.device = f'cuda:{args.device}' if args.device else "cpu"
     args.model_dir = os.path.join(args.model_dir, args.device)
+    args.device = f'cuda:{args.device}' if args.device else "cpu"
     if args.time == '': args.time = get_time_kst()
     from platform import system as sysChecker
     if sysChecker() == 'Linux':
@@ -111,5 +113,11 @@ def save_json(args, filename, saved_jsonlines):
             f.write(txts[i])
 
 
+def checkGPU(args, logger=None):
+    import torch.cuda
+    logger.info('Memory Usage on {}'.format(torch.cuda.get_device_name(device=args.device)))
+    logger.info('Allocated: {} GB'.format(round(torch.cuda.memory_allocated(device=args.device)/1024**3,1)))
+    logger.info('Cached:   {} GB'.format(round(torch.cuda.memory_cached(device=args.device)/1024**3,1)))
+    return False
 if __name__ == "__main__":
     parseargs()
