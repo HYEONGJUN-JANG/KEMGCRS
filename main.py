@@ -94,22 +94,6 @@ def main():
     # train_know_DataLoader = DataLoader(train_know_DataModel, batch_size=args.batch_size, shuffle=True)
     # test_know_DataLoader = DataLoader(test_know_DataModel, batch_size=1, shuffle=False)
 
-    # TODO : type, topic , get_item 에서 dialog, type, topic, situation, profile, 각각 batchify
-
-    #
-    # task = 'know'
-    # for batch in tqdm(train_know_DataLoader, desc=f"{task}_Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-    #     cbdicKeys=['dialog_token', 'dialog_mask', 'response', 'type', 'topic']
-    #     if task=='know': cbdicKeys+=['candidate_indice']
-    #     context_batch = batchify(args, batch, tokenizer, task='know')
-    #     dialog_token, dialog_mask, response, type, topic, candidate_indice = [context_batch[i] for i in cbdicKeys]
-
-
-    ## Pipeline
-    # for batch in tqdm(train_know_DataLoader, desc="Know_Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-    #     batch['type'] = new_pred_goal
-    #     batch['topic'] = new_pred_topic
-
 
     # TODO: retriever 로 바꿔서 save 와 load
     retriever = models.Retriever(args, bert_model1, bert_model2)

@@ -72,5 +72,9 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever, token
         print('LOSS:\t%.4f' % total_loss)
         logger.info('LOSS:\t%.4f' % total_loss)
         early_stopping(round(10000 - int(total_loss), 3), retriever)
-
+        if early_stopping.early_stop:
+            print("Early stopping")
+            logger.info("Early Stopping on Epoch {}, Path: {}".format(epoch, modelpath))
+            break
+    # 혹시모르니까 한번 더 저장
     torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식

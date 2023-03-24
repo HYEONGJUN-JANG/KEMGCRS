@@ -3,7 +3,7 @@ from torch import save as saveTorch
 
 class EarlyStopping:
     """주어진 patience 이후로 validation loss가 개선되지 않으면 학습을 조기 중지"""
-    def __init__(self, patience=6, verbose=False, delta=0.003, path='checkpoint.pt'):
+    def __init__(self, patience=7, verbose=False, delta=0.004, path='checkpoint.pt'):
         """
         Args:
             patience (int): validation score 가 개선된 후 기다리는 기간 | Default: 7
@@ -36,7 +36,7 @@ class EarlyStopping:
 
     def save_checkpoint(self, score, model):
         '''validation loss가 감소하면 모델을 저장한다.'''
-        if self.verbose: print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {score:.6f}).  Saving model ... in {self.path}')
+        if self.verbose: print(f'Validation score increased ({self.val_loss_min:.6f} --> {score:.6f}).  Saving model ... in {self.path}')
         saveTorch(model.state_dict(), self.path)
         self.val_loss_min = score
 
