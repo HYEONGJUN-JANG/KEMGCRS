@@ -37,7 +37,7 @@ class EarlyStopping:
 
     def save_checkpoint(self, score, model):
         '''validation loss가 감소하면 모델을 저장한다.'''
-        if self.verbose: print(f'Validation score increased ({self.val_loss_min:.6f} --> {score:.6f}).  Saving model ... in {self.path}')
+        if self.verbose: print(f'Use EarlyStop: {self.args.earlystop} || Validation score increased ({self.val_loss_min:.6f} --> {score:.6f}).  Saving model ... in {self.path}')
         saveTorch(model.state_dict(), self.path)
         self.val_loss_min = score
 
