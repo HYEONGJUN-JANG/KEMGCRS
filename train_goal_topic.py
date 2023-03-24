@@ -13,13 +13,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
+    assert args.task == 'type'
     criterion = nn.CrossEntropyLoss().to(args.device)
     optimizer = optim.Adam(retriever.parameters(), lr=args.lr)
     jsonlineSave = []
     TotalLoss = 0
     checkf1=0
     save_output_mode = False # True일 경우 해당 epoch에서의 batch들 모아서 output으로 save
-    modelpath = os.path.join(args.model_dir, 'type_best_model.pt')
+    modelpath = os.path.join(args.model_dir, f"{args.task}_best_model.pt")
     early_stopping = EarlyStopping(patience=7, path=modelpath, verbose=True)
     logger.info("Train_Goal")
     for epoch in range(args.num_epochs):
@@ -98,12 +99,13 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
     print('done')
 
 def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
+    assert args.task == 'topic'
     criterion = nn.CrossEntropyLoss().to(args.device)
     optimizer = optim.Adam(retriever.parameters(), lr=args.lr)
     jsonlineSave = []
     TotalLoss = 0
     save_output_mode = False # True일 경우 해당 epoch에서의 batch들 모아서 output으로 save
-    modelpath = os.path.join(args.model_dir, 'topic_best_model.pt')
+    modelpath = os.path.join(args.model_dir, f"{args.task}_best_model.pt")
     early_stopping = EarlyStopping(patience=7, path=modelpath, verbose=True)
     for epoch in range(args.num_epochs):
         logger.info("train epoch: {}".format(epoch))

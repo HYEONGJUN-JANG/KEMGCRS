@@ -17,6 +17,7 @@ def update_moving_average(ma_model, current_model):
         ma_params.data = decay * old_weight + (1 - decay) * up_weight
 
 def train_retriever_idx(args, train_dataloader, knowledge_data, retriever, tokenizer):
+    assert args.task == 'know'
     logger.info("Train Retriever Index")
     # For training BERT indexing
     # train_dataloader = data_pre.dataset_reader(args, tokenizer, knowledgeDB)
