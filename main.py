@@ -21,24 +21,11 @@ import metric
 def main():
     # HJ 작업 --> 형준 여기서만 작업
     args = parseargs()
-    args.data_cache = True
-    args.batch_size = 4
-    args.log_name = "log_Topic PRF"
-    args.task = 'goal'
-    args.num_epochs = 2
-    args.do_finetune = True
     # args.do_pipeline = True
     # args.ft_type, args.ft_topic, args.ft_know = True, True, True
     if sysChecker() == 'Linux':
-        args.home = '/home/work/CRSTEST/KEMGCRS'
-        args.data_dir = os.path.join(args.home,'data')
-        args.output_dir =  os.path.join(args.data_dir,'output')
-        args.log_dir =  os.path.join(args.home,'logs')
-        args.model_dir =  os.path.join(args.home,'models',args.device)
-        args.bert_saved_model_path = os.path.join(args.home, "cache", args.bert_name)
-        args.batch_size = 128
-        args.num_epochs = 25
         pass  # HJ KT-server
+
     args.bert_cache_name = os.path.join(args.home, "cache", args.bert_name)
 
     checkPath(args.log_dir)
