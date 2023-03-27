@@ -10,6 +10,7 @@ from utils import write_pkl, save_json, checkGPU
 import torch.optim as optim
 from sklearn.metrics import precision_score, recall_score, f1_score
 import logging
+
 logger = logging.getLogger(__name__)
 
 def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
