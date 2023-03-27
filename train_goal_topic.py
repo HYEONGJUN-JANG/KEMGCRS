@@ -22,7 +22,9 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
     checkf1=0
     save_output_mode = False # True일 경우 해당 epoch에서의 batch들 모아서 output으로 save
     # modelpath = os.path.join(args.model_dir, f"{args.task}_best_model.pt")
+
     modelpath = os.path.join(args.model_dir, f"{args.task}_best_bart_model.pt") if args.usebart else os.path.join(args.model_dir, f"{args.task}_best_model.pt")
+
     early_stopping = EarlyStopping(args, patience=7, path=modelpath, verbose=True)
     logger.info("Train_Goal")
     gpucheck=True
