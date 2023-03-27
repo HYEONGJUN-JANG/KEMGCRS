@@ -92,7 +92,7 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
         logger.info("{} Epoch: {}, Train Loss: {}, Test Loss: {}, P/R/F: {}/{}/{}".format(args.task, epoch, train_epoch_loss, test_loss, p, r, f))
         TotalLoss += train_epoch_loss / len(train_dataloader)
         early_stopping(f, retriever)
-        if early_stopping.early_stop:
+        if early_stopping.early_stop and args.earlystop:
             print("Early stopping")
             logger.info("Early Stopping on Epoch {}, Path: {}".format(epoch, modelpath))
             break
@@ -203,7 +203,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
         logger.info("Test Hit@5: {}".format(test_hit5))
         TotalLoss += train_epoch_loss / len(train_dataloader)
         early_stopping(test_hit5, retriever)
-        if early_stopping.early_stop:
+        if early_stopping.early_stop and args.earlystop:
             print("Early stopping")
             logger.info("Early Stopping on Epoch {}, Path: {}".format(epoch, modelpath))
             break
