@@ -98,6 +98,7 @@ def batchify(args, batch, tokenizer=None, task=''):
     for k, v in context_batch.items():
         if not isinstance(v, torch.Tensor):
             context_batch[k] = torch.as_tensor(v, device=args.device)
+            # context_batch[k] = torch.as_tensor(v)
     return context_batch
     # Tensor[dialog_token, dialog_mask, response, type, topic, candidate_indice(Optional)]
 

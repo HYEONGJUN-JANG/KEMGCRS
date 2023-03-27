@@ -37,7 +37,13 @@ def parseargs():
     parser.add_argument('--k_DB_name', default='all_knowledge_DB.pickle', type=str, help="knowledge DB file name in data_dir")
     parser.add_argument('--k_idx_name', default='knowledge_index.npy', type=str, help="knowledge index file name in data_dir")
 
-    parser.add_argument('--bert_name', default='bert-base-uncased', type=str, help="BERT Model Name")
+    ## Model BERT or BART
+    parser.add_argument("--usebart", action='store_true', help="Whether to Use BART for Query Encoder.")
+    parser.add_argument('--kencoder_name', default='bert-base-uncased', type=str, help="Knowledge Encoder Model Name")
+    parser.add_argument('--qencoder_name', default='facebook/bart-base', type=str, help="Query Encoder Model Name")
+
+    parser.add_argument('--bart_name', default='facebook/bart-base', type=str, help="BERT Model Name")
+
     parser.add_argument('--model_name', default='myretriever', type=str, help="BERT Model Name")
 
     parser.add_argument('--pretrained_model', default='bert_model.pt', type=str, help="Pre-trained Retriever BERT Model Name")
@@ -81,7 +87,7 @@ def parseargs():
         args.log_dir = os.path.join(args.home, 'logs')
         args.model_dir = os.path.join(args.home, 'models', args.device)
         args.bert_saved_model_path = os.path.join(args.home, "cache", args.bert_name)
-        args.batch_size = 128
+        args.batch_size = 64
         args.num_epochs = 25
         pass  # HJ KT-server
     elif sysChecker() == "Windows":
@@ -96,7 +102,8 @@ def parseargs():
         print("Check Your Platform Setting");
         exit()
 
-    args.bert_cache_name = os.path.join(args.home, "cache", args.bert_name)
+    args.usebart = True
+    args.bert_cache_name = os.path.join(args.home, "cache", args.kencoder_name)
 
     return args
 
