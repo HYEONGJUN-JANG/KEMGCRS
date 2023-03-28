@@ -221,7 +221,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
                         jsonlineSave.append(
                             {'input':input_text[i], 'pred': pred_topic_text[i],'pred5': pred_top5_texts[i], 'target':target_topic_text[i], 'correct':correct[i], 'response': real_resp[i], 'goal_type': goal_type[i]}
                         )
-        p,r,f = round(precision_score(test_labels, test_preds, average='weighted', zero_division=0), 3), round(recall_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(f1_score(test_labels, test_preds, average='macro', zero_division=0), 3)
+        p,r,f = round(precision_score(test_labels, test_preds, average='weighted', zero_division=0), 3), round(recall_score(test_labels, test_preds, average='weighted', zero_division=0), 3), round(f1_score(test_labels, test_preds, average='weighted', zero_division=0), 3)
         topic_eval(test_labels_token, test_preds_token)
         test_hit5 = round(test_pred_at5_tfs.count(True)/len(test_pred_at5_tfs),3)
         test_hit1 = np.average(test_pred_at1_tfs)
