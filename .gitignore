@@ -132,3 +132,6 @@ dmypy.json
 /logs/
 /models/
 .idea/
+*.bin
+*.pt
+*.pkl
