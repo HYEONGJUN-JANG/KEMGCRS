@@ -318,8 +318,8 @@ def save_json_hj(args, filename, saved_jsonlines, task):
         saved_jsonlines: Key-value dictionary ( goal_type(str), topic(str), tf(str), dialog(str), target(str), response(str) predict5(list)
     Returns: None
     '''
-    if task=='goal': txts = json2txt_goal(saved_jsonlines, args.use_bart)
-    elif task=='topic': txts = json2txt_topic(saved_jsonlines, args.use_bart)
+    if task=='goal': txts = json2txt_goal(saved_jsonlines, args.usebart)
+    elif task=='topic': txts = json2txt_topic(saved_jsonlines, args.usebart)
     else: return
     path = os.path.join(args.data_dir, 'print')
     if not os.path.exists(path): os.makedirs(path)
