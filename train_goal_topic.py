@@ -33,7 +33,7 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
         if args.num_epochs>1:
             torch.cuda.empty_cache()
             cnt = 0
-            if epoch>=4: save_output_mode=True
+            if epoch>=args.num_epochs-1: save_output_mode=True
             # TRAIN
             print("Train")
             #### return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'target_knowledge': target_knowledge, 'goal_type': goal_type, 'response': response, 'topic': topic, 'user_profile':user_profile, 'situation':situation}
@@ -44,9 +44,13 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
                 context_batch = batchify(args, batch, tokenizer, task=args.task)
                 dialog_token, dialog_mask, response, type, topic = [context_batch[i] for i in cbdicKeys]
                 targets = type
-
-                dot_score = retriever.goal_selection(dialog_token, dialog_mask)
+                if args.usebart:
+                    gen_labels = context_batch['label']
+                    gen_loss, dot_score = retriever.goal_selection(dialog_token, dialog_mask, gen_labels)
+                else:
+                    dot_score = retriever.goal_selection(dialog_token, dialog_mask)
                 loss = criterion(dot_score, targets)
+                if args.usebart: loss += gen_loss
                 train_epoch_loss += loss
                 optimizer.zero_grad()
                 loss.backward()
@@ -59,6 +63,10 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
         # TEST
         test_labels = []
         test_preds = []
+
+        # test_inputs = []
+        test_gens = []
+
         test_loss = 0
         print("TEST")
         torch.cuda.empty_cache()
@@ -71,26 +79,44 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
                 dialog_token, dialog_mask, response, type, topic = [context_batch[i] for i in cbdicKeys]
                 batch_size = dialog_token.size(0)
                 targets = type
-
-                dot_score = retriever.goal_selection(dialog_token, dialog_mask)
+                if args.usebart:
+                    gen_labels = context_batch['label']
+                    gen_loss, dot_score = retriever.goal_selection(dialog_token, dialog_mask, gen_labels)
+                else:
+                    dot_score = retriever.goal_selection(dialog_token, dialog_mask)
                 loss = criterion(dot_score, targets)
+                if args.usebart: loss += gen_loss
                 test_loss += loss
                 test_pred, test_label=[],[]
                 test_pred.extend(list(map(int, dot_score.argmax(1))))
+
                 test_label.extend(list(map(int, type)))
                 test_labels.extend(test_label)
                 test_preds.extend(test_pred)
 
-
-
-
+                if args.usebart:
+                    generated_ids = retriever.query_bert.generate(
+                        input_ids=dialog_token,
+                        attention_mask=dialog_mask,
+                        num_beams=1,
+                        max_length=32,
+                        # repetition_penalty=2.5,
+                        # length_penalty=1.5,
+                        early_stopping=True,
+                    )
+                    # test_inputs.extend([tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=True) for g in dialog_token])
+                    test_gen=[tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=True) for g in generated_ids]
+                    test_gens.extend(test_gen)
                 if save_output_mode:
                     input_text = tokenizer.batch_decode(dialog_token, skip_special_tokens=True)
                     target_goal_text = [args.goalDic['int'][idx] for idx in test_label]  # target goal
                     pred_goal_text = [args.goalDic['int'][idx] for idx in test_pred]
                     correct = [p==l for p,l in zip(test_pred, test_label)]
                     for i in range(batch_size):
-                        jsonlineSave.append({'input':input_text[i], 'pred_goal': pred_goal_text[i], 'target_goal':target_goal_text[i], 'correct':correct[i]})
+                        if args.usebart:
+                            jsonlineSave.append({'input':input_text[i], 'pred_goal': pred_goal_text[i],'gen_goal': test_gen[i], 'target_goal':target_goal_text[i], 'correct':correct[i]})
+                        else:
+                            jsonlineSave.append({'input':input_text[i], 'pred_goal': pred_goal_text[i], 'target_goal':target_goal_text[i], 'correct':correct[i]})
         p, r, f = round(precision_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(recall_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(f1_score(test_labels, test_preds, average='macro', zero_division=0), 3)
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
         print(f"Train samples: {cnt}, Test samples: {len(test_labels)}")
@@ -143,8 +169,15 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
                 targets = topic
 
 
-                dot_score = retriever.topic_selection(dialog_token, dialog_mask)
+                # dot_score = retriever.topic_selection(dialog_token, dialog_mask)
+                if args.usebart:
+                    gen_labels = context_batch['label']
+                    gen_loss, dot_score = retriever.topic_selection(dialog_token, dialog_mask, gen_labels)
+                else:
+                    dot_score = retriever.topic_selection(dialog_token, dialog_mask)
+
                 loss = criterion(dot_score, targets)
+                if args.usebart: loss += gen_loss
                 train_epoch_loss += loss
                 optimizer.zero_grad()
                 loss.backward()
@@ -160,6 +193,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
         test_pred_at5s=[]
         test_pred_at5_tfs=[]
         test_loss = 0
+        test_gens = []
         print("TEST")
         # torch.cuda.empty_cache()
         retriever.eval()
@@ -179,8 +213,13 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
                 test_label = list(map(int,targets))
                 test_labels.extend(test_label)
                 # user_profile = batch['user_profile']
+                if args.usebart:
+                    gen_labels = context_batch['label']
+                    gen_loss, dot_score = retriever.topic_selection(dialog_token, dialog_mask, gen_labels)
+                else:
+                    dot_score = retriever.topic_selection(dialog_token, dialog_mask)
 
-                dot_score = retriever.topic_selection(dialog_token, dialog_mask)
+                # dot_score = retriever.topic_selection(dialog_token, dialog_mask)
                 loss = criterion(dot_score, targets)
                 test_loss += loss
                 # test_preds.extend(list(map(int, dot_score.argmax(1))))
@@ -191,6 +230,21 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
                 correct = [p==l for p,l in zip(test_pred, test_label)]
                 correct_at5 = [l in p for p,l in zip(test_pred_at5, test_label)]
                 test_pred_at5_tfs.extend(correct_at5)
+
+                if args.usebart:
+                    generated_ids = retriever.query_bert.generate(
+                        input_ids=dialog_token,
+                        attention_mask=dialog_mask,
+                        num_beams=1,
+                        max_length=32,
+                        # repetition_penalty=2.5,
+                        # length_penalty=1.5,
+                        early_stopping=True,
+                    )
+                    # test_inputs.extend([tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=True) for g in dialog_token])
+                    test_gen=[tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=True) for g in generated_ids]
+                    test_gens.extend(test_gen)
+
                 if save_output_mode:
                     input_text = tokenizer.batch_decode(dialog_token)
                     target_topic_text = [args.topicDic['int'][idx] for idx in test_labels]  # target goal
@@ -198,9 +252,8 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
                     pred_top5_texts = [[args.topicDic['int'][idx] for idx in top5_idxs] for top5_idxs in test_pred_at5]
                     real_resp = tokenizer.batch_decode(response, skip_special_tokens=True)
                     for i in range(batch_size):
-                        jsonlineSave.append(
-                            {'input':input_text[i], 'pred': pred_topic_text[i],'pred5': pred_top5_texts[i], 'target':target_topic_text[i], 'correct':correct[i], 'response': real_resp[i], 'goal_type': goal_type[i]}
-                        )
+                        if args.usebart: jsonlineSave.append({'input':input_text[i], 'pred': pred_topic_text[i],'gen_pred':test_gen ,'pred5': pred_top5_texts[i], 'target':target_topic_text[i], 'correct':correct[i], 'response': real_resp[i], 'goal_type': goal_type[i]})
+                        else: jsonlineSave.append({'input':input_text[i], 'pred': pred_topic_text[i],'pred5': pred_top5_texts[i], 'target':target_topic_text[i], 'correct':correct[i], 'response': real_resp[i], 'goal_type': goal_type[i]})
         p,r,f = round(precision_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(recall_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(f1_score(test_labels, test_preds, average='macro', zero_division=0), 3)
         test_hit5 = round(test_pred_at5_tfs.count(True)/len(test_pred_at5_tfs),3)
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
@@ -226,23 +279,25 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
     print('done')
 
 
-def json2txt_goal(saved_jsonlines: list) -> list:
+def json2txt_goal(saved_jsonlines: list, usebart) -> list:
     txtlines = []
     for js in saved_jsonlines:  # TODO: Movie recommendation, Food recommendation, POI recommendation, Music recommendation, Q&A, Chat about stars
         # {'input':input_text[i], 'pred_goal': pred_goal_text[i], 'target_goal':target_goal_text[i], 'correct':correct[i]}
         dialog, pred_goal, target_goal, tf  = js['input'], js['pred_goal'], js['target_goal'], js['correct']
-        txt = f"\n---------------------------\n[Target Goal]: {target_goal}\t[Pred Goal]: {pred_goal}\t[TF]: {tf}\n[Dialog]"
+        if usebart: txt = f"\n---------------------------\n[Target Goal]: {target_goal}\t[Pred Goal]: {pred_goal}\t[Generated Goal]: {js['gen_goal']}\t[TF]: {tf}\n[Dialog]"
+        else: txt = f"\n---------------------------\n[Target Goal]: {target_goal}\t[Pred Goal]: {pred_goal}\t[TF]: {tf}\n[Dialog]"
         for i in dialog.replace("user :", '|user :').replace("system :", "|system : ").split('|'):
             txt += f"{i}\n"
         txtlines.append(txt)
     return txtlines
 
-def json2txt_topic(saved_jsonlines: list) -> list:
+def json2txt_topic(saved_jsonlines: list, usebart) -> list:
     txtlines = []
     for js in saved_jsonlines:  # TODO: Movie recommendation, Food recommendation, POI recommendation, Music recommendation, Q&A, Chat about stars
         # {'input':input_text[i], 'pred': pred_topic_text[i], 'target':target_topic_text[i], 'correct':correct[i], 'response': real_resp[i], 'goal_type': goal_type[i]}
         dialog, pred, pred5, target, tf, response,goal_type = js['input'], js['pred'],js['pred5'], js['target'], js['correct'], js['response'], js['goal_type']
-        txt = f"\n---------------------------\n[Goal]: {goal_type}\t[Target Topic]: {target}\t[Pred Topic]: {pred}\t[TF]: {tf}\n[pred_top5]\n"
+        if usebart: txt = f"\n---------------------------\n[Goal]: {goal_type}\t[Target Topic]: {target}\t[Pred Topic]: {pred}\t[Generated Topic]: {js['gen_pred']}\t [TF]: {tf}\n[pred_top5]\n"
+        else: txt = f"\n---------------------------\n[Goal]: {goal_type}\t[Target Topic]: {target}\t[Pred Topic]: {pred}\t[TF]: {tf}\n[pred_top5]\n"
         for i in pred5:
             txt+=f"{i}\n"
         txt+='[Dialog]\n'
@@ -258,8 +313,8 @@ def save_json_hj(args, filename, saved_jsonlines, task):
         saved_jsonlines: Key-value dictionary ( goal_type(str), topic(str), tf(str), dialog(str), target(str), response(str) predict5(list)
     Returns: None
     '''
-    if task=='goal': txts = json2txt_goal(saved_jsonlines)
-    elif task=='topic': txts = json2txt_topic(saved_jsonlines)
+    if task=='goal': txts = json2txt_goal(saved_jsonlines, args.use_bart)
+    elif task=='topic': txts = json2txt_topic(saved_jsonlines, args.use_bart)
     else: return
     path = os.path.join(args.data_dir, 'print')
     if not os.path.exists(path): os.makedirs(path)

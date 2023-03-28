@@ -95,16 +95,18 @@ def parseargs():
         args.batch_size = 4
         args.log_name = "log_Topic PRF"
         args.task = 'goal'
-        args.num_epochs = 2
+        args.num_epochs = 1
         args.do_finetune = True
         pass  # HJ local
     else:
         print("Check Your Platform Setting");
         exit()
-
-    args.usebart = True
     args.bert_cache_name = os.path.join(args.home, "cache", args.kencoder_name)
 
+    args.usebart = True
+    args.do_finetune=True
+    # args.ft_type=True
+    args.ft_topic=True
     return args
 
 
