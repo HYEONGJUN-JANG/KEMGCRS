@@ -110,11 +110,11 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
                     test_gens.extend(test_gen)
                     target_goal_text = [args.goalDic['int'][idx] for idx in test_label]
                     target_goal_texts.extend(target_goal_text)
+                    correct = [p==l for p,l in zip(test_pred, test_label)]
                 if save_output_mode:
                     input_text = tokenizer.batch_decode(dialog_token, skip_special_tokens=True)
                     # target_goal_text = [args.goalDic['int'][idx] for idx in test_label]  # target goal
                     pred_goal_text = [args.goalDic['int'][idx] for idx in test_pred]
-                    correct = [p==l for p,l in zip(test_pred, test_label)]
                     for i in range(batch_size):
                         if args.usebart: jsonlineSave.append({'input':input_text[i], 'pred_goal': pred_goal_text[i],'gen_goal': test_gen[i], 'target_goal':target_goal_text[i], 'correct':correct[i]})
                         else: jsonlineSave.append({'input':input_text[i], 'pred_goal': pred_goal_text[i], 'target_goal':target_goal_text[i], 'correct':correct[i]})
