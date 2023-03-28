@@ -34,7 +34,6 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever, token
         logger.info(f"Train Retriever Epoch: {epoch}")
         total_loss = 0
         for batch in tqdm(train_dataloader, desc="Knowledge Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-
             if isinstance(train_dataloader.dataset, DialogDataset_TEMP):
                 if args.task == 'know':
                     cbdicKeys = ['dialog_token', 'dialog_mask', 'response', 'type', 'topic']

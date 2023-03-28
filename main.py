@@ -78,8 +78,8 @@ def main():
     conversation_test_sample = data_temp.dataset_reader_raw_temp(args, qtokenizer, knowledgeDB, data_name='test')
 
     # Type, Topic 용 datamodel 예시
-    train_type_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, ktokenizer, task='type', mode='train')
-    train_type_DataLoader = DataLoader(train_type_DataModel, batch_size=args.batch_size, shuffle=True)
+    # train_type_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, ktokenizer, task='topic', mode='train')
+    # train_type_DataLoader = DataLoader(train_type_DataModel, batch_size=args.batch_size, shuffle=True)
 
     # test_type_DataModel = data_temp.DialogDataset_TEMP(args, conversation_test_sample, knowledgeDB, ktokenizer, task='type',mode='test')
     # test_type_DataLoader = DataLoader(test_type_DataModel, batch_size=args.batch_size, shuffle=True)
@@ -90,7 +90,7 @@ def main():
     # test_know_DataModel = data_temp.DialogDataset_TEMP(args, conversation_test_sample, knowledgeDB, ktokenizer, task='know', mode='test')
     # train_know_DataLoader = DataLoader(train_know_DataModel, batch_size=args.batch_size, shuffle=True)
     # test_know_DataLoader = DataLoader(test_know_DataModel, batch_size=1, shuffle=False)
-
+    args.task = 'topic'
     args.ft_type=False
     # TODO: retriever 로 바꿔서 save 와 load
     retriever = models.Retriever(args, kencoder, qencoder)

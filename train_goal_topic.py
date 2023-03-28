@@ -175,7 +175,8 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
                 if args.task == 'know':
                     cbdicKeys += ['candidate_indice']
                     dialog_token, dialog_mask, response, type, topic, candidate_indice = [context_batch[i] for i in cbdicKeys]
-                else: dialog_token, dialog_mask, response, type, topic, topic_idx = [context_batch[i] for i in cbdicKeys]
+                else:
+                    dialog_token, dialog_mask, response, type, topic, topic_idx = [context_batch[i] for i in cbdicKeys]
                 batch_size = dialog_token.size(0)
                 goal_type = [args.goalDic['int'][int(i)] for i in type]
                 targets = topic_idx
@@ -202,7 +203,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
                 test_labels_token.extend(
                     [tokenizer.decode(gid, skip_special_tokens=True, clean_up_tokenization_spaces=True) for gid in
                      topic])
-
+                topic_eval(test_labels_token, test_preds_token)
                 loss = criterion(dot_score, targets)
                 test_loss += loss
                 # test_preds.extend(list(map(int, dot_score.argmax(1))))

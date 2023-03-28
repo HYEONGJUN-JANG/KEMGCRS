@@ -69,24 +69,46 @@ def batchify(args, batch, tokenizer=None, task=''):
     suffix_list=[]
     for i in range(len(dialog)): # batch 수 만큼
         suffix = ' '
-        if task == 'type': suffix = tokenizer.sep_token
-        elif task == 'topic': suffix = tokenizer.sep_token + '<type>' + type[i] + '<user_profile>' + user_profile[i]
-        elif task == 'know' :
+        if task == 'type':
+            suffix = tokenizer.sep_token
+        elif task == 'topic':
+            suffix = '<type>' + type[i] + '<user_profile>' + user_profile[i]
+        elif task == 'know':
             if isinstance(topic[i], list): topic[i] = ','.join(topic[i])
-            suffix = tokenizer.sep_token + '<situation>' + situation[i] + '<type>' + type[i] + '<topic>' + topic[i]
+            suffix = tokenizer.sep_token + '<situation>' + situation[i] + '<type>' + type[i] + '<topic>' + topic[i] + "predict the next goal:"
         else : # Rescponse
             pass
         suffix_list.append(suffix)
 
-    tokenized_dialog = tokenizer(dialog, add_special_tokens=False)
-    tokenized_suffix = tokenizer(suffix_list, add_special_tokens=False, max_length=args.max_length//4, truncation=True)
+    input_sentences = [s+'<dialog>'+d for d, s in zip(dialog, suffix_list)]
+    input_sentences = tokenizer(input_sentences, add_special_tokens=False).input_ids
+    topic_prompt = tokenizer.encode('predict the next goal: ')[1:]
+    input_sentences = [[tokenizer.cls_token_id] + sentence[-args.max_length+len(topic_prompt)+1:] + topic_prompt for sentence in input_sentences]
+    input_sentences = [input_ids + [tokenizer.pad_token_id] * (args.max_length-len(input_ids)) for input_ids in input_sentences]
 
+
+
+    # suffix_list_token = tokenizer(suffix_list, add_special_tokens=False)
+    # dialog_list_token = tokenizer(dialog, add_special_tokens=False)
+    # input_token = [tokenizer.cls_token + s+d + " predict the next topic:" + tokenizer.eos_token for s, d in zip(suffix_list_token.input_ids, dialog_list_token.input_ids)]
+    # input_encoding = tokenizer(input_token)
+    context_batch['dialog_token'] = torch.LongTensor(input_sentences).to(args.device)
+    attention_mask = context_batch['dialog_token'].ne(tokenizer.pad_token_id)
+    context_batch['dialog_mask'] = attention_mask
+
+    # tokenized_dialog = tokenizer(input_token, truncation=True, padding='max_length', max_length=args.max_length)
+    # tokenized_dialog = tokenizer(dialog, add_special_tokens=False)
+    # tokenized_suffix = tokenizer(suffix_list, add_special_tokens=False, max_length=args.max_length//4, truncation=True)
+    # truncationPadding
     context_batch['response'] = tokenizer(response, add_special_tokens=True, max_length=args.max_length, padding='max_length', truncation=True).input_ids
-    context_batch['dialog_token'] = [truncationPadding(input_ids=dialog_inputids, prefix=[tokenizer.cls_token_id], suffix=suffix_inputids, max_length=args.max_length) for dialog_inputids, suffix_inputids in zip(tokenized_dialog.input_ids, tokenized_suffix.input_ids)]
-    context_batch['dialog_mask'] = [truncationPadding(input_ids=dialoginputids, prefix=[1], suffix=suffix_inputids, max_length=args.max_length) for dialoginputids, suffix_inputids in zip(tokenized_dialog.attention_mask, tokenized_suffix.attention_mask)]
+    # context_batch['dialog_token'] = [truncationPadding(input_ids=dialog_inputids, prefix=[tokenizer.cls_token_id], suffix=suffix_inputids, max_length=args.max_length) for dialog_inputids, suffix_inputids in zip(tokenized_dialog.input_ids, tokenized_suffix.input_ids)]
+    # context_batch['dialog_mask'] = [truncationPadding(input_ids=dialoginputids, prefix=[1], suffix=suffix_inputids, max_length=args.max_length) for dialoginputids, suffix_inputids in zip(tokenized_dialog.attention_mask, tokenized_suffix.attention_mask)]
+    # context_batch['dialog_token'] = tokenized_dialog.input_ids
+    # context_batch['dialog_mask'] = tokenized_dialog.attention_mask
+
     context_batch['type'] = [args.goalDic['str'][i] for i in type]  # index로 바꿈
     context_batch['topic_idx'] = [args.topicDic['str'][i] for i in topic]  # index로 바꿈
-    context_batch['topic'] = tokenizer(topic, add_special_tokens=False, padding=True).input_ids
+    context_batch['topic'] = tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
     # context_batch['topic'] = [[token_id if token_id != tokenizer.pad_token_id else -100 for token_id in topic] for topic
     #               in context_batch['topic']]
 
