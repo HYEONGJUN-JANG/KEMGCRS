@@ -143,10 +143,9 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
                 batch_size = dialog_token.size(0)
                 targets = topic_idx
 
-
-                # dot_score = retriever.topic_selection(dialog_token, dialog_mask)
-                # loss = criterion(dot_score, targets)
-                loss = retriever.topic_generation(dialog_token, dialog_mask, topic)
+                dot_score = retriever.topic_selection(dialog_token, dialog_mask)
+                loss = criterion(dot_score, targets)
+                # loss = retriever.topic_generation(dialog_token, dialog_mask, topic)
 
                 train_epoch_loss += loss.item()
                 optimizer.zero_grad()
