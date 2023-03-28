@@ -25,13 +25,14 @@ class Retriever(nn.Module):
             nn.ReLU(),
             nn.Linear(self.q_hidden_size, args.goal_num)
         )
-        self.topic_proj = nn.Sequential(
-            nn.Linear(self.q_hidden_size, self.q_hidden_size // 2),
-            nn.ReLU(),
-            nn.Linear(self.q_hidden_size // 2, self.q_hidden_size),
-            nn.ReLU(),
-            nn.Linear(self.q_hidden_size, args.topic_num)
-        )
+        # self.topic_proj = nn.Sequential(
+        #     nn.Linear(self.q_hidden_size, self.q_hidden_size // 2),
+        #     nn.ReLU(),
+        #     nn.Linear(self.q_hidden_size // 2, self.q_hidden_size),
+        #     nn.ReLU(),
+        #     nn.Linear(self.q_hidden_size, args.topic_num)
+        # )
+        self.topic_proj = nn.Linear(self.q_hidden_size, args.topic_num)
 
 
     def forward(self, token_seq, mask):

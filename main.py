@@ -91,7 +91,7 @@ def main():
     # train_know_DataLoader = DataLoader(train_know_DataModel, batch_size=args.batch_size, shuffle=True)
     # test_know_DataLoader = DataLoader(test_know_DataModel, batch_size=1, shuffle=False)
 
-
+    args.ft_type=False
     # TODO: retriever 로 바꿔서 save 와 load
     retriever = models.Retriever(args, kencoder, qencoder)
     retriever = retriever.to(args.device)
