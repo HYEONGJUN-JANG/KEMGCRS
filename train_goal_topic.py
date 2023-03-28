@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
     assert args.task == 'type'
     criterion = nn.CrossEntropyLoss().to(args.device)
-    optimizer = optim.Adam(retriever.parameters(), lr=args.lr)
+    optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
     jsonlineSave = []
     TotalLoss = 0
     checkf1=0
