@@ -67,7 +67,7 @@ def batchify(args, batch, tokenizer=None, task=''):
     for i in range(len(dialog)): # batch 수 만큼
         suffix = ' '
         if task == 'type': suffix = tokenizer.sep_token + 'predict next type: '
-        elif task == 'topic': suffix = tokenizer.sep_token + '<type>' + type[i] + '<user_profile>' + user_profile[i] + 'predict next topic: '
+        elif task == 'topic': suffix = tokenizer.sep_token + '<type>' + type[i] + '<user_profile>' + user_profile[i] + tokenizer.sep_token +'predict next topic: '
         elif task == 'know' :
             if isinstance(topic[i], list): topic[i] = ','.join(topic[i])
             suffix = tokenizer.sep_token + '<situation>' + situation[i] + '<type>' + type[i] + '<topic>' + topic[i]

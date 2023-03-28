@@ -65,6 +65,7 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
         test_preds = []
 
         # test_inputs = []
+        target_goal_texts = []
         test_gens = []
 
         test_loss = 0
@@ -107,21 +108,23 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
                     # test_inputs.extend([tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=True) for g in dialog_token])
                     test_gen=[tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=True) for g in generated_ids]
                     test_gens.extend(test_gen)
+                    target_goal_text = [args.goalDic['int'][idx] for idx in test_label]
+                    target_goal_texts.extend(target_goal_text)
                 if save_output_mode:
                     input_text = tokenizer.batch_decode(dialog_token, skip_special_tokens=True)
-                    target_goal_text = [args.goalDic['int'][idx] for idx in test_label]  # target goal
+                    # target_goal_text = [args.goalDic['int'][idx] for idx in test_label]  # target goal
                     pred_goal_text = [args.goalDic['int'][idx] for idx in test_pred]
                     correct = [p==l for p,l in zip(test_pred, test_label)]
                     for i in range(batch_size):
-                        if args.usebart:
-                            jsonlineSave.append({'input':input_text[i], 'pred_goal': pred_goal_text[i],'gen_goal': test_gen[i], 'target_goal':target_goal_text[i], 'correct':correct[i]})
-                        else:
-                            jsonlineSave.append({'input':input_text[i], 'pred_goal': pred_goal_text[i], 'target_goal':target_goal_text[i], 'correct':correct[i]})
+                        if args.usebart: jsonlineSave.append({'input':input_text[i], 'pred_goal': pred_goal_text[i],'gen_goal': test_gen[i], 'target_goal':target_goal_text[i], 'correct':correct[i]})
+                        else: jsonlineSave.append({'input':input_text[i], 'pred_goal': pred_goal_text[i], 'target_goal':target_goal_text[i], 'correct':correct[i]})
         p, r, f = round(precision_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(recall_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(f1_score(test_labels, test_preds, average='macro', zero_division=0), 3)
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
         print(f"Train samples: {cnt}, Test samples: {len(test_labels)}")
         print(f"Test Loss: {test_loss}")
         print(f"P/R/F1: {p} / {r} / {f}")
+        # sum([1 if g in k else 0 for g, k in zip(test_gens , target_goal_texts)])
+        print(f"{args.task} Generation Test: {sum([1 if g in k else 0 for g, k in zip(test_gens , target_goal_texts)]) / len(test_gens)}")
         logger.info("{} Epoch: {}, Train Loss: {}, Test Loss: {}, P/R/F: {}/{}/{}".format(args.task, epoch, train_epoch_loss, test_loss, p, r, f))
         TotalLoss += train_epoch_loss / len(train_dataloader)
         early_stopping(f, retriever)
@@ -192,6 +195,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
         test_preds = []
         test_pred_at5s=[]
         test_pred_at5_tfs=[]
+        target_topic_texts=[]
         test_loss = 0
         test_gens = []
         print("TEST")
@@ -244,10 +248,10 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
                     # test_inputs.extend([tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=True) for g in dialog_token])
                     test_gen=[tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=True) for g in generated_ids]
                     test_gens.extend(test_gen)
-
+                    target_topic_text = [args.topicDic['int'][idx] for idx in test_labels]  # target goal
+                    target_topic_texts.extend(target_topic_text)
                 if save_output_mode:
                     input_text = tokenizer.batch_decode(dialog_token)
-                    target_topic_text = [args.topicDic['int'][idx] for idx in test_labels]  # target goal
                     pred_topic_text = [args.topicDic['int'][idx] for idx in test_preds]
                     pred_top5_texts = [[args.topicDic['int'][idx] for idx in top5_idxs] for top5_idxs in test_pred_at5]
                     real_resp = tokenizer.batch_decode(response, skip_special_tokens=True)
@@ -261,6 +265,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
         print(f"Test Loss: {test_loss}")
         print(f"Test P/R/F1: {p} / {r} / {f}")
         print(f"Test Hit@5: {test_hit5}")
+        print(f"{args.task} Generation Test: {sum([1 if g in k else 0 for g, k in zip(test_gens, target_topic_texts)]) / len(test_gens)}")
         logger.info("{} Epoch: {}, Training Loss: {}, Test Loss: {}".format(args.task, epoch, train_epoch_loss, test_loss))
         logger.info("Test P/R/F1:\t {} / {} / {}".format(p, r, f))
         logger.info("Test Hit@5: {}".format(test_hit5))
