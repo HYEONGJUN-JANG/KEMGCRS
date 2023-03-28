@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from torch import nn
 from tqdm import tqdm
@@ -135,17 +136,19 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
         if args.num_epochs>1:
             retriever.train()
             for batch in tqdm(train_dataloader, desc="Topic_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-                cbdicKeys = ['dialog_token', 'dialog_mask', 'response', 'type', 'topic']
+                cbdicKeys = ['dialog_token', 'dialog_mask', 'response', 'type', 'topic', 'topic_idx']
                 if args.task == 'know': cbdicKeys += ['candidate_indice']
                 context_batch = batchify(args, batch, tokenizer, task=args.task)
-                dialog_token, dialog_mask, response, type, topic = [context_batch[i] for i in cbdicKeys]
+                dialog_token, dialog_mask, response, type, topic, topic_idx = [context_batch[i] for i in cbdicKeys]
                 batch_size = dialog_token.size(0)
-                targets = topic
+                targets = topic_idx
 
 
-                dot_score = retriever.topic_selection(dialog_token, dialog_mask)
-                loss = criterion(dot_score, targets)
-                train_epoch_loss += loss
+                # dot_score = retriever.topic_selection(dialog_token, dialog_mask)
+                # loss = criterion(dot_score, targets)
+                loss = retriever.topic_generation(dialog_token, dialog_mask, topic)
+
+                train_epoch_loss += loss.item()
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -153,34 +156,53 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
                 if gpucheck: gpucheck = checkGPU(args, logger)
                 cnt += len(batch['dialog'])
 
-
         # TEST
-        test_labels = []
-        test_preds = []
-        test_pred_at5s=[]
-        test_pred_at5_tfs=[]
+        test_labels, test_labels_token = [], []
+        test_preds, test_preds_token = [], []
+        test_pred_at5s= []
+        test_pred_at5_tfs= []
+        test_pred_at1_tfs = []
         test_loss = 0
         print("TEST")
         # torch.cuda.empty_cache()
         retriever.eval()
+        model_to_eval = retriever.module if hasattr(retriever, 'module') else retriever
+
         with torch.no_grad():
             for batch in tqdm(test_dataloader, desc="Topic_Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-                cbdicKeys = ['dialog_token', 'dialog_mask', 'response', 'type', 'topic']
+                cbdicKeys = ['dialog_token', 'dialog_mask', 'response', 'type', 'topic', 'topic_idx']
                 context_batch = batchify(args, batch, tokenizer, task=args.task)
                 if args.task == 'know':
                     cbdicKeys += ['candidate_indice']
                     dialog_token, dialog_mask, response, type, topic, candidate_indice = [context_batch[i] for i in cbdicKeys]
-                else: dialog_token, dialog_mask, response, type, topic = [context_batch[i] for i in cbdicKeys]
+                else: dialog_token, dialog_mask, response, type, topic, topid_idx = [context_batch[i] for i in cbdicKeys]
                 batch_size = dialog_token.size(0)
                 goal_type = [args.goalDic['int'][int(i)] for i in type]
-                targets = topic
-
+                targets = topic_idx
 
                 test_label = list(map(int,targets))
                 test_labels.extend(test_label)
                 # user_profile = batch['user_profile']
 
                 dot_score = retriever.topic_selection(dialog_token, dialog_mask)
+
+                generated_ids = model_to_eval.query_bert.generate(
+                    input_ids=dialog_token,
+                    attention_mask=dialog_mask,
+                    num_beams=1,
+                    max_length=32,
+                    # repetition_penalty=2.5,
+                    # length_penalty=1.5,
+                    early_stopping=True,
+                )
+                test_preds_token.extend(
+                    [tokenizer.decode(gid, skip_special_tokens=True, clean_up_tokenization_spaces=True) for gid in
+                     generated_ids])
+
+                test_labels_token.extend(
+                    [tokenizer.decode(gid, skip_special_tokens=True, clean_up_tokenization_spaces=True) for gid in
+                     topic])
+
                 loss = criterion(dot_score, targets)
                 test_loss += loss
                 # test_preds.extend(list(map(int, dot_score.argmax(1))))
@@ -189,6 +211,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
                 test_preds.extend(test_pred)
                 test_pred_at5s.extend(test_pred_at5)
                 correct = [p==l for p,l in zip(test_pred, test_label)]
+                test_pred_at1_tfs.extend(correct)
                 correct_at5 = [l in p for p,l in zip(test_pred_at5, test_label)]
                 test_pred_at5_tfs.extend(correct_at5)
                 if save_output_mode:
@@ -202,11 +225,14 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
                             {'input':input_text[i], 'pred': pred_topic_text[i],'pred5': pred_top5_texts[i], 'target':target_topic_text[i], 'correct':correct[i], 'response': real_resp[i], 'goal_type': goal_type[i]}
                         )
         p,r,f = round(precision_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(recall_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(f1_score(test_labels, test_preds, average='macro', zero_division=0), 3)
+        topic_eval(test_labels_token, test_preds_token)
         test_hit5 = round(test_pred_at5_tfs.count(True)/len(test_pred_at5_tfs),3)
+        test_hit1 = np.average(test_pred_at1_tfs)
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
         print(f"Train sampels: {cnt} , Test samples: {len(test_labels)}")
         print(f"Test Loss: {test_loss}")
         print(f"Test P/R/F1: {p} / {r} / {f}")
+        print(f"Test Hit@1: {test_hit1}")
         print(f"Test Hit@5: {test_hit5}")
         logger.info("{} Epoch: {}, Training Loss: {}, Test Loss: {}".format(args.task, epoch, train_epoch_loss, test_loss))
         logger.info("Test P/R/F1:\t {} / {} / {}".format(p, r, f))
@@ -250,6 +276,8 @@ def json2txt_topic(saved_jsonlines: list) -> list:
             txt += f"{i}\n"
         txtlines.append(txt)
     return txtlines
+
+
 def save_json_hj(args, filename, saved_jsonlines, task):
     '''
     Args:
@@ -270,8 +298,41 @@ def save_json_hj(args, filename, saved_jsonlines, task):
 # {'input':input_text[i], 'pred': pred_topic_text[i], 'target':target_topic_text[i], 'correct':correct[i], 'response': real_resp[i], 'goal_type': goal_type[i]}
 
 
+def topic_eval(raw_ref, raw_pred):
+    refs = [ref.split(' | ') for ref in raw_ref]
+    preds = [pred.split(' | ') for pred in raw_pred]
+    f1_scores = know_f1_score(preds, refs)
+    print('P/R/F1/hits: ', f1_scores)
 
 
+def know_f1_score(pred_pt, gold_pt):
+    ps = []
+    rs = []
+    f1s = []
+    for pred_labels, gold_labels in zip(pred_pt, gold_pt):
+        if len(pred_labels) == 0:
+            pred_labels.append('empty')
+        if len(gold_labels) == 0:
+            gold_labels.append('empty')
+        tp = 0
+        for t in pred_labels:
+            if t in gold_labels:
+                tp += 1
+        r = tp / len(gold_labels)
+        p = tp / len(pred_labels)
+        try:
+            f1 = 2 * p * r / (p + r)
+        except ZeroDivisionError:
+            f1 = 0
+        ps.append(p)
+        rs.append(r)
+        f1s.append(f1)
+    p = sum(ps) / len(ps)
+    r = sum(rs) / len(rs)
+    f1 = sum(f1s) / len(f1s)
+    scores = [p, r, f1]
+
+    return scores
 
 if __name__ == "__main__":
     import main

@@ -109,8 +109,8 @@ def main():
             train_goal(args, train_type_DataLoader, test_type_DataLoader, retriever, qtokenizer)
 
         if args.ft_topic:
-            print(f"Fine-tune {args.task} Task")
             args.task = 'topic'
+            print(f"Fine-tune {args.task} Task")
             logging.info('Fine-tune: {} Task'.format(args.task))
             train_topic_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, qtokenizer, task=args.task, mode='train')
             test_topic_DataModel = data_temp.DialogDataset_TEMP(args, conversation_test_sample, knowledgeDB, qtokenizer, task=args.task, mode='test')
@@ -139,7 +139,6 @@ def main():
 
     if args.do_pipeline:
         # Pipeline Fine-tune
-
         args.mode = 'test'
         logging.info('Pipeline')
         # train_type_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, ktokenizer, task='type')

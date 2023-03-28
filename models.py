@@ -92,6 +92,9 @@ class Retriever(nn.Module):
         # dot_score = torch.matmul(dialog_emb, goal_idx.transpose(1,0)) #[B, N_goal]
         return dialog_emb
 
+    def topic_generation(self, token_seq, mask, labels):
+        outputs = self.query_bert(input_ids=token_seq, attention_mask=mask, labels=labels, output_hidden_states=True)
+        return outputs[0]
 
 class Model(nn.Module):
     def __init__(self, bert_model, args):

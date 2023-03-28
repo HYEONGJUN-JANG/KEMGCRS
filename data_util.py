@@ -2,6 +2,9 @@ import torch
 from collections import defaultdict
 import random
 
+from torch.nn.utils.rnn import pad_sequence
+
+
 def readDic(filename, out=None):
     output_idx_str=dict()
     output_idx_int=dict()
@@ -82,7 +85,10 @@ def batchify(args, batch, tokenizer=None, task=''):
     context_batch['dialog_token'] = [truncationPadding(input_ids=dialog_inputids, prefix=[tokenizer.cls_token_id], suffix=suffix_inputids, max_length=args.max_length) for dialog_inputids, suffix_inputids in zip(tokenized_dialog.input_ids, tokenized_suffix.input_ids)]
     context_batch['dialog_mask'] = [truncationPadding(input_ids=dialoginputids, prefix=[1], suffix=suffix_inputids, max_length=args.max_length) for dialoginputids, suffix_inputids in zip(tokenized_dialog.attention_mask, tokenized_suffix.attention_mask)]
     context_batch['type'] = [args.goalDic['str'][i] for i in type]  # index로 바꿈
-    context_batch['topic'] = [args.topicDic['str'][i] for i in topic]  # index로 바꿈
+    context_batch['topic_idx'] = [args.topicDic['str'][i] for i in topic]  # index로 바꿈
+    context_batch['topic'] = tokenizer(topic, add_special_tokens=False, padding=True).input_ids
+    # context_batch['topic'] = [[token_id if token_id != tokenizer.pad_token_id else -100 for token_id in topic] for topic
+    #               in context_batch['topic']]
 
     if task == 'know':
         target_knowledge = target_knowledge.tolist()
