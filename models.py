@@ -3,38 +3,40 @@ from torch import nn
 
 
 class Retriever(nn.Module):
-    def __init__(self, args, bert_model1, bert_model2):
+    def __init__(self, args, kencoder, qencoder):
         super(Retriever, self).__init__()
         self.args = args
-        self.query_bert = bert_model1 # Dialog input 받기위한 BERT
-        self.key_bert = bert_model2 # Knowledge text 처리를 위한 BERT
+        self.key_bert = kencoder # Knowledge text 처리를 위한 BERT
+        self.query_bert = qencoder # Dialog input 받기위한 BERT
+        self.q_hidden_size = qencoder.config.hidden_size
+        self.k_hidden_size = kencoder.config.hidden_size
 
         self.proj = nn.Sequential(
-            nn.Linear(args.hidden_size, args.hidden_size // 2),
+            nn.Linear(self.q_hidden_size, self.q_hidden_size // 2),
             nn.ReLU(),
-            nn.Linear(args.hidden_size // 2, args.hidden_size)
+            nn.Linear(self.q_hidden_size // 2, self.q_hidden_size)
         )
-        self.pred_know = nn.Linear(args.hidden_size, args.knowledge_num)
+        # self.pred_know = nn.Linear(self.q_hidden_size, args.knowledge_num)
 
-        self.linear_weight = nn.Linear(args.hidden_size, 1)
         self.goal_proj = nn.Sequential(
-            nn.Linear(args.hidden_size, args.hidden_size // 2),
+            nn.Linear(self.q_hidden_size, self.q_hidden_size // 2),
             nn.ReLU(),
-            nn.Linear(args.hidden_size // 2, args.hidden_size),
+            nn.Linear(self.q_hidden_size // 2, self.q_hidden_size),
             nn.ReLU(),
-            nn.Linear(args.hidden_size, args.goal_num)
+            nn.Linear(self.q_hidden_size, args.goal_num)
         )
         self.topic_proj = nn.Sequential(
-            nn.Linear(args.hidden_size, args.hidden_size // 2),
+            nn.Linear(self.q_hidden_size, self.q_hidden_size // 2),
             nn.ReLU(),
-            nn.Linear(args.hidden_size // 2, args.hidden_size),
+            nn.Linear(self.q_hidden_size // 2, self.q_hidden_size),
             nn.ReLU(),
-            nn.Linear(args.hidden_size, args.topic_num)
+            nn.Linear(self.q_hidden_size, args.topic_num)
         )
 
 
     def forward(self, token_seq, mask):
-        dialog_emb = self.bert_model(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        if self.args.usebart: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:,0,:].squeeze(1)
+        else: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         dialog_emb = self.proj(dialog_emb)
         return dialog_emb
 
@@ -50,8 +52,10 @@ class Retriever(nn.Module):
         batch_size = mask.size(0)
 
         # dot-product
-        dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
-        # dialog_emb = self.proj(dialog_emb)
+        if self.args.usebart: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:,0,:].squeeze(1)
+        else: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+
+        # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B*(K+1), L]
         candidate_knowledge_mask = candidate_knowledge_mask.view(-1, self.args.max_length)  # [B*(K+1), L]
 
@@ -66,17 +70,23 @@ class Retriever(nn.Module):
         eval_know.computing_score에서
         모든 key vector에서 올라온 벡터를 통해 계산처리
         """
-        dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        if self.args.usebart: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:,0,:].squeeze(1)
+        else: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
         return dot_score
 
     def goal_selection(self, token_seq, mask):
-        dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        if self.args.usebart: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:,0,:].squeeze(1)
+        else: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         dialog_emb = self.goal_proj(dialog_emb)
         # dot_score = torch.matmul(dialog_emb, goal_idx.transpose(1,0)) #[B, N_goal]
         return dialog_emb
     def topic_selection(self, token_seq, mask):
-        dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        if self.args.usebart: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:,0,:].squeeze(1)
+        else: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         dialog_emb = self.topic_proj(dialog_emb)
         # dot_score = torch.matmul(dialog_emb, goal_idx.transpose(1,0)) #[B, N_goal]
         return dialog_emb
