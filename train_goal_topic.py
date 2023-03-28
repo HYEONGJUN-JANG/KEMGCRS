@@ -203,7 +203,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
                 test_labels_token.extend(
                     [tokenizer.decode(gid, skip_special_tokens=True, clean_up_tokenization_spaces=True) for gid in
                      topic])
-                topic_eval(test_labels_token, test_preds_token)
+                # topic_eval(test_labels_token, test_preds_token)
                 loss = criterion(dot_score, targets)
                 test_loss += loss
                 # test_preds.extend(list(map(int, dot_score.argmax(1))))
