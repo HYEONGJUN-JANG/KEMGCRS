@@ -56,7 +56,6 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
                 if gpucheck: gpucheck = checkGPU(args, logger)
                 cnt += len(batch['dialog'])
 
-
         # TEST
         test_labels = []
         test_preds = []
@@ -89,7 +88,7 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
                     correct = [p==l for p,l in zip(test_pred, test_label)]
                     for i in range(batch_size):
                         jsonlineSave.append({'input':input_text[i], 'pred_goal': pred_goal_text[i], 'target_goal':target_goal_text[i], 'correct':correct[i]})
-        p, r, f = round(precision_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(recall_score(test_labels, test_preds, average='macro', zero_division=0), 3), round(f1_score(test_labels, test_preds, average='macro', zero_division=0), 3)
+        p, r, f = round(precision_score(test_labels, test_preds, average='weighted', zero_division=0), 3), round(recall_score(test_labels, test_preds, average='weighted', zero_division=0), 3), round(f1_score(test_labels, test_preds, average='weighted', zero_division=0), 3)
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
         print(f"Train samples: {cnt}, Test samples: {len(test_labels)}")
         print(f"Test Loss: {test_loss}")
