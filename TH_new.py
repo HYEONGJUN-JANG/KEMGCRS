@@ -285,9 +285,10 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
             prefix = '<knowledge>' + self.args.knowledgeDB[target_knowledge_idx] + self.tokenizer.eos_token
             topic_prompt = self.tokenizer.encode('predict the next response: ')[1:]
 
-        input_sentence = prefix + '<dialog>' + dialog
-        input_sentence = self.tokenizer(input_sentence, add_special_tokens=False).input_ids
-        input_sentence = [self.tokenizer.cls_token_id] + input_sentence[-self.args.max_length + len(topic_prompt) + 1:] + topic_prompt
+        prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
+
+        input_sentence = self.tokenizer('<dialog>'+dialog, add_special_tokens=False).input_ids
+        input_sentence = [self.tokenizer.cls_token_id] + prefix_encoding + input_sentence[-(self.args.max_length - len(topic_prompt) -len(prefix_encoding) - 1):] + topic_prompt
         input_sentence = input_sentence + [self.tokenizer.pad_token_id] * (self.args.max_length - len(input_sentence))
         context_batch['dialog_token'] = torch.LongTensor(input_sentence).to(self.args.device)
         attention_mask = context_batch['dialog_token'].ne(self.tokenizer.pad_token_id)
