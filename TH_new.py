@@ -406,9 +406,9 @@ def main():
         all_response.append(tokenizer.batch_decode(response, skip_special_tokens=True))
         all_dialog.append(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
 
-    with open('response_write.txt', 'w', encoding='UTF-8') as f:
+    with open(f"response_write_{args.time}_{args.model_name}.txt", 'w', encoding='UTF-8') as f:
         for (a,b,c) in zip(all_dialog, all_response, all_generated):
-            f.write('[DIALOG]\t%s\n[RESPONSE]\t%s\n[GENERATED]\t%s\n', a,b,c)
+            f.write('[DIALOG]\t%s\n[RESPONSE]\t%s\n[GENERATED]\t%s\n' % (a,b,c))
 
     # if args.saved_model_path == '':
     #     train_retriever_idx(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
