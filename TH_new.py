@@ -384,7 +384,6 @@ def main():
             loss.backward()
             optimizer.step()
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
-
     torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
 
     # test generation task
@@ -402,13 +401,14 @@ def main():
                                                   attention_mask=dialog_mask,
                                                   max_length=50)
         decoded_generated = tokenizer.batch_decode(generated, skip_special_tokens=True)
-        all_generated.append(decoded_generated)
-        all_response.append(tokenizer.batch_decode(response, skip_special_tokens=True))
-        all_dialog.append(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
+        all_generated.extend(decoded_generated)
+        all_response.extend(tokenizer.batch_decode(response, skip_special_tokens=True))
+        all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
 
     with open(f"response_write_{args.time}_{args.model_name}.txt", 'w', encoding='UTF-8') as f:
         for (a,b,c) in zip(all_dialog, all_response, all_generated):
             f.write('[DIALOG]\t%s\n[RESPONSE]\t%s\n[GENERATED]\t%s\n' % (a,b,c))
+            f.write('-------------------------------------------\n')
 
     # if args.saved_model_path == '':
     #     train_retriever_idx(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
