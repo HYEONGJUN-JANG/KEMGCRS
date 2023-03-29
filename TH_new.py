@@ -4,6 +4,7 @@ import logging
 from collections import defaultdict
 import random
 
+import torch
 from torch import optim
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
@@ -236,11 +237,12 @@ class Retriever(nn.Module):
         batch_size = mask.size(0)
 
         # dot-product
-        if self.args.usebart:
-            dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
-        else:
-            dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        # if self.args.usebart:
+        #     dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
+        # else:
+        #     dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
 
+        dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
         # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B*(K+1), L]
         candidate_knowledge_mask = candidate_knowledge_mask.view(-1, self.args.max_length)  # [B*(K+1), L]
@@ -376,46 +378,75 @@ def main():
     criterion = nn.CrossEntropyLoss().to(args.device)
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
     # train generate task
-    for epoch in range(args.num_epochs):
-        train_epoch_loss = 0
-        for batch in tqdm(train_dataloader, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-            retriever.train()
+    if args.saved_model_path == '':
+        for epoch in range(args.num_epochs):
+            train_epoch_loss = 0
+            for batch in tqdm(train_dataloader, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+                retriever.train()
+                dialog_token = batch['dialog_token']
+                dialog_mask = batch['dialog_mask']
+                response = batch['response']
+
+                loss = retriever.generation(dialog_token, dialog_mask, response)
+                # loss = criterion(dot_score, targets)
+                train_epoch_loss += loss
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+            print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+        torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
+
+        # test generation task
+        all_dialog = []
+        all_response = []
+        all_generated = []
+        for batch in tqdm(test_dataloader, desc="Generate Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+            retriever.eval()
             dialog_token = batch['dialog_token']
             dialog_mask = batch['dialog_mask']
             response = batch['response']
 
-            loss = retriever.generation(dialog_token, dialog_mask, response)
+            batch_size = dialog_token.shape[0]
+            generated = retriever.query_bert.generate(input_ids=dialog_token,
+                                                      attention_mask=dialog_mask,
+                                                      max_length=50)
+            decoded_generated = tokenizer.batch_decode(generated, skip_special_tokens=True)
+            all_generated.extend(decoded_generated)
+            all_response.extend(tokenizer.batch_decode(response, skip_special_tokens=True))
+            all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
+
+        with open(f"response_write_{args.time}_{args.model_name}.txt", 'w', encoding='UTF-8') as f:
+            for (a, b, c) in zip(all_dialog, all_response, all_generated):
+                f.write('[DIALOG]\t%s\n[RESPONSE]\t%s\n[GENERATED]\t%s\n' % (a, b, c))
+                f.write('-------------------------------------------\n')
+    else:
+        retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
+
+    train_datamodel_know = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='know')
+    test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know')
+    train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
+    test_dataloader = DataLoader(test_datamodel_know, batch_size=args.batch_size, shuffle=False)
+
+    for epoch in range(args.num_epochs):
+        train_epoch_loss = 0
+        for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+            retriever.train()
+            dialog_token = batch['dialog_token']
+            dialog_mask = batch['dialog_mask']
+            # response = batch['response']
+            candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
+            candidate_knowledge_mask = candidate_knowledge_mask.to(args.device)  # [B,5,256]
+
+            logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+            loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
             # loss = criterion(dot_score, targets)
             train_epoch_loss += loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
-    torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
 
-    # test generation task
-    all_dialog = []
-    all_response = []
-    all_generated = []
-    for batch in tqdm(test_dataloader, desc="Generate Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-        retriever.eval()
-        dialog_token = batch['dialog_token']
-        dialog_mask = batch['dialog_mask']
-        response = batch['response']
-
-        batch_size = dialog_token.shape[0]
-        generated = retriever.query_bert.generate(input_ids=dialog_token,
-                                                  attention_mask=dialog_mask,
-                                                  max_length=50)
-        decoded_generated = tokenizer.batch_decode(generated, skip_special_tokens=True)
-        all_generated.extend(decoded_generated)
-        all_response.extend(tokenizer.batch_decode(response, skip_special_tokens=True))
-        all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
-
-    with open(f"response_write_{args.time}_{args.model_name}.txt", 'w', encoding='UTF-8') as f:
-        for (a,b,c) in zip(all_dialog, all_response, all_generated):
-            f.write('[DIALOG]\t%s\n[RESPONSE]\t%s\n[GENERATED]\t%s\n' % (a,b,c))
-            f.write('-------------------------------------------\n')
+    eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
     # if args.saved_model_path == '':
     #     train_retriever_idx(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
