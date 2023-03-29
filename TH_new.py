@@ -394,7 +394,7 @@ def main():
                 loss.backward()
                 optimizer.step()
             print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
-        torch.save(retriever.state_dict(), os.path.join('./models', f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
+        torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
 
         # test generation task
         all_dialog = []
@@ -420,7 +420,7 @@ def main():
                 f.write('[DIALOG]\t%s\n[RESPONSE]\t%s\n[GENERATED]\t%s\n' % (a, b, c))
                 f.write('-------------------------------------------\n')
     else:
-        retriever.load_state_dict(torch.load(os.path.join('./models', args.saved_model_path)))
+        retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
 
     train_datamodel_know = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='know')
     test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know')
