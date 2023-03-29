@@ -369,28 +369,29 @@ def main():
     criterion = nn.CrossEntropyLoss().to(args.device)
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
     # train generate task
-    for epoch in range(args.num_epochs):
-        train_epoch_loss = 0
-        for batch in tqdm(train_dataloader, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-            retriever.train()
-            dialog_token = batch['dialog_token']
-            dialog_mask = batch['dialog_mask']
-            response = batch['response']
+    # for epoch in range(args.num_epochs):
+    #     train_epoch_loss = 0
+    #     for batch in tqdm(train_dataloader, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+    #         retriever.train()
+    #         dialog_token = batch['dialog_token']
+    #         dialog_mask = batch['dialog_mask']
+    #         response = batch['response']
+    #
+    #         loss = retriever.generation(dialog_token, dialog_mask, response)
+    #         # loss = criterion(dot_score, targets)
+    #         train_epoch_loss += loss
+    #         optimizer.zero_grad()
+    #         loss.backward()
+    #         optimizer.step()
+    #     print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
-            loss = retriever.generation(dialog_token, dialog_mask, response)
-            # loss = criterion(dot_score, targets)
-            train_epoch_loss += loss
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-        print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
-
+    torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
 
     # test generation task
     all_dialog = []
     all_response = []
     all_generated = []
-    for batch in tqdm(test_dataloader, desc="Type_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+    for batch in tqdm(test_dataloader, desc="Generate Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
         retriever.eval()
         dialog_token = batch['dialog_token']
         dialog_mask = batch['dialog_mask']
