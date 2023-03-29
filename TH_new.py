@@ -435,7 +435,7 @@ def main():
             dialog_mask = batch['dialog_mask']
             # response = batch['response']
             candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
-            candidate_knowledge_mask = candidate_knowledge_mask.to(args.device)  # [B,5,256]
+            candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
 
             logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
             loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
