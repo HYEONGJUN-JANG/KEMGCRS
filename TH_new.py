@@ -325,7 +325,6 @@ def main():
     # args.data_cache = False
     args.who = "TH"
     args.bert_name = 'facebook/bart-base'
-    args.batch_size = 2
 
     checkPath(args.log_dir)
     checkPath(args.model_dir)
@@ -369,11 +368,10 @@ def main():
 
     criterion = nn.CrossEntropyLoss().to(args.device)
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
-
     # train generate task
-    for e in range(5):
+    for epoch in range(args.num_epochs):
         train_epoch_loss = 0
-        for batch in tqdm(train_dataloader, desc="Type_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+        for batch in tqdm(train_dataloader, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
             retriever.train()
             dialog_token = batch['dialog_token']
             dialog_mask = batch['dialog_mask']
@@ -385,6 +383,8 @@ def main():
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+        print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+
 
     # test generation task
     all_dialog = []
