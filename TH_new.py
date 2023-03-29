@@ -41,6 +41,26 @@ def user_profile_setting(ufDic: dict) -> str:
     return uf
 
 
+def process_augment_sample(raw_data, tokenizer, knowledgeDB):
+    train_sample = []
+    for ij in range(len(raw_data)):
+        conversation = raw_data[ij]
+        augmented_dialog = []
+        for i in range(len(conversation['dialog'])):
+            role = conversation['role_seq'][i]
+            if role == 'System' and len(augmented_dialog) > 0 and conversation['knowledge_seq'][i] != '':
+                flatten_dialog = tokenizer.sep_token.join(augmented_dialog)
+                train_sample.append({'dialog': flatten_dialog,
+                                     'user_profile': conversation['user_profile'],
+                                     'response': conversation['dialog'][i],
+                                     'type': conversation['type'][i],
+                                     'topic': conversation['topic'][i],
+                                     'situation': conversation['situation'],
+                                     'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i])})
+            augmented_dialog.append(conversation['dialog'][i])
+    return train_sample
+
+
 def dataset_reader(args, tokenizer, knowledgeDB, data_name='train'):
     conversation_sample = []
     data_path = os.path.join(args.data_dir, f"en_{data_name}.txt")
@@ -231,34 +251,14 @@ class Retriever(nn.Module):
         return logit
 
 
-class DialogDatasetKnow(Dataset):  # knowledge용 데이터셋
-    def __init__(self, args, conversation_sample, knowledgeDB, tokenizer, task):
+class DialogDataset(Dataset):  # knowledge용 데이터셋
+    def __init__(self, args, data_sample, knowledgeDB, tokenizer, task):
         super(Dataset, self).__init__()
         self.args = args
         self.task = task
-        self.raw_data = conversation_sample
         self.tokenizer = tokenizer
         self.knowledgeDB = knowledgeDB
-        self.augmented_raw_sample = self.augment_raw_dataset(conversation_sample)
-
-    def augment_raw_dataset(self, raw_data):
-        train_sample = []
-        for ij in range(len(raw_data)):
-            conversation = raw_data[ij]
-            augmented_dialog = []
-            for i in range(len(conversation['dialog'])):
-                role = conversation['role_seq'][i]
-                if role == 'System' and len(augmented_dialog) > 0 and conversation['knowledge_seq'][i] != '':
-                    flatten_dialog = self.tokenizer.sep_token.join(augmented_dialog)
-                    train_sample.append({'dialog': flatten_dialog,
-                                         'user_profile': conversation['user_profile'],
-                                         'response': conversation['dialog'][i],
-                                         'type': conversation['type'][i],
-                                         'topic': conversation['topic'][i],
-                                         'situation': conversation['situation'],
-                                         'target_knowledge': self.knowledgeDB.index(conversation['knowledge_seq'][i])})
-                augmented_dialog.append(conversation['dialog'][i])
-        return train_sample
+        self.augmented_raw_sample = data_sample
 
     def negative_sampler(self, target_knowledge):
         # candidate_entity = self.knowledgeDB[target_knowledge][0]
@@ -358,13 +358,16 @@ def main():
     args.knowledge_num = len(knowledgeDB)
     args.knowledgeDB = knowledgeDB
 
-    train_dataset = dataset_reader(args, tokenizer, knowledgeDB, 'train')
-    test_dataset = dataset_reader(args, tokenizer, knowledgeDB, 'test')
-    train_datamodel = DialogDatasetKnow(args, train_dataset, knowledgeDB, tokenizer, task='know')
-    test_datamodel = DialogDatasetKnow(args, test_dataset, knowledgeDB, tokenizer, task='know')
+    train_dataset_raw = dataset_reader(args, tokenizer, knowledgeDB, 'train')
+    test_dataset_raw = dataset_reader(args, tokenizer, knowledgeDB, 'test')
+    train_dataset = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
+    test_dataset = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
 
-    train_dataloader = DataLoader(train_datamodel, batch_size=args.batch_size, shuffle=True)
-    test_dataloader = DataLoader(test_datamodel, batch_size=args.batch_size, shuffle=False)
+    train_datamodel_resp = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='resp')
+    test_datamodel_resp = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='resp')
+
+    train_dataloader = DataLoader(train_datamodel_resp, batch_size=args.batch_size, shuffle=True)
+    test_dataloader = DataLoader(test_datamodel_resp, batch_size=args.batch_size, shuffle=False)
 
     retriever = Retriever(args, bert_model)
     retriever = retriever.to(args.device)
