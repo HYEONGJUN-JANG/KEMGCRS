@@ -81,7 +81,7 @@ def parseargs():
     from platform import system as sysChecker
     if sysChecker() == 'Linux':
         # HJ KT-server
-        args.home = '/home/work/CRSTEST/KEMGCRS'
+        args.home = '/home/work/CRSFolder/KEMGCRS'
         args.data_dir = os.path.join(args.home, 'data')
         args.output_dir = os.path.join(args.data_dir, 'output')
         args.log_dir = os.path.join(args.home, 'logs')
