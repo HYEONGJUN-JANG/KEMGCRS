@@ -279,11 +279,14 @@ class DialogDatasetKnow(Dataset):  # knowledge용 데이터셋
 
         context_batch = defaultdict()
         if self.task == 'know':
-            prefix = '<situation>' + situation + '<type>' + type + '<topic>' + topic + "predict the next goal:"
+            prefix = '<situation>' + situation + '<type>' + type + '<topic>' + topic + self.tokenizer.eos_token
+            topic_prompt = self.tokenizer.encode('predict the next knowledge: ')[1:]
+        elif self.task == 'resp':
+            prefix = '<knowledge>' + self.args.knowledgeDB[target_knowledge_idx] + self.tokenizer.eos_token
+            topic_prompt = self.tokenizer.encode('predict the next response: ')[1:]
 
         input_sentence = prefix + '<dialog>' + dialog
         input_sentence = self.tokenizer(input_sentence, add_special_tokens=False).input_ids
-        topic_prompt = self.tokenizer.encode('predict the next goal: ')[1:]
         input_sentence = [self.tokenizer.cls_token_id] + input_sentence[-self.args.max_length + len(topic_prompt) + 1:] + topic_prompt
         input_sentence = input_sentence + [self.tokenizer.pad_token_id] * (self.args.max_length - len(input_sentence))
         context_batch['dialog_token'] = torch.LongTensor(input_sentence).to(self.args.device)
@@ -299,7 +302,7 @@ class DialogDatasetKnow(Dataset):  # knowledge용 데이터셋
         context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
-        target_knowledge = self.args.knowledgeDB[target_knowledge_idx]
+        # target_knowledge = self.args.knowledgeDB[target_knowledge_idx]
 
         candidate_indice = [target_knowledge_idx] + negative_sampler(self.args, target_knowledge_idx)
         # candidate_knowledge = tokenizer([args.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=args.max_length)
