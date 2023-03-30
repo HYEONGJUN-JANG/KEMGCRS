@@ -31,6 +31,7 @@ def parseargs():
     parser.add_argument("--ft_topic", action='store_true', help="Whether to Fine-tune on topic.")
     parser.add_argument("--ft_know", action='store_true', help="Whether to Fine-tune on know.")
     parser.add_argument("--earlystop", action='store_true', help="Whether to Use EarlyStopping.")
+    parser.add_argument("--task", default='resp', type=str, help="Choose the task")
 
     parser.add_argument("--data_dir", default='data', type=str, help="The data directory.")
     # parser.add_argument('--data_name', default='en_test.txt', type=str, help="dataset name")
@@ -123,7 +124,7 @@ def save_json(args, filename, saved_jsonlines):
             goal, topic, tf, dialog, targetkg, resp, pred5 = js['goal_type'], js['topic'], js['tf'], js['dialog'], js['target'], js['response'], js["predict5"]
             if goal == 'Movie recommendation' or goal=='Food recommendation' or goal=='POI recommendation' or goal=='Music recommendation' or goal=='Q&A' or goal=='Chat about stars':
                 pred_txt = "\n".join(pred5)
-                txt = f"\n---------------------------\n[Goal]: {goal}\t[Topic]: {topic[0]}\t[TF]: {tf}\n[Target Know_text]: {targetkg}\n[PRED_KnowText]\n{pred_txt}\n[Dialog]"
+                txt = f"\n---------------------------\n[Goal]: {goal}\t[Topic]: {topic}\t[TF]: {tf}\n[Target Know_text]: {targetkg}\n[PRED_KnowText]\n{pred_txt}\n[Dialog]"
                 for i in dialog.replace("user :", '|user :').replace("system :", "|system : ").split('|'):
                     txt += f"{i}\n"
                 txt += f"[Response]: {resp}\n"
