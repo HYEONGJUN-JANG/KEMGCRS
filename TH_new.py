@@ -204,13 +204,14 @@ class Retriever(nn.Module):
 
 
 class DialogDataset(Dataset):  # knowledge용 데이터셋
-    def __init__(self, args, data_sample, knowledgeDB, tokenizer, task):
+    def __init__(self, args, data_sample, knowledgeDB, tokenizer, task, mode='train'):
         super(Dataset, self).__init__()
         self.args = args
         self.task = task
         self.tokenizer = tokenizer
         self.knowledgeDB = knowledgeDB
         self.augmented_raw_sample = data_sample
+        self.mode = mode
 
     def negative_sampler(self, target_knowledge):
         # candidate_entity = self.knowledgeDB[target_knowledge][0]
@@ -247,7 +248,11 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         else:
             input_sentence = prefix_encoding + input_sentence[-(self.args.max_length - len(topic_prompt) - len(prefix_encoding)):] + topic_prompt
 
-        input_sentence = input_sentence + [pad_token_id] * (self.args.max_length - len(input_sentence))
+        if self.mode != 'generate':
+            input_sentence = input_sentence + [pad_token_id] * (self.args.max_length - len(input_sentence))
+        else:
+            input_sentence = [pad_token_id] * (self.args.max_length - len(input_sentence)) + input_sentence
+
         context_batch['input_ids'] = torch.LongTensor(input_sentence).to(self.args.device)
         attention_mask = context_batch['input_ids'].ne(pad_token_id)
         context_batch['attention_mask'] = attention_mask
@@ -394,9 +399,11 @@ def main():
         test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
 
         train_datamodel_resp = DialogDataset(args, train_dataset_resp, knowledgeDB, tokenizer, task='resp')
-        test_datamodel_resp = DialogDataset(args, test_dataset_resp, knowledgeDB, tokenizer, task='resp')
+        test_datamodel_resp = DialogDataset(args, test_dataset_resp, knowledgeDB, tokenizer, task='resp', mode='generate')
+
         train_dataloader_resp = DataLoader(train_datamodel_resp, batch_size=args.batch_size, shuffle=True)
         test_dataloader_resp = DataLoader(test_datamodel_resp, batch_size=args.batch_size, shuffle=False)
+
         generator = Retriever(args, gpt_model=gpt_model)
         generator = generator.to(args.device)
         criterion = nn.CrossEntropyLoss().to(args.device)
