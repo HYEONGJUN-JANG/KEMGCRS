@@ -354,7 +354,11 @@ def knowledge_reindexing(args, knowledge_data, retriever):
     for batch in tqdm(knowledgeDataLoader):
         input_ids = batch[0].to(args.device)
         attention_mask = batch[1].to(args.device)
-        knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
+
+        if args.usebart:
+            knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
+        else:
+            knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
         knowledge_index.extend(knowledge_emb.cpu().detach())
     knowledge_index = torch.stack(knowledge_index, 0)
     return knowledge_index
