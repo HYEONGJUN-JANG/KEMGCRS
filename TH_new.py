@@ -253,12 +253,18 @@ class Retriever(nn.Module):
         # else:
         #     dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
 
-        dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
+        if self.args.usebart: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:,0,:].squeeze(1)
+        else: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+
         # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B*(K+1), L]
         candidate_knowledge_mask = candidate_knowledge_mask.view(-1, self.args.max_length)  # [B*(K+1), L]
 
-        knowledge_index = self.query_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
+        if self.args.usebart:
+            knowledge_index = self.query_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
+        else:
+            knowledge_index = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+
         knowledge_index = knowledge_index.view(batch_size, -1, dialog_emb.size(-1))
         logit = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2)  # [B, 1, d] * [B, K+1, d] = [B, K+1]
         return logit
@@ -292,7 +298,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         context_batch = defaultdict()
         if self.task == 'know':
-            prefix = '<situation>' + situation + '<type>' + type + '<topic>' + topic + self.tokenizer.eos_token
+            prefix = '<type>' + type + '<topic>' + topic + self.tokenizer.eos_token
             topic_prompt = self.tokenizer.encode('predict the next knowledge: ')[1:]
         elif self.task == 'resp':
             prefix = '<knowledge>' + self.args.knowledgeDB[target_knowledge_idx] + self.tokenizer.eos_token
@@ -404,7 +410,7 @@ def main():
     args = parseargs()
     # args.data_cache = False
     args.who = "TH"
-    args.bert_name = 'facebook/bart-base'
+    args.bert_name = 'bert-base-uncased'
 
     checkPath(args.log_dir)
     checkPath(args.model_dir)
@@ -415,7 +421,6 @@ def main():
     checkPath(os.path.join("cache", args.bert_name))
 
     bert_model = BartForConditionalGeneration.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
-
     tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
     tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
     bert_model.resize_token_embeddings(len(tokenizer))
@@ -446,55 +451,59 @@ def main():
     train_dataloader = DataLoader(train_datamodel_resp, batch_size=args.batch_size, shuffle=True)
     test_dataloader = DataLoader(test_datamodel_resp, batch_size=args.batch_size, shuffle=False)
 
-    retriever = Retriever(args, bert_model)
-    retriever = retriever.to(args.device)
+    generator = Retriever(args, bert_model)
+    generator = generator.to(args.device)
 
     criterion = nn.CrossEntropyLoss().to(args.device)
-    optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
+    optimizer = optim.AdamW(generator.parameters(), lr=args.lr)
     # train generate task
-    if args.saved_model_path == '':
-        for epoch in range(args.num_epochs):
-            train_epoch_loss = 0
-            for batch in tqdm(train_dataloader, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-                retriever.train()
-                dialog_token = batch['dialog_token']
-                dialog_mask = batch['dialog_mask']
-                response = batch['response']
+    # if args.saved_model_path == '':
+    #     for epoch in range(args.num_epochs):
+    #         train_epoch_loss = 0
+    #         for batch in tqdm(train_dataloader, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+    #             generator.train()
+    #             dialog_token = batch['dialog_token']
+    #             dialog_mask = batch['dialog_mask']
+    #             response = batch['response']
+    #
+    #             loss = generator.generation(dialog_token, dialog_mask, response)
+    #             # loss = criterion(dot_score, targets)
+    #             train_epoch_loss += loss
+    #             optimizer.zero_grad()
+    #             loss.backward()
+    #             optimizer.step()
+    #         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+    #     torch.save(generator.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
+    #
+    #     # test generation task
+    #     all_dialog = []
+    #     all_response = []
+    #     all_generated = []
+    #     for batch in tqdm(test_dataloader, desc="Generate Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+    #         generator.eval()
+    #         dialog_token = batch['dialog_token']
+    #         dialog_mask = batch['dialog_mask']
+    #         response = batch['response']
+    #
+    #         batch_size = dialog_token.shape[0]
+    #         generated = generator.query_bert.generate(input_ids=dialog_token,
+    #                                                   attention_mask=dialog_mask,
+    #                                                   max_length=50)
+    #         decoded_generated = tokenizer.batch_decode(generated, skip_special_tokens=True)
+    #         all_generated.extend(decoded_generated)
+    #         all_response.extend(tokenizer.batch_decode(response, skip_special_tokens=True))
+    #         all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
+    #
+    #     with open(f"response_write_{args.time}_{args.model_name}.txt", 'w', encoding='UTF-8') as f:
+    #         for (a, b, c) in zip(all_dialog, all_response, all_generated):
+    #             f.write('[DIALOG]\t%s\n[RESPONSE]\t%s\n[GENERATED]\t%s\n' % (a, b, c))
+    #             f.write('-------------------------------------------\n')
+    # else:
+    #     generator.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
 
-                loss = retriever.generation(dialog_token, dialog_mask, response)
-                # loss = criterion(dot_score, targets)
-                train_epoch_loss += loss
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-            print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
-        torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
-
-        # test generation task
-        all_dialog = []
-        all_response = []
-        all_generated = []
-        for batch in tqdm(test_dataloader, desc="Generate Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-            retriever.eval()
-            dialog_token = batch['dialog_token']
-            dialog_mask = batch['dialog_mask']
-            response = batch['response']
-
-            batch_size = dialog_token.shape[0]
-            generated = retriever.query_bert.generate(input_ids=dialog_token,
-                                                      attention_mask=dialog_mask,
-                                                      max_length=50)
-            decoded_generated = tokenizer.batch_decode(generated, skip_special_tokens=True)
-            all_generated.extend(decoded_generated)
-            all_response.extend(tokenizer.batch_decode(response, skip_special_tokens=True))
-            all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
-
-        with open(f"response_write_{args.time}_{args.model_name}.txt", 'w', encoding='UTF-8') as f:
-            for (a, b, c) in zip(all_dialog, all_response, all_generated):
-                f.write('[DIALOG]\t%s\n[RESPONSE]\t%s\n[GENERATED]\t%s\n' % (a, b, c))
-                f.write('-------------------------------------------\n')
-    else:
-        retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
+    retriever = Retriever(args, bert_model)
+    retriever = retriever.to(args.device)
+    optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
 
     train_datamodel_know = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='know')
     test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know')
