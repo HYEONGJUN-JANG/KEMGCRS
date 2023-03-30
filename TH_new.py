@@ -442,20 +442,18 @@ def main():
     # Read knowledge DB
     # train_knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'train_knowledge_DB.pickle'))  # TODO: verbalize (TH)
     knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'knowledgeDB.txt'))  # TODO: verbalize (TH)
-    knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
-    args.knowledge_num = len(knowledgeDB)
-    args.knowledgeDB = knowledgeDB
+    # knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
+    # args.knowledge_num = len(knowledgeDB)
+    # args.knowledgeDB = knowledgeDB
 
-    train_dataset_raw = dataset_reader(args, 'train')
-    test_dataset_raw = dataset_reader(args, 'test')
+    # train_dataset_raw = dataset_reader(args, 'train')
+    # test_dataset_raw = dataset_reader(args, 'test')
     # train_dataset = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
     # test_dataset = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
     # train_datamodel_resp = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='resp')
     # test_datamodel_resp = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='resp')
-    #
     # train_dataloader = DataLoader(train_datamodel_resp, batch_size=args.batch_size, shuffle=True)
     # test_dataloader = DataLoader(test_datamodel_resp, batch_size=args.batch_size, shuffle=False)
-    #
     # generator = Retriever(args, bert_model)
     # generator = generator.to(args.device)
     # criterion = nn.CrossEntropyLoss().to(args.device)
@@ -519,6 +517,10 @@ def main():
     retriever = retriever.to(args.device)
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
 
+    knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
+    args.knowledge_num = len(knowledgeDB)
+    args.knowledgeDB = knowledgeDB
+
     train_dataset_raw = dataset_reader(args, 'train')
     test_dataset_raw = dataset_reader(args, 'test')
     train_dataset = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
@@ -529,6 +531,7 @@ def main():
     train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
     test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
 
+    args.num_epochs=0
     for epoch in range(args.num_epochs):
         train_epoch_loss = 0
         for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
@@ -550,12 +553,12 @@ def main():
 
     eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
-    if args.saved_model_path == '':
-        train_retriever_idx(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
-    else:
-        retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
-
-    eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    # if args.saved_model_path == '':
+    #     train_retriever_idx(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
+    # else:
+    #     retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
+    #
+    # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
 if __name__ == "__main__":
