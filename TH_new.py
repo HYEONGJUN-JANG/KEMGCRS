@@ -385,6 +385,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         topic_idx = batch['topic_idx']
         candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
         target_knowledge = candidate_knowledge_token[:, 0, :]
+        target_knowledge_idx = int(batch['candidate_indice'][:,0])
 
         # tokenizer.batch_decode(dialog_token, skip_special_tokens=True)  # 'dialog context'
         # print([knowledgeDB[idx] for idx in target_knowledge]) # target knowledge
@@ -395,7 +396,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
         target_knowledge_text = tokenizer.batch_decode(target_knowledge, skip_special_tokens=True)  # target knowledge
         retrieved_knowledge_text = [knowledgeDB[idx].lower() for idx in top_candidate[0]]  # list
-        correct = target_knowledge_text in retrieved_knowledge_text
+        correct = target_knowledge_idx in top_candidate
+
         response = '||'.join(tokenizer.batch_decode(response, skip_special_tokens=True))
 
         type_idx = [args.goalDic['int'][int(idx)] for idx in type_idx]
@@ -531,24 +533,24 @@ def main():
     train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
     test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
 
-    for epoch in range(args.num_epochs):
-        train_epoch_loss = 0
-        for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-            retriever.train()
-            dialog_token = batch['dialog_token']
-            dialog_mask = batch['dialog_mask']
-            # response = batch['response']
-            candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
-            candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
-
-            logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
-            loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
-            # loss = criterion(dot_score, targets)
-            train_epoch_loss += loss
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-        print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+    # for epoch in range(args.num_epochs):
+    #     train_epoch_loss = 0
+    #     for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+    #         retriever.train()
+    #         dialog_token = batch['dialog_token']
+    #         dialog_mask = batch['dialog_mask']
+    #         # response = batch['response']
+    #         candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
+    #         candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
+    #
+    #         logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+    #         loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
+    #         # loss = criterion(dot_score, targets)
+    #         train_epoch_loss += loss
+    #         optimizer.zero_grad()
+    #         loss.backward()
+    #         optimizer.step()
+    #     print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
     eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
