@@ -298,10 +298,10 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         context_batch = defaultdict()
         if self.task == 'know':
-            prefix = '<type>' + type + '<topic>' + topic + self.tokenizer.eos_token
+            prefix = '<type>' + type + '<topic>' + topic
             topic_prompt = self.tokenizer.encode('predict the next knowledge: ')[1:]
         elif self.task == 'resp':
-            prefix = '<knowledge>' + self.args.knowledgeDB[target_knowledge_idx] + self.tokenizer.eos_token
+            prefix = '<knowledge>' + self.args.knowledgeDB[target_knowledge_idx]
             topic_prompt = self.tokenizer.encode('predict the next response: ')[1:]
 
         prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
@@ -445,17 +445,16 @@ def main():
     train_dataset = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
     test_dataset = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
 
-    train_datamodel_resp = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='resp')
-    test_datamodel_resp = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='resp')
-
-    train_dataloader = DataLoader(train_datamodel_resp, batch_size=args.batch_size, shuffle=True)
-    test_dataloader = DataLoader(test_datamodel_resp, batch_size=args.batch_size, shuffle=False)
-
-    generator = Retriever(args, bert_model)
-    generator = generator.to(args.device)
-
-    criterion = nn.CrossEntropyLoss().to(args.device)
-    optimizer = optim.AdamW(generator.parameters(), lr=args.lr)
+    # train_datamodel_resp = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='resp')
+    # test_datamodel_resp = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='resp')
+    #
+    # train_dataloader = DataLoader(train_datamodel_resp, batch_size=args.batch_size, shuffle=True)
+    # test_dataloader = DataLoader(test_datamodel_resp, batch_size=args.batch_size, shuffle=False)
+    #
+    # generator = Retriever(args, bert_model)
+    # generator = generator.to(args.device)
+    # criterion = nn.CrossEntropyLoss().to(args.device)
+    # optimizer = optim.AdamW(generator.parameters(), lr=args.lr)
     # train generate task
     # if args.saved_model_path == '':
     #     for epoch in range(args.num_epochs):
