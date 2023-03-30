@@ -62,7 +62,7 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
     return train_sample
 
 
-def dataset_reader(args, tokenizer, knowledgeDB, data_name='train'):
+def dataset_reader(args, data_name='train'):
     conversation_sample = []
     data_path = os.path.join(args.data_dir, f"en_{data_name}.txt")
     with open(data_path, 'r', encoding='UTF-8') as f:
@@ -307,7 +307,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
 
         input_sentence = self.tokenizer('<dialog>'+dialog, add_special_tokens=False).input_ids
-        input_sentence = [self.tokenizer.cls_token_id] + prefix_encoding + input_sentence[-(self.args.max_length - len(topic_prompt) -len(prefix_encoding) - 1):] + topic_prompt
+        input_sentence = [self.tokenizer.cls_token_id] + prefix_encoding + input_sentence[-(self.args.max_length - len(topic_prompt) - len(prefix_encoding) - 1):] + topic_prompt
         input_sentence = input_sentence + [self.tokenizer.pad_token_id] * (self.args.max_length - len(input_sentence))
         context_batch['dialog_token'] = torch.LongTensor(input_sentence).to(self.args.device)
         attention_mask = context_batch['dialog_token'].ne(self.tokenizer.pad_token_id)
@@ -440,11 +440,10 @@ def main():
     args.knowledge_num = len(knowledgeDB)
     args.knowledgeDB = knowledgeDB
 
-    train_dataset_raw = dataset_reader(args, tokenizer, knowledgeDB, 'train')
-    test_dataset_raw = dataset_reader(args, tokenizer, knowledgeDB, 'test')
-    train_dataset = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
-    test_dataset = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
-
+    # train_dataset_raw = dataset_reader(args, 'train')
+    # test_dataset_raw = dataset_reader(args, 'test')
+    # train_dataset = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
+    # test_dataset = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
     # train_datamodel_resp = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='resp')
     # test_datamodel_resp = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='resp')
     #
@@ -499,10 +498,23 @@ def main():
     #             f.write('-------------------------------------------\n')
     # else:
     #     generator.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
+    args.bert_name = 'args.bert_name'
+    args.usebart = False
+
+    bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
+    tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
+    tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
+    bert_model.resize_token_embeddings(len(tokenizer))
+    args.hidden_size = bert_model.config.hidden_size  # BERT large 쓸 때 대비
 
     retriever = Retriever(args, bert_model)
     retriever = retriever.to(args.device)
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
+
+    train_dataset_raw = dataset_reader(args, 'train')
+    test_dataset_raw = dataset_reader(args, 'test')
+    train_dataset = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
+    test_dataset = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
 
     train_datamodel_know = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='know')
     test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know')
