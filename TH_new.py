@@ -498,7 +498,7 @@ def main():
     #             f.write('-------------------------------------------\n')
     # else:
     #     generator.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
-    args.bert_name = 'args.bert_name'
+    args.bert_name = 'bert-base-uncased'
     args.usebart = False
 
     bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
