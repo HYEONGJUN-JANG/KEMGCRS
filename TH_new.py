@@ -263,7 +263,7 @@ class Retriever(nn.Module):
         if self.args.usebart:
             knowledge_index = self.query_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
         else:
-            knowledge_index = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+            knowledge_index = self.query_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask).last_hidden_state[:, 0, :]  # [B, d]
 
         knowledge_index = knowledge_index.view(batch_size, -1, dialog_emb.size(-1))
         logit = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2)  # [B, 1, d] * [B, K+1, d] = [B, K+1]
