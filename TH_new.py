@@ -533,24 +533,24 @@ def main():
     train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
     test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
 
-    # for epoch in range(args.num_epochs):
-    #     train_epoch_loss = 0
-    #     for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-    #         retriever.train()
-    #         dialog_token = batch['dialog_token']
-    #         dialog_mask = batch['dialog_mask']
-    #         # response = batch['response']
-    #         candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
-    #         candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
-    #
-    #         logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
-    #         loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
-    #         # loss = criterion(dot_score, targets)
-    #         train_epoch_loss += loss
-    #         optimizer.zero_grad()
-    #         loss.backward()
-    #         optimizer.step()
-    #     print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+    for epoch in range(args.num_epochs):
+        train_epoch_loss = 0
+        for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+            retriever.train()
+            dialog_token = batch['dialog_token']
+            dialog_mask = batch['dialog_mask']
+            # response = batch['response']
+            candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
+            candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
+
+            logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+            loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
+            # loss = criterion(dot_score, targets)
+            train_epoch_loss += loss
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
     eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
