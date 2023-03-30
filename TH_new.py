@@ -8,9 +8,9 @@ import torch
 from torch import optim
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
-from transformers import AutoModel, AutoTokenizer, BartForConditionalGeneration
+from transformers import AutoModel, AutoTokenizer, BartForConditionalGeneration, GPT2LMHeadModel
 import data
-from config import bert_special_tokens_dict
+from config import bert_special_tokens_dict, gpt_special_tokens_dict
 from eval_know import eval_know
 from train_know import train_retriever_idx
 from utils import *
@@ -50,7 +50,7 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
         for i in range(len(conversation['dialog'])):
             role = conversation['role_seq'][i]
             if role == 'System' and len(augmented_dialog) > 0 and conversation['knowledge_seq'][i] != '':
-                flatten_dialog = tokenizer.sep_token.join(augmented_dialog)
+                flatten_dialog = ' '.join(augmented_dialog)
                 train_sample.append({'dialog': flatten_dialog,
                                      'user_profile': conversation['user_profile'],
                                      'response': conversation['dialog'][i],
@@ -108,80 +108,6 @@ def negative_sampler(args, target_knowledge):
     return negative_indice
 
 
-def batchify(args, batch, knowledgeDB, tokenizer=None, task=''):
-    """
-    :param args: args
-    :param batch: batch
-    :param tokenizer: tokenizer
-    :param task: task {'type','topic','know'}
-    :return: Tensor[ dialog_token, dialog_mask, response, type, topic, candidate_indice(Optional) ]
-    """
-    # Input batches are all string
-    dialog, user_profile, response, type, topic, situation, target_knowledge = [batch[i] for i in ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge']]
-    context_batch = defaultdict()
-    prefix_list = []
-    for i in range(len(dialog)):  # batch 수 만큼
-        prefix = ' '
-        if task == 'type':
-            prefix = tokenizer.sep_token
-        elif task == 'topic':
-            prefix = '<type>' + type[i] + '<user_profile>' + user_profile[i]
-        elif task == 'know':
-            if isinstance(topic[i], list): topic[i] = ','.join(topic[i])
-            prefix = tokenizer.sep_token + '<situation>' + situation[i] + '<type>' + type[i] + '<topic>' + topic[i] + "predict the next goal:"
-        else:  # Rescponse
-            prefix = tokenizer.sep_token + '<knowledge>' + knowledgeDB[target_knowledge[i]] + "predict the next response:"
-            pass
-        prefix_list.append(prefix)
-
-    input_sentences = [s + '<dialog>' + d for d, s in zip(dialog, prefix_list)]
-    input_sentences = tokenizer(input_sentences, add_special_tokens=False).input_ids
-    topic_prompt = tokenizer.encode('predict the next goal: ')[1:]
-    input_sentences = [[tokenizer.cls_token_id] + sentence[-args.max_length + len(topic_prompt) + 1:] + topic_prompt for sentence in input_sentences]
-    input_sentences = [input_ids + [tokenizer.pad_token_id] * (args.max_length - len(input_ids)) for input_ids in input_sentences]
-
-    # suffix_list_token = tokenizer(suffix_list, add_special_tokens=False)
-    # dialog_list_token = tokenizer(dialog, add_special_tokens=False)
-    # input_token = [tokenizer.cls_token + s+d + " predict the next topic:" + tokenizer.eos_token for s, d in zip(suffix_list_token.input_ids, dialog_list_token.input_ids)]
-    # input_encoding = tokenizer(input_token)
-    context_batch['dialog_token'] = torch.LongTensor(input_sentences).to(args.device)
-    attention_mask = context_batch['dialog_token'].ne(tokenizer.pad_token_id)
-    context_batch['dialog_mask'] = attention_mask
-
-    # tokenized_dialog = tokenizer(input_token, truncation=True, padding='max_length', max_length=args.max_length)
-    # tokenized_dialog = tokenizer(dialog, add_special_tokens=False)
-    # tokenized_suffix = tokenizer(suffix_list, add_special_tokens=False, max_length=args.max_length//4, truncation=True)
-    # truncationPadding
-    context_batch['response'] = tokenizer(response, add_special_tokens=True, max_length=args.max_length, padding='max_length', truncation=True).input_ids
-    # context_batch['dialog_token'] = [truncationPadding(input_ids=dialog_inputids, prefix=[tokenizer.cls_token_id], suffix=suffix_inputids, max_length=args.max_length) for dialog_inputids, suffix_inputids in zip(tokenized_dialog.input_ids, tokenized_suffix.input_ids)]
-    # context_batch['dialog_mask'] = [truncationPadding(input_ids=dialoginputids, prefix=[1], suffix=suffix_inputids, max_length=args.max_length) for dialoginputids, suffix_inputids in zip(tokenized_dialog.attention_mask, tokenized_suffix.attention_mask)]
-    # context_batch['dialog_token'] = tokenized_dialog.input_ids
-    # context_batch['dialog_mask'] = tokenized_dialog.attention_mask
-
-    context_batch['type'] = [args.goalDic['str'][i] for i in type]  # index로 바꿈
-    context_batch['topic_idx'] = [args.topicDic['str'][i] for i in topic]  # index로 바꿈
-    context_batch['topic'] = tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
-    # context_batch['topic'] = [[token_id if token_id != tokenizer.pad_token_id else -100 for token_id in topic] for topic
-    #               in context_batch['topic']]
-
-    if task == 'know':
-        target_knowledge = target_knowledge.tolist()
-        candidate_indice = [[know] + negative_sampler(args, know) for know in target_knowledge]
-        # candidate_knowledge = tokenizer([args.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=args.max_length)
-        candidate_knowledge_token = [[tokenizer(args.knowledgeDB[i], truncation=True, padding='max_length', max_length=args.max_length).input_ids for i in idx] for idx in candidate_indice]
-        candidate_knowledge_mask = [[tokenizer(args.knowledgeDB[i], truncation=True, padding='max_length', max_length=args.max_length).attention_mask for i in idx] for idx in candidate_indice]
-        context_batch['candidate_indice'] = candidate_indice  # 이미 Tensor로 받음
-        context_batch['candidate_knowledge_token'] = candidate_knowledge_token
-        context_batch['candidate_knowledge_mask'] = candidate_knowledge_mask
-        # [target, cand1, cand2, cand3, cand4]
-
-    for k, v in context_batch.items():
-        if not isinstance(v, torch.Tensor):
-            context_batch[k] = torch.as_tensor(v, device=args.device)
-            # context_batch[k] = torch.as_tensor(v)
-    return context_batch
-
-
 class KnowledgeDataset(Dataset):
     def __init__(self, args, knowledgeDB, tokenizer):
         super(Dataset, self).__init__()
@@ -206,11 +132,12 @@ class KnowledgeDataset(Dataset):
 
 
 class Retriever(nn.Module):
-    def __init__(self, args, query_bert):
+    def __init__(self, args, query_bert=None, gpt_model=None):
         super(Retriever, self).__init__()
         self.args = args
         self.query_bert = query_bert  # Knowledge text 처리를 위한 BERT
-        self.hidden_size = query_bert.config.hidden_size
+        self.gpt_model = gpt_model
+        self.hidden_size = args.hidden_size
         self.topic_proj = nn.Linear(self.hidden_size, args.topic_num)
 
     def forward(self, token_seq, mask):
@@ -222,7 +149,9 @@ class Retriever(nn.Module):
         return dialog_emb
 
     def generation(self, token_seq, mask, labels):
-        outputs = self.query_bert(input_ids=token_seq, attention_mask=mask, labels=labels, output_hidden_states=True)
+        outputs = self.gpt_model(input_ids=token_seq, attention_mask =mask, labels=labels)
+        # outputs = self.gpt_model(input_ids=token_seq, labels=labels)
+
         return outputs[0]
 
     def compute_know_score(self, token_seq, mask, knowledge_index):
@@ -230,8 +159,10 @@ class Retriever(nn.Module):
         eval_know.computing_score에서
         모든 key vector에서 올라온 벡터를 통해 계산처리
         """
-        if self.args.usebart: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:,0,:].squeeze(1)
-        else: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        if self.args.usebart:
+            dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
+        else:
+            dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
         return dot_score
@@ -253,8 +184,10 @@ class Retriever(nn.Module):
         # else:
         #     dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
 
-        if self.args.usebart: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:,0,:].squeeze(1)
-        else: dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        if self.args.usebart:
+            dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
+        else:
+            dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
 
         # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B*(K+1), L]
@@ -295,6 +228,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         data = self.augmented_raw_sample[idx]
         cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge']
         dialog, user_profile, response, type, topic, situation, target_knowledge_idx = [data[i] for i in cbdicKeys]
+        pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
 
         context_batch = defaultdict()
         if self.task == 'know':
@@ -307,17 +241,21 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
 
-        input_sentence = self.tokenizer('<dialog>'+dialog, add_special_tokens=False).input_ids
-        input_sentence = [self.tokenizer.cls_token_id] + prefix_encoding + input_sentence[-(self.args.max_length - len(topic_prompt) - len(prefix_encoding) - 1):] + topic_prompt
-        input_sentence = input_sentence + [self.tokenizer.pad_token_id] * (self.args.max_length - len(input_sentence))
-        context_batch['dialog_token'] = torch.LongTensor(input_sentence).to(self.args.device)
-        attention_mask = context_batch['dialog_token'].ne(self.tokenizer.pad_token_id)
-        context_batch['dialog_mask'] = attention_mask
+        input_sentence = self.tokenizer('<dialog>' + dialog, add_special_tokens=False).input_ids
+        if self.tokenizer.cls_token_id is not None:
+            input_sentence = [self.tokenizer.cls_token_id] + prefix_encoding + input_sentence[-(self.args.max_length - len(topic_prompt) - len(prefix_encoding) - 1):] + topic_prompt
+        else:
+            input_sentence = prefix_encoding + input_sentence[-(self.args.max_length - len(topic_prompt) - len(prefix_encoding)):] + topic_prompt
+
+        input_sentence = input_sentence + [pad_token_id] * (self.args.max_length - len(input_sentence))
+        context_batch['input_ids'] = torch.LongTensor(input_sentence).to(self.args.device)
+        attention_mask = context_batch['input_ids'].ne(pad_token_id)
+        context_batch['attention_mask'] = attention_mask
         context_batch['response'] = self.tokenizer(response,
-                                                   add_special_tokens=True,
-                                                   max_length=self.args.max_length,
-                                                   padding='max_length',
-                                                   truncation=True).input_ids
+                                                 add_special_tokens=True,
+                                                 max_length=self.args.max_length,
+                                                 padding='max_length',
+                                                 truncation=True).input_ids
 
         context_batch['type'] = self.args.goalDic['str'][type]  # index로 바꿈
         context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
@@ -366,7 +304,6 @@ def knowledge_reindexing(args, knowledge_data, retriever):
 
 
 def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer):
-
     # Read knowledge DB
     # knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     # knowledge_index = knowledge_index.to(args.device)
@@ -376,16 +313,16 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     knowledge_index = knowledge_index.to(args.device)
 
     cnt = 0
-    for batch in tqdm(test_dataloader, desc="Knowledge_Test", bar_format=' {percentage:3.0f} % | {bar:23} {r_bar}'): # TODO: Knowledge task 분리중
-        dialog_token = batch['dialog_token']
-        dialog_mask = batch['dialog_mask']
+    for batch in tqdm(test_dataloader, desc="Knowledge_Test", bar_format=' {percentage:3.0f} % | {bar:23} {r_bar}'):  # TODO: Knowledge task 분리중
+        dialog_token = batch['input_ids']
+        dialog_mask = batch['attention_mask']
         response = batch['response']
         candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
         type_idx = batch['type']
         topic_idx = batch['topic_idx']
         candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
         target_knowledge = candidate_knowledge_token[:, 0, :]
-        target_knowledge_idx = int(batch['candidate_indice'][:,0])
+        target_knowledge_idx = int(batch['candidate_indice'][:, 0])
 
         # tokenizer.batch_decode(dialog_token, skip_special_tokens=True)  # 'dialog context'
         # print([knowledgeDB[idx] for idx in target_knowledge]) # target knowledge
@@ -418,7 +355,8 @@ def main():
     # args.data_cache = False
     args.who = "TH"
     args.bert_name = 'facebook/bart-base'
-    args.usebart = True
+    args.task = 'resp'
+    # args.usebart = True
 
     checkPath(args.log_dir)
     checkPath(args.model_dir)
@@ -427,12 +365,6 @@ def main():
     logging.info('Commend: {}'.format(', '.join(map(str, sys.argv))))
     # Model cached load
     checkPath(os.path.join("cache", args.bert_name))
-
-    bert_model = BartForConditionalGeneration.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
-    tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
-    tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
-    bert_model.resize_token_embeddings(len(tokenizer))
-    args.hidden_size = bert_model.config.hidden_size  # BERT large 쓸 때 대비
 
     topicDic = readDic(os.path.join(args.data_dir, "topic2id.txt"))
     goalDic = readDic(os.path.join(args.data_dir, "goal2id.txt"))
@@ -447,119 +379,122 @@ def main():
     args.knowledge_num = len(knowledgeDB)
     args.knowledgeDB = knowledgeDB
 
-    # train_dataset_raw_resp = dataset_reader(args, 'train')
-    # test_dataset_raw_resp = dataset_reader(args, 'test')
-    # train_dataset_resp = process_augment_sample(train_dataset_raw_resp, tokenizer, knowledgeDB)
-    # test_dataset_resp = process_augment_sample(test_dataset_raw_resp, tokenizer, knowledgeDB)
-    #
-    # train_datamodel_resp = DialogDataset(args, train_dataset_resp, knowledgeDB, tokenizer, task='resp')
-    # test_datamodel_resp = DialogDataset(args, test_dataset_resp, knowledgeDB, tokenizer, task='resp')
-    # train_dataloader_resp = DataLoader(train_datamodel_resp, batch_size=args.batch_size, shuffle=True)
-    # test_dataloader_resp = DataLoader(test_datamodel_resp, batch_size=args.batch_size, shuffle=False)
-    # generator = Retriever(args, bert_model)
-    # generator = generator.to(args.device)
-    # criterion = nn.CrossEntropyLoss().to(args.device)
-    # optimizer = optim.AdamW(generator.parameters(), lr=args.lr)
-    # # train generate task
-    # if args.saved_model_path == '':
-    #     for epoch in range(args.num_epochs):
-    #         train_epoch_loss = 0
-    #         for batch in tqdm(train_dataloader_resp, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-    #             generator.train()
-    #             dialog_token = batch['dialog_token']
-    #             dialog_mask = batch['dialog_mask']
-    #             response = batch['response']
-    #
-    #             loss = generator.generation(dialog_token, dialog_mask, response)
-    #             # loss = criterion(dot_score, targets)
-    #             train_epoch_loss += loss
-    #             optimizer.zero_grad()
-    #             loss.backward()
-    #             optimizer.step()
-    #         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
-    #     torch.save(generator.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
-    #
-    #     # test generation task
-    #     all_dialog = []
-    #     all_response = []
-    #     all_generated = []
-    #     for batch in tqdm(test_dataloader_resp, desc="Generate Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-    #         generator.eval()
-    #         dialog_token = batch['dialog_token']
-    #         dialog_mask = batch['dialog_mask']
-    #         response = batch['response']
-    #
-    #         batch_size = dialog_token.shape[0]
-    #         generated = generator.query_bert.generate(input_ids=dialog_token,
-    #                                                   attention_mask=dialog_mask,
-    #                                                   max_length=50)
-    #         decoded_generated = tokenizer.batch_decode(generated, skip_special_tokens=True)
-    #         all_generated.extend(decoded_generated)
-    #         all_response.extend(tokenizer.batch_decode(response, skip_special_tokens=True))
-    #         all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
-    #
-    #     with open(f"response_write_{args.time}_{args.model_name}.txt", 'w', encoding='UTF-8') as f:
-    #         for (a, b, c) in zip(all_dialog, all_response, all_generated):
-    #             f.write('[DIALOG]\t%s\n[RESPONSE]\t%s\n[GENERATED]\t%s\n' % (a, b, c))
-    #             f.write('-------------------------------------------\n')
-    # else:
-    #     generator.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
-
-    # KNOWLEDGE TASk
-    args.bert_name = 'bert-base-uncased'
-    args.usebart = False
-
-    bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
-    tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
-    tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
-    bert_model.resize_token_embeddings(len(tokenizer))
-    args.hidden_size = bert_model.config.hidden_size  # BERT large 쓸 때 대비
-
-    retriever = Retriever(args, bert_model)
-    retriever = retriever.to(args.device)
-    optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
-
-    knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
-    args.knowledge_num = len(knowledgeDB)
-    args.knowledgeDB = knowledgeDB
-
     train_dataset_raw = dataset_reader(args, 'train')
     test_dataset_raw = dataset_reader(args, 'test')
-    train_dataset = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
-    test_dataset = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
 
-    train_datamodel_know = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='know')
-    test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know')
-    train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
-    test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
+    if 'resp' in args.task:
+        args.bert_name = 'gpt2'
+        gpt_model = GPT2LMHeadModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
+        tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
+        tokenizer.add_special_tokens(gpt_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
+        gpt_model.resize_token_embeddings(len(tokenizer))
+        args.hidden_size = gpt_model.config.hidden_size  # BERT large 쓸 때 대비
 
-    for epoch in range(args.num_epochs):
-        train_epoch_loss = 0
-        for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-            retriever.train()
-            dialog_token = batch['dialog_token']
-            dialog_mask = batch['dialog_mask']
-            # response = batch['response']
-            candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
-            candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
+        train_dataset_resp = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
+        test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
 
-            logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
-            loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
-            # loss = criterion(dot_score, targets)
-            train_epoch_loss += loss
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-        print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+        train_datamodel_resp = DialogDataset(args, train_dataset_resp, knowledgeDB, tokenizer, task='resp')
+        test_datamodel_resp = DialogDataset(args, test_dataset_resp, knowledgeDB, tokenizer, task='resp')
+        train_dataloader_resp = DataLoader(train_datamodel_resp, batch_size=args.batch_size, shuffle=True)
+        test_dataloader_resp = DataLoader(test_datamodel_resp, batch_size=args.batch_size, shuffle=False)
+        generator = Retriever(args, gpt_model=gpt_model)
+        generator = generator.to(args.device)
+        criterion = nn.CrossEntropyLoss().to(args.device)
+        optimizer = optim.AdamW(generator.parameters(), lr=args.lr)
+        # train generate task
+        if args.saved_model_path == '':
+            for epoch in range(args.num_epochs):
+                train_epoch_loss = 0
+                for batch in tqdm(train_dataloader_resp, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+                    generator.train()
+                    dialog_token = batch['input_ids']
+                    dialog_mask = batch['attention_mask']
+                    response = batch['response']
 
-    eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+                    loss = generator.generation(dialog_token, dialog_mask, response)
+                    # loss = criterion(dot_score, targets)
+                    train_epoch_loss += loss
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+                print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+            torch.save(generator.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
 
-    # if args.saved_model_path == '':
-    #     train_retriever_idx(args, train_dataloader, knowledge_data, retriever)  # [TH] <topic> 추가됐으니까 재학습
-    # else:
-    #     retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
-    #
-    # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+            # test generation task
+            all_dialog = []
+            all_response = []
+            all_generated = []
+            for batch in tqdm(test_dataloader_resp, desc="Generate Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+                generator.eval()
+                dialog_token = batch['input_ids']
+                dialog_mask = batch['attention_mask']
+                response = batch['response']
+
+                batch_size = dialog_token.shape[0]
+                generated = generator.gpt_model.generate(input_ids=dialog_token,
+                                                          attention_mask=dialog_mask,
+                                                          max_length=50)
+                decoded_generated = tokenizer.batch_decode(generated, skip_special_tokens=True)
+                all_generated.extend(decoded_generated)
+                all_response.extend(tokenizer.batch_decode(response, skip_special_tokens=True))
+                all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
+
+            with open(f"response_write_{args.time}_{args.model_name}.txt", 'w', encoding='UTF-8') as f:
+                for (a, b, c) in zip(all_dialog, all_response, all_generated):
+                    f.write('[DIALOG]\t%s\n[RESPONSE]\t%s\n[GENERATED]\t%s\n' % (a, b, c))
+                    f.write('-------------------------------------------\n')
+        else:
+            generator.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
+
+    if 'know' in args.task:
+        # KNOWLEDGE TASk
+        args.bert_name = 'bert-base-uncased'
+        args.usebart = False
+
+        bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
+        tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
+        tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
+        bert_model.resize_token_embeddings(len(tokenizer))
+        args.hidden_size = bert_model.config.hidden_size  # BERT large 쓸 때 대비
+
+        retriever = Retriever(args, bert_model)
+        retriever = retriever.to(args.device)
+        optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
+
+        knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
+        args.knowledge_num = len(knowledgeDB)
+        args.knowledgeDB = knowledgeDB
+
+        train_dataset_raw = dataset_reader(args, 'train')
+        test_dataset_raw = dataset_reader(args, 'test')
+        train_dataset = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
+        test_dataset = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
+
+        train_datamodel_know = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='know')
+        test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know')
+        train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
+        test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
+
+        for epoch in range(args.num_epochs):
+            train_epoch_loss = 0
+            for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+                retriever.train()
+                dialog_token = batch['dialog_token']
+                dialog_mask = batch['dialog_mask']
+                # response = batch['response']
+                candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
+                candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
+
+                logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+                loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
+                # loss = criterion(dot_score, targets)
+                train_epoch_loss += loss
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+            print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+
+        eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
 if __name__ == "__main__":
