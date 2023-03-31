@@ -8,7 +8,7 @@ import torch
 from torch import optim
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
-from transformers import AutoModel, AutoTokenizer, BartForConditionalGeneration, GPT2LMHeadModel
+from transformers import AutoModel, AutoTokenizer, BartForConditionalGeneration, GPT2LMHeadModel, GPT2Config
 import data
 from config import bert_special_tokens_dict, gpt_special_tokens_dict
 from eval_know import eval_know
@@ -49,16 +49,18 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
         augmented_dialog = []
         for i in range(len(conversation['dialog'])):
             role = conversation['role_seq'][i]
+            utterance = conversation['dialog'][i]
+
             if role == 'System' and len(augmented_dialog) > 0 and conversation['knowledge_seq'][i] != '':
-                flatten_dialog = ' '.join(augmented_dialog)
+                flatten_dialog = ''.join(augmented_dialog)
                 train_sample.append({'dialog': flatten_dialog,
                                      'user_profile': conversation['user_profile'],
-                                     'response': conversation['dialog'][i],
+                                     'response': utterance  + tokenizer.eos_token,
                                      'type': conversation['type'][i],
                                      'topic': conversation['topic'][i],
                                      'situation': conversation['situation'],
                                      'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i])})
-            augmented_dialog.append(conversation['dialog'][i])
+            augmented_dialog.append(utterance)
     return train_sample
 
 
@@ -149,7 +151,7 @@ class Retriever(nn.Module):
         return dialog_emb
 
     def generation(self, token_seq, mask, labels):
-        outputs = self.gpt_model(input_ids=token_seq, attention_mask =mask, labels=labels)
+        outputs = self.gpt_model(input_ids=token_seq, attention_mask=mask, labels=labels)
         # outputs = self.gpt_model(input_ids=token_seq, labels=labels)
 
         return outputs[0]
@@ -257,10 +259,10 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         attention_mask = context_batch['input_ids'].ne(pad_token_id)
         context_batch['attention_mask'] = attention_mask
         context_batch['response'] = self.tokenizer(response,
-                                                 add_special_tokens=True,
-                                                 max_length=self.args.max_length,
-                                                 padding='max_length',
-                                                 truncation=True).input_ids
+                                                   add_special_tokens=True,
+                                                   max_length=self.args.max_length,
+                                                   padding='max_length',
+                                                   truncation=True).input_ids
 
         context_batch['type'] = self.args.goalDic['str'][type]  # index로 바꿈
         context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
@@ -279,6 +281,74 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         for k, v in context_batch.items():
             if not isinstance(v, torch.Tensor):
                 context_batch[k] = torch.as_tensor(v, device=self.args.device)
+                # context_batch[k] = torch.as_tensor(v)
+        return context_batch
+
+    def __len__(self):
+        return len(self.augmented_raw_sample)
+
+
+class GenerationDataset(Dataset):  # knowledge용 데이터셋
+    def __init__(self, args, data_sample, knowledgeDB, tokenizer, mode='train'):
+        super(Dataset, self).__init__()
+        self.args = args
+        self.tokenizer = tokenizer
+        self.knowledgeDB = knowledgeDB
+        self.augmented_raw_sample = data_sample
+        self.mode = mode
+        self.generate_prompt_ids = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize('System:'))
+
+    def __getitem__(self, idx):  # TODO 구현 전
+        data = self.augmented_raw_sample[idx]
+        cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge']
+        dialog, user_profile, response, type, topic, situation, target_knowledge_idx = [data[i] for i in cbdicKeys]
+        pad_token_id = self.tokenizer.eos_token_id
+
+        context_batch = defaultdict()
+        resp_batch = []
+        context_len_batch = []
+
+        prefix = ''
+        topic_prompt = self.tokenizer.encode('predict the next response: ')[1:]
+
+        prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
+
+        dialog = self.tokenizer(dialog, max_length=self.args.max_length,
+                                truncation=True).input_ids
+
+
+        if self.mode == 'train':
+            response = self.tokenizer(response, max_length=self.args.max_gen_length,
+                                      truncation=True).input_ids
+
+            self.tokenizer.padding_side = 'right'
+            max_length = self.args.max_length + self.args.max_gen_length
+            context_ids = dialog + response
+            context_ids = context_ids[-max_length:]
+            context_ids = context_ids + [pad_token_id] * (max_length - len(context_ids))
+            resp_batch = [token_id if token_id != self.tokenizer.pad_token_id else -100 for token_id in context_ids]
+
+            context_batch['input_ids'] = torch.LongTensor(context_ids)
+            context_batch['attention_mask'] = torch.ne(context_batch['input_ids'], pad_token_id)
+            context_batch['response'] =torch.LongTensor(resp_batch)
+
+        elif self.mode == 'test':
+            self.tokenizer.padding_side = 'left'
+
+            context_ids = dialog[-(self.args.max_length-len(self.generate_prompt_ids)):]
+            context_len_batch = len(context_ids)
+            context_ids += self.generate_prompt_ids
+
+            context_ids = [pad_token_id] * (self.args.max_length - len(context_ids)) + context_ids
+            context_batch['input_ids'] = torch.LongTensor(context_ids)
+            context_batch['attention_mask'] = torch.ne(context_batch['input_ids'], pad_token_id)
+
+            context_batch['response'] = response
+            context_batch['context_len'] = context_len_batch
+
+        # for k, v in context_batch.items():
+        #     if not isinstance(v, torch.Tensor):
+        #         context_batch[k] = torch.as_tensor(v, device=self.args.device)
                 # context_batch[k] = torch.as_tensor(v)
         return context_batch
 
@@ -362,6 +432,7 @@ def main():
     args.bert_name = 'facebook/bart-base'
     args.task = 'resp'
     # args.usebart = True
+    args.max_gen_length = 50
 
     checkPath(args.log_dir)
     checkPath(args.model_dir)
@@ -389,7 +460,8 @@ def main():
 
     if 'resp' in args.task:
         args.bert_name = 'gpt2'
-        gpt_model = GPT2LMHeadModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
+        config = GPT2Config.from_pretrained(args.bert_name, max_length=args.max_gen_length+args.max_length)
+        gpt_model = GPT2LMHeadModel.from_pretrained(args.bert_name, config=config,cache_dir=os.path.join("cache", args.bert_name))
         tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
         tokenizer.add_special_tokens(gpt_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
         gpt_model.resize_token_embeddings(len(tokenizer))
@@ -398,8 +470,8 @@ def main():
         train_dataset_resp = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
         test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
 
-        train_datamodel_resp = DialogDataset(args, train_dataset_resp, knowledgeDB, tokenizer, task='resp')
-        test_datamodel_resp = DialogDataset(args, test_dataset_resp, knowledgeDB, tokenizer, task='resp', mode='generate')
+        train_datamodel_resp = GenerationDataset(args, train_dataset_resp, knowledgeDB, tokenizer, mode='train')
+        test_datamodel_resp = GenerationDataset(args, test_dataset_resp, knowledgeDB, tokenizer, mode='test')
 
         train_dataloader_resp = DataLoader(train_datamodel_resp, batch_size=args.batch_size, shuffle=True)
         test_dataloader_resp = DataLoader(test_datamodel_resp, batch_size=args.batch_size, shuffle=False)
@@ -414,9 +486,9 @@ def main():
                 train_epoch_loss = 0
                 for batch in tqdm(train_dataloader_resp, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
                     generator.train()
-                    dialog_token = batch['input_ids']
-                    dialog_mask = batch['attention_mask']
-                    response = batch['response']
+                    dialog_token = batch['input_ids'].to(args.device)
+                    dialog_mask = batch['attention_mask'].to(args.device)
+                    response = batch['response'].to(args.device)
 
                     loss = generator.generation(dialog_token, dialog_mask, response)
                     # loss = criterion(dot_score, targets)
@@ -425,7 +497,7 @@ def main():
                     loss.backward()
                     optimizer.step()
                 print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
-            torch.save(generator.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_bin.pt"))  # TIME_MODELNAME 형식
+            torch.save(generator.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_gen_bin.pt"))  # TIME_MODELNAME 형식
 
             # test generation task
             all_dialog = []
@@ -433,17 +505,17 @@ def main():
             all_generated = []
             for batch in tqdm(test_dataloader_resp, desc="Generate Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
                 generator.eval()
-                dialog_token = batch['input_ids']
-                dialog_mask = batch['attention_mask']
+                dialog_token = batch['input_ids'].to(args.device)
+                dialog_mask = batch['attention_mask'].to(args.device)
                 response = batch['response']
 
                 batch_size = dialog_token.shape[0]
                 generated = generator.gpt_model.generate(input_ids=dialog_token,
-                                                          attention_mask=dialog_mask,
-                                                          max_length=50)
+                                                         attention_mask=dialog_mask,
+                                                         max_length=args.max_gen_length+args.max_length)
                 decoded_generated = tokenizer.batch_decode(generated, skip_special_tokens=True)
                 all_generated.extend(decoded_generated)
-                all_response.extend(tokenizer.batch_decode(response, skip_special_tokens=True))
+                all_response.extend(response)
                 all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
 
             with open(f"response_write_{args.time}_{args.model_name}.txt", 'w', encoding='UTF-8') as f:
