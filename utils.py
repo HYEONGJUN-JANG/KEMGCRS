@@ -44,6 +44,8 @@ def parseargs():
     parser.add_argument('--qencoder_name', default='facebook/bart-base', type=str, help="Query Encoder Model Name")
 
     parser.add_argument('--bart_name', default='facebook/bart-base', type=str, help="BERT Model Name")
+    parser.add_argument('--bert_name', default='bert-base-uncased', type=str, help="BERT Model Name")
+    parser.add_argument('--gpt_name', default='gpt2', type=str, help="BERT Model Name")
 
     parser.add_argument('--model_name', default='myretriever', type=str, help="BERT Model Name")
 
