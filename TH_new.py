@@ -483,8 +483,8 @@ def main():
         train_dataset_resp = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
         test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
 
-        train_datamodel_resp = GenerationDataset(args, train_dataset_resp, knowledgeDB, tokenizer, mode='train')
-        test_datamodel_resp = GenerationDataset(args, test_dataset_resp, knowledgeDB, tokenizer, mode='test')
+        train_datamodel_resp = GenerationDataset(args, train_dataset_resp, knowledgeDB, tokenizer, mode='train', knowledge='yes')
+        test_datamodel_resp = GenerationDataset(args, test_dataset_resp, knowledgeDB, tokenizer, mode='test', knowledge='no')
 
         train_dataloader_resp = DataLoader(train_datamodel_resp, batch_size=args.batch_size, shuffle=True)
         test_dataloader_resp = DataLoader(test_datamodel_resp, batch_size=args.batch_size, shuffle=False)
