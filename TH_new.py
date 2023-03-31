@@ -317,7 +317,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         knowledge_text = self.knowledgeDB[target_knowledge_idx]
 
         max_knowledge_length=30
-        if knowledge=='yes':
+        if self.knowledge=='yes':
             knowledge_text = self.tokenizer('<knowledge>'+self.knowledgeDB[target_knowledge_idx], max_length=max_knowledge_length,
                                 truncation=True).input_ids
         else:
