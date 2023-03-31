@@ -22,9 +22,9 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever, token
     # For training BERT indexing
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(retriever.parameters(), lr=args.lr)
-    modelpath = os.path.join(args.model_dir, f"{args.task}_best_model.pt")
-    early_stopping = EarlyStopping(args, patience=7, path=modelpath, verbose=True)
+    optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
+    # modelpath = os.path.join(args.model_dir, f"{args.task}_best_model.pt")
+    # early_stopping = EarlyStopping(args, patience=7, path=modelpath, verbose=True)
     if args.retrieve == 'freeze':
         knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
         knowledge_index = knowledge_index.to(args.device)
@@ -36,7 +36,7 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever, token
         for batch in tqdm(train_dataloader, desc="Knowledge Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
             if isinstance(train_dataloader.dataset, DialogDataset_TEMP):
                 if args.task == 'know':
-                    cbdicKeys = ['dialog_token', 'dialog_mask', 'response', 'type', 'topic']
+                    cbdicKeys = ['dialog_token', 'dialog_mask', 'response', 'type', 'topic', 'topic_idx']
                     context_batch = batchify(args, batch, tokenizer, task=args.task)
                     cbdicKeys += ['candidate_indice','candidate_knowledge_token','candidate_knowledge_mask']
                     dialog_token, dialog_mask, response, type, topic, candidate_indice, candidate_knowledge_token, candidate_knowledge_mask = [context_batch[i] for i in cbdicKeys]
@@ -69,11 +69,11 @@ def train_retriever_idx(args, train_dataloader, knowledge_data, retriever, token
         print('LOSS:\t%.4f' % total_loss)
         logger.info('LOSS:\t%.4f' % total_loss)
         logger.info('{} LOSS:\t{}'.format(args.task, round(total_loss,4)))
-        early_stopping(round(1000 - int(total_loss), 3), retriever)
-        if early_stopping.early_stop:
-            print("Early stopping")
-            logger.info("Early Stopping on Epoch {}, Path: {}".format(epoch, modelpath))
-            break
+        # early_stopping(round(1000 - int(total_loss), 3), retriever)
+        # if early_stopping.early_stop:
+        #     print("Early stopping")
+        #     logger.info("Early Stopping on Epoch {}, Path: {}".format(epoch, modelpath))
+        #     break
         if gpucheck: gpucheck = checkGPU(args, logger)
     del optimizer
     torch.cuda.empty_cache()
