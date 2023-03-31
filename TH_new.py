@@ -514,7 +514,13 @@ def main():
                                                          attention_mask=dialog_mask,
                                                          max_length=args.max_gen_length+args.max_length)
                 decoded_generated = tokenizer.batch_decode(generated, skip_special_tokens=True)
-                all_generated.extend(decoded_generated)
+
+                gen_resp_ids = []
+                for gen_seq, length in zip(decoded_generated, batch['context_len']):
+                    gen_seq = [token_id for token_id in gen_seq if token_id != tokenizer.eos_token_id]
+                    gen_resp_ids.append(gen_seq[length:])
+
+                all_generated.extend(gen_resp_ids)
                 all_response.extend(response)
                 all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
 
