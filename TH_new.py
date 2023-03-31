@@ -315,9 +315,12 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
 
         knowledge_text = self.knowledgeDB[target_knowledge_idx]
 
-        dialog = '<knowledge>' + knowledge_text + '<dialog>' + dialog
-        dialog = self.tokenizer(dialog, max_length=self.args.max_length,
+        max_knowledge_length=30
+        knowledge_text = self.tokenizer('<knowledge>'+self.knowledgeDB[target_knowledge_idx], max_length=max_knowledge_length,
                                 truncation=True).input_ids
+        dialog = self.tokenizer('<dialog>'+dialog, max_length=self.args.max_length-len(knowledge_text),
+                                truncation=True).input_ids
+        dialog = knowledge_text+dialog
 
         if self.mode == 'train':
             response = self.tokenizer(response, max_length=self.args.max_gen_length,
