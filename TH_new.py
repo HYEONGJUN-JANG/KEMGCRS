@@ -487,22 +487,22 @@ def main():
         optimizer = optim.AdamW(generator.parameters(), lr=args.lr)
         # train generate task
         if args.saved_model_path == '':
-            # for epoch in range(args.num_epochs):
-            #     train_epoch_loss = 0
-            #     for batch in tqdm(train_dataloader_resp, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-            #         generator.train()
-            #         dialog_token = batch['input_ids'].to(args.device)
-            #         dialog_mask = batch['attention_mask'].to(args.device)
-            #         response = batch['response'].to(args.device)
-            #
-            #         loss = generator.generation(dialog_token, dialog_mask, response)
-            #         # loss = criterion(dot_score, targets)
-            #         train_epoch_loss += loss
-            #         optimizer.zero_grad()
-            #         loss.backward()
-            #         optimizer.step()
-            #     print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
-            # torch.save(generator.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_gen_bin.pt"))  # TIME_MODELNAME 형식
+            for epoch in range(args.num_epochs):
+                train_epoch_loss = 0
+                for batch in tqdm(train_dataloader_resp, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+                    generator.train()
+                    dialog_token = batch['input_ids'].to(args.device)
+                    dialog_mask = batch['attention_mask'].to(args.device)
+                    response = batch['response'].to(args.device)
+
+                    loss = generator.generation(dialog_token, dialog_mask, response)
+                    # loss = criterion(dot_score, targets)
+                    train_epoch_loss += loss
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+                print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+            torch.save(generator.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_gen_bin.pt"))  # TIME_MODELNAME 형식
 
             # test generation task
             all_dialog = []
