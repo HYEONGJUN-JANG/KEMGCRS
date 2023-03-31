@@ -316,8 +316,12 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         knowledge_text = self.knowledgeDB[target_knowledge_idx]
 
         max_knowledge_length=30
-        knowledge_text = self.tokenizer('<knowledge>'+self.knowledgeDB[target_knowledge_idx], max_length=max_knowledge_length,
+        if self.args.knowledge:
+            knowledge_text = self.tokenizer('<knowledge>'+self.knowledgeDB[target_knowledge_idx], max_length=max_knowledge_length,
                                 truncation=True).input_ids
+        else:
+            knowledge_text = []
+
         dialog = self.tokenizer('<dialog>'+dialog, max_length=self.args.max_length-len(knowledge_text),
                                 truncation=True).input_ids
         dialog = knowledge_text+dialog
