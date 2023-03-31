@@ -526,7 +526,7 @@ def main():
                     gen_seq = [token_id for token_id in gen_seq if token_id != tokenizer.pad_token_id]
                     gen_resp_ids.append(gen_seq[length:])
 
-                all_generated.extend(gen_resp_ids)
+                all_generated.extend(tokenizer.batch_decode(gen_resp_ids))
                 all_response.extend(response)
                 all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
 
