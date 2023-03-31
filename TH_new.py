@@ -49,13 +49,13 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
         augmented_dialog = []
         for i in range(len(conversation['dialog'])):
             role = conversation['role_seq'][i]
-            utterance = conversation['dialog'][i]
+            utterance = conversation['dialog'][i]+ tokenizer.eos_token
 
             if role == 'System' and len(augmented_dialog) > 0 and conversation['knowledge_seq'][i] != '':
                 flatten_dialog = ''.join(augmented_dialog)
                 train_sample.append({'dialog': flatten_dialog,
                                      'user_profile': conversation['user_profile'],
-                                     'response': utterance  + tokenizer.eos_token,
+                                     'response': utterance  ,
                                      'type': conversation['type'][i],
                                      'topic': conversation['topic'][i],
                                      'situation': conversation['situation'],
@@ -302,7 +302,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         data = self.augmented_raw_sample[idx]
         cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge']
         dialog, user_profile, response, type, topic, situation, target_knowledge_idx = [data[i] for i in cbdicKeys]
-        pad_token_id = self.tokenizer.eos_token_id
+        pad_token_id = self.tokenizer.pad_token_id
 
         context_batch = defaultdict()
         resp_batch = []
@@ -313,6 +313,9 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
 
         prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
 
+        knowledge_text = self.knowledgeDB[target_knowledge_idx]
+
+        dialog = knowledge_text + self.tokenizer.eos_token + dialog
         dialog = self.tokenizer(dialog, max_length=self.args.max_length,
                                 truncation=True).input_ids
 
@@ -321,7 +324,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             response = self.tokenizer(response, max_length=self.args.max_gen_length,
                                       truncation=True).input_ids
 
-            self.tokenizer.padding_side = 'right'
+            # self.tokenizer.padding_side = 'right'
             max_length = self.args.max_length + self.args.max_gen_length
             context_ids = dialog + response
             context_ids = context_ids[-max_length:]
@@ -333,10 +336,10 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             context_batch['response'] =torch.LongTensor(resp_batch)
 
         elif self.mode == 'test':
-            self.tokenizer.padding_side = 'left'
+            # self.tokenizer.padding_side = 'left'
 
             context_ids = dialog[-(self.args.max_length-len(self.generate_prompt_ids)):]
-            context_len_batch = len(context_ids)
+            context_len_batch = len([token for token in context_ids if token!=pad_token_id])
             context_ids += self.generate_prompt_ids
 
             context_ids = [pad_token_id] * (self.args.max_length - len(context_ids)) + context_ids
@@ -460,10 +463,12 @@ def main():
 
     if 'resp' in args.task:
         args.bert_name = 'gpt2'
-        config = GPT2Config.from_pretrained(args.bert_name, max_length=args.max_gen_length+args.max_length)
-        gpt_model = GPT2LMHeadModel.from_pretrained(args.bert_name, config=config,cache_dir=os.path.join("cache", args.bert_name))
+        # config = GPT2Config.from_pretrained(args.bert_name, max_length=args.max_gen_length+args.max_length)
+        gpt_model = GPT2LMHeadModel.from_pretrained(args.bert_name,cache_dir=os.path.join("cache", args.bert_name))
         tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
+        tokenizer.pad_token = tokenizer.eos_token
         # tokenizer.add_special_tokens(gpt_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
+
         gpt_model.resize_token_embeddings(len(tokenizer))
         args.hidden_size = gpt_model.config.hidden_size  # BERT large 쓸 때 대비
 
@@ -512,12 +517,13 @@ def main():
                 batch_size = dialog_token.shape[0]
                 generated = generator.gpt_model.generate(input_ids=dialog_token,
                                                          attention_mask=dialog_mask,
+                                                         pad_token_id=tokenizer.pad_token_id,
                                                          max_length=args.max_gen_length+args.max_length)
-                decoded_generated = tokenizer.batch_decode(generated, skip_special_tokens=True)
+                # decoded_generated = tokenizer.batch_decode(generated)
 
                 gen_resp_ids = []
-                for gen_seq, length in zip(decoded_generated, batch['context_len']):
-                    gen_seq = [token_id for token_id in gen_seq if token_id != tokenizer.eos_token_id]
+                for gen_seq, length in zip(generated, batch['context_len']):
+                    gen_seq = [token_id for token_id in gen_seq if token_id != tokenizer.pad_token_id]
                     gen_resp_ids.append(gen_seq[length:])
 
                 all_generated.extend(gen_resp_ids)
