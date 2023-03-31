@@ -289,13 +289,14 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
 
 class GenerationDataset(Dataset):  # knowledge용 데이터셋
-    def __init__(self, args, data_sample, knowledgeDB, tokenizer, mode='train'):
+    def __init__(self, args, data_sample, knowledgeDB, tokenizer, mode='train', knowledge='yes'):
         super(Dataset, self).__init__()
         self.args = args
         self.tokenizer = tokenizer
         self.knowledgeDB = knowledgeDB
         self.augmented_raw_sample = data_sample
         self.mode = mode
+        self.knowledge = knowledge
         self.generate_prompt_ids = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize('System:'))
 
     def __getitem__(self, idx):  # TODO 구현 전
@@ -316,7 +317,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         knowledge_text = self.knowledgeDB[target_knowledge_idx]
 
         max_knowledge_length=30
-        if self.args.knowledge:
+        if knowledge=='yes':
             knowledge_text = self.tokenizer('<knowledge>'+self.knowledgeDB[target_knowledge_idx], max_length=max_knowledge_length,
                                 truncation=True).input_ids
         else:
@@ -568,8 +569,8 @@ def main():
         train_dataset = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
         test_dataset = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
 
-        train_datamodel_know = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='know')
-        test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know')
+        train_datamodel_know = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='know', knowledge='yes')
+        test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know', knowledge='no')
         train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
         test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
 
