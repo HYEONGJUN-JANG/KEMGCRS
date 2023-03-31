@@ -49,13 +49,13 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
         augmented_dialog = []
         for i in range(len(conversation['dialog'])):
             role = conversation['role_seq'][i]
-            utterance = conversation['dialog'][i]+ tokenizer.eos_token
+            utterance = conversation['dialog'][i] + tokenizer.eos_token
 
             if role == 'System' and len(augmented_dialog) > 0 and conversation['knowledge_seq'][i] != '':
                 flatten_dialog = ''.join(augmented_dialog)
                 train_sample.append({'dialog': flatten_dialog,
                                      'user_profile': conversation['user_profile'],
-                                     'response': utterance  ,
+                                     'response': utterance,
                                      'type': conversation['type'][i],
                                      'topic': conversation['topic'][i],
                                      'situation': conversation['situation'],
@@ -315,10 +315,9 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
 
         knowledge_text = self.knowledgeDB[target_knowledge_idx]
 
-        dialog = knowledge_text + self.tokenizer.eos_token + dialog
+        dialog = '<knowledge>' + knowledge_text + self.tokenizer.eos_token + '<dialog>' + dialog
         dialog = self.tokenizer(dialog, max_length=self.args.max_length,
                                 truncation=True).input_ids
-
 
         if self.mode == 'train':
             response = self.tokenizer(response, max_length=self.args.max_gen_length,
@@ -333,13 +332,13 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
 
             context_batch['input_ids'] = torch.LongTensor(context_ids)
             context_batch['attention_mask'] = torch.ne(context_batch['input_ids'], pad_token_id)
-            context_batch['response'] =torch.LongTensor(resp_batch)
+            context_batch['response'] = torch.LongTensor(resp_batch)
 
         elif self.mode == 'test':
             # self.tokenizer.padding_side = 'left'
 
-            context_ids = dialog[-(self.args.max_length-len(self.generate_prompt_ids)):]
-            context_len_batch = len([token for token in context_ids if token!=pad_token_id])
+            context_ids = dialog[-(self.args.max_length - len(self.generate_prompt_ids)):]
+            context_len_batch = len([token for token in context_ids if token != pad_token_id])
             context_ids += self.generate_prompt_ids
 
             context_ids = [pad_token_id] * (self.args.max_length - len(context_ids)) + context_ids
@@ -352,7 +351,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         # for k, v in context_batch.items():
         #     if not isinstance(v, torch.Tensor):
         #         context_batch[k] = torch.as_tensor(v, device=self.args.device)
-                # context_batch[k] = torch.as_tensor(v)
+        # context_batch[k] = torch.as_tensor(v)
         return context_batch
 
     def __len__(self):
@@ -466,8 +465,8 @@ def main():
         # config = GPT2Config.from_pretrained(args.bert_name, max_length=args.max_gen_length+args.max_length)
         gpt_model = GPT2LMHeadModel.from_pretrained(args.gpt_name, cache_dir=os.path.join("cache", args.gpt_name))
         tokenizer = AutoTokenizer.from_pretrained(args.gpt_name)
-        tokenizer.pad_token = tokenizer.eos_token
-        # tokenizer.add_special_tokens(gpt_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
+        # tokenizer.pad_token = tokenizer.eos_token
+        tokenizer.add_special_tokens(gpt_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
 
         gpt_model.resize_token_embeddings(len(tokenizer))
         args.hidden_size = gpt_model.config.hidden_size  # BERT large 쓸 때 대비
@@ -487,22 +486,22 @@ def main():
         optimizer = optim.AdamW(generator.parameters(), lr=args.lr)
         # train generate task
         if args.saved_model_path == '':
-            for epoch in range(args.num_epochs):
-                train_epoch_loss = 0
-                for batch in tqdm(train_dataloader_resp, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-                    generator.train()
-                    dialog_token = batch['input_ids'].to(args.device)
-                    dialog_mask = batch['attention_mask'].to(args.device)
-                    response = batch['response'].to(args.device)
-
-                    loss = generator.generation(dialog_token, dialog_mask, response)
-                    # loss = criterion(dot_score, targets)
-                    train_epoch_loss += loss
-                    optimizer.zero_grad()
-                    loss.backward()
-                    optimizer.step()
-                print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
-            torch.save(generator.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_gen_bin.pt"))  # TIME_MODELNAME 형식
+            # for epoch in range(args.num_epochs):
+            #     train_epoch_loss = 0
+            #     for batch in tqdm(train_dataloader_resp, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+            #         generator.train()
+            #         dialog_token = batch['input_ids'].to(args.device)
+            #         dialog_mask = batch['attention_mask'].to(args.device)
+            #         response = batch['response'].to(args.device)
+            #
+            #         loss = generator.generation(dialog_token, dialog_mask, response)
+            #         # loss = criterion(dot_score, targets)
+            #         train_epoch_loss += loss
+            #         optimizer.zero_grad()
+            #         loss.backward()
+            #         optimizer.step()
+            #     print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+            # torch.save(generator.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_gen_bin.pt"))  # TIME_MODELNAME 형식
 
             # test generation task
             all_dialog = []
@@ -518,7 +517,7 @@ def main():
                 generated = generator.gpt_model.generate(input_ids=dialog_token,
                                                          attention_mask=dialog_mask,
                                                          pad_token_id=tokenizer.pad_token_id,
-                                                         max_length=args.max_gen_length+args.max_length)
+                                                         max_length=args.max_gen_length + args.max_length)
                 # decoded_generated = tokenizer.batch_decode(generated)
 
                 gen_resp_ids = []
