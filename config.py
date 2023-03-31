@@ -3,6 +3,6 @@ bert_special_tokens_dict = {
 }
 
 gpt_special_tokens_dict = {
-    'pad_token': '<pad>',
-    # 'additional_special_tokens': ['<dialog>', '<topic>', '<type>','<profile>','<knowledge>'],
+    # 'pad_token': '<pad>',
+    'additional_special_tokens': ['<dialog>', '<topic>', '<type>','<profile>','<knowledge>'],
 }
