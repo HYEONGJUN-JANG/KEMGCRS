@@ -463,7 +463,7 @@ def main():
         config = GPT2Config.from_pretrained(args.bert_name, max_length=args.max_gen_length+args.max_length)
         gpt_model = GPT2LMHeadModel.from_pretrained(args.bert_name, config=config,cache_dir=os.path.join("cache", args.bert_name))
         tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
-        tokenizer.add_special_tokens(gpt_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
+        # tokenizer.add_special_tokens(gpt_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
         gpt_model.resize_token_embeddings(len(tokenizer))
         args.hidden_size = gpt_model.config.hidden_size  # BERT large 쓸 때 대비
 
