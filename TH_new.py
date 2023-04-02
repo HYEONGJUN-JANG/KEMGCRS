@@ -602,14 +602,15 @@ def main():
         test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
         criterion = nn.CrossEntropyLoss()
 
-        if args.know_ablation == 'freeze':
-            print('FREEZE')
 
-            knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
-            knowledge_index = knowledge_index.to(args.device)
 
         for epoch in range(args.num_epochs):
             train_epoch_loss = 0
+            if args.know_ablation == 'freeze':
+                print('FREEZE')
+
+                knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+                knowledge_index = knowledge_index.to(args.device)
             for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
                 retriever.train()
                 dialog_token = batch['input_ids']
