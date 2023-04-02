@@ -655,6 +655,8 @@ def main():
             print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
             if args.know_ablation == 'freeze': update_moving_average(retriever.key_bert, retriever.query_bert)
 
+        knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+        knowledge_index = knowledge_index.to(args.device)
         eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
