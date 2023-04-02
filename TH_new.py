@@ -219,8 +219,8 @@ class Retriever(nn.Module):
                 knowledge_index = self.query_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask).last_hidden_state[:, 0, :]  # [B, d]
 
             knowledge_index = knowledge_index.view(batch_size, -1, dialog_emb.size(-1))
-            dialog_emb = self.linear_proj(dialog_emb)
-            knowledge_index = self.linear_proj(knowledge_index)
+            # dialog_emb = self.linear_proj(dialog_emb)
+            # knowledge_index = self.linear_proj(knowledge_index)
             logit = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2)  # [B, 1, d] * [B, K+1, d] = [B, K+1]
 
         return logit
@@ -466,10 +466,10 @@ def main():
     # args.data_cache = False
     args.who = "TH"
     # args.bert_name = 'facebook/bart-base'
-    # args.task = 'know'
+    args.task = 'know'
     # args.usebart = True
     args.max_gen_length = 50
-    # args.know_ablation = 'mlp'
+    args.know_ablation = 'freeze'
 
     checkPath(args.log_dir)
     checkPath(args.model_dir)
