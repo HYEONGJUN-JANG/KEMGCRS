@@ -473,7 +473,7 @@ def main():
     test_dataset_raw = dataset_reader(args, 'test')
 
     if 'resp' in args.task:
-        print(args)
+
         # config = GPT2Config.from_pretrained(args.bert_name, max_length=args.max_gen_length+args.max_length)
         gpt_model = GPT2LMHeadModel.from_pretrained(args.gpt_name, cache_dir=os.path.join("cache", args.gpt_name))
         tokenizer = AutoTokenizer.from_pretrained(args.gpt_name)
