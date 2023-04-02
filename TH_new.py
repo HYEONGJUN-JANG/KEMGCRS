@@ -434,11 +434,10 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         # tokenizer.batch_decode(dialog_token, skip_special_tokens=True)  # 'dialog context'
         # print([knowledgeDB[idx] for idx in target_knowledge]) # target knowledge
         # dot_score = retriever.compute_score(response_token, response_mask, knowledge_index)
-        if args.know_ablation == 'negative_sampling':
-            dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
-        elif args.know_ablation == 'mlp':
+        if args.know_ablation == 'mlp':
             dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
-
+        else:
+            dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
         top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
 
         input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
