@@ -463,7 +463,7 @@ def main():
     args.goalDic = goalDic
     args.topic_num = len(topicDic['int'])
     args.goal_num = len(goalDic['int'])
-    args.batch_size = 1
+
     # Read knowledge DB
     # train_knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'train_knowledge_DB.pickle'))  # TODO: verbalize (TH)
     knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'knowledgeDB.txt'))  # TODO: verbalize (TH)
