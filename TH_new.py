@@ -5,6 +5,7 @@ import logging
 from collections import defaultdict
 import random
 
+import numpy as np
 import torch
 from torch import optim
 from torch.utils.data import DataLoader, Dataset
@@ -48,7 +49,7 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
     if tokenizer.eos_token is not None:
         eos_token = tokenizer.eos_token
     else:
-        eos_token=tokenizer.sep_token
+        eos_token = tokenizer.sep_token
     for ij in range(len(raw_data)):
         conversation = raw_data[ij]
         augmented_dialog = []
@@ -206,7 +207,6 @@ class Retriever(nn.Module):
 
         # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
 
-
         if self.args.know_ablation == 'mlp':
             logit = self.know_proj(dialog_emb)
         elif self.args.know_ablation == 'negative_sampling':
@@ -338,16 +338,16 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
         knowledge_text = self.knowledgeDB[target_knowledge_idx]
 
-        max_knowledge_length=30
+        max_knowledge_length = 30
         if self.knowledge:
-            knowledge_text = self.tokenizer('<knowledge>'+self.knowledgeDB[target_knowledge_idx], max_length=max_knowledge_length,
-                                truncation=True).input_ids
+            knowledge_text = self.tokenizer('<knowledge>' + self.knowledgeDB[target_knowledge_idx], max_length=max_knowledge_length,
+                                            truncation=True).input_ids
         else:
             knowledge_text = []
 
-        dialog = self.tokenizer('<dialog>'+dialog, max_length=self.args.max_length-len(knowledge_text),
+        dialog = self.tokenizer('<dialog>' + dialog, max_length=self.args.max_length - len(knowledge_text),
                                 truncation=True).input_ids
-        dialog = knowledge_text+dialog
+        dialog = knowledge_text + dialog
 
         if self.mode == 'train':
             response = self.tokenizer(response, max_length=self.args.max_gen_length,
@@ -421,6 +421,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     knowledge_index = knowledge_index.to(args.device)
 
+    hit1, hit5, hit10 = [], [], []
     cnt = 0
     for batch in tqdm(test_dataloader, desc="Knowledge_Test", bar_format=' {percentage:3.0f} % | {bar:23} {r_bar}'):  # TODO: Knowledge task 분리중
         dialog_token = batch['input_ids']
@@ -442,6 +443,13 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
         top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
 
+        for k in [1, 5, 10]:
+            top_candidate_k = torch.topk(dot_score, k=k, dim=1).indices  # [B, K]
+            correct_k = target_knowledge_idx in top_candidate
+            if k == 1: hit1.append(correct_k)
+            if k == 5: hit5.append(correct_k)
+            if k == 10: hit10.append(correct_k)
+
         input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
         target_knowledge_text = tokenizer.batch_decode(target_knowledge, skip_special_tokens=True)  # target knowledge
         retrieved_knowledge_text = [knowledgeDB[idx].lower() for idx in top_candidate[0]]  # list
@@ -455,10 +463,15 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response, "predict5": retrieved_knowledge_text})
         cnt += 1
 
+    print(f"Test Hit@1: {np.average(hit1)}")
+    print(f"Test Hit@5: {np.average(hit5)}")
+    print(f"Test Hit@10: {np.average(hit10)}")
+
     # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
     write_pkl(obj=jsonlineSave, filename='jsonline.pkl')  # 입출력 저장
     save_json(args, f"{args.time}_{args.model_name}_inout", jsonlineSave)
     print('done')
+
 
 def update_moving_average(ma_model, current_model):
     print('update moving average')
@@ -466,6 +479,7 @@ def update_moving_average(ma_model, current_model):
     for current_params, ma_params in zip(current_model.parameters(), ma_model.parameters()):
         old_weight, up_weight = ma_params.data, current_params.data
         ma_params.data = decay * old_weight + (1 - decay) * up_weight
+
 
 def main():
     # TH 작업 main
@@ -608,8 +622,6 @@ def main():
         test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
         criterion = nn.CrossEntropyLoss()
 
-
-
         for epoch in range(args.num_epochs):
             train_epoch_loss = 0
             if args.know_ablation == 'freeze':
@@ -631,9 +643,10 @@ def main():
                 else:
                     logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
 
-
-                if args.know_ablation == 'negative_sampling': loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
-                else: loss = criterion(logit, target_knowledge_idx) # For MLP predict
+                if args.know_ablation == 'negative_sampling':
+                    loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
+                else:
+                    loss = criterion(logit, target_knowledge_idx)  # For MLP predict
 
                 train_epoch_loss += loss
                 optimizer.zero_grad()
