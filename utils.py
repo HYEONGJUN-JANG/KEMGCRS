@@ -33,6 +33,7 @@ def parseargs():
     parser.add_argument("--earlystop", action='store_true', help="Whether to Use EarlyStopping.")
     parser.add_argument("--task", default='resp', type=str, help="Choose the task")
     parser.add_argument("--knowledge", action='store_true', help="Whether to Use knowledge in response.")
+    parser.add_argument("--know_ablation", default='negative_sampling', type=str, help="Whether to Use knowledge in response.")
 
     parser.add_argument("--data_dir", default='data', type=str, help="The data directory.")
     # parser.add_argument('--data_name', default='en_test.txt', type=str, help="dataset name")
