@@ -152,6 +152,7 @@ class Retriever(nn.Module):
         self.gpt_model = gpt_model
         self.hidden_size = args.hidden_size
         self.topic_proj = nn.Linear(self.hidden_size, args.topic_num)
+        self.linear_proj = nn.Linear(self.hidden_size, 128)
         self.know_proj = nn.Linear(self.hidden_size, self.args.knowledge_num)
 
     def forward(self, token_seq, mask):
@@ -218,6 +219,8 @@ class Retriever(nn.Module):
                 knowledge_index = self.query_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask).last_hidden_state[:, 0, :]  # [B, d]
 
             knowledge_index = knowledge_index.view(batch_size, -1, dialog_emb.size(-1))
+            dialog_emb = self.linear_proj(dialog_emb)
+            knowledge_index = self.linear_proj(knowledge_index)
             logit = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2)  # [B, 1, d] * [B, K+1, d] = [B, K+1]
 
         return logit
@@ -611,8 +614,9 @@ def main():
                 target_knowledge_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
 
                 logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
-                # loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
-                loss = criterion(logit, target_knowledge_idx)
+                if args.know_ablation == 'negative_sampling': loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
+                # if args.know_ablation == 'mlp': loss = criterion(logit, target_knowledge_idx) # For MLP predict
+
                 train_epoch_loss += loss
                 optimizer.zero_grad()
                 loss.backward()
