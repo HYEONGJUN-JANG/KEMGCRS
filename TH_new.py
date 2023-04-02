@@ -601,6 +601,12 @@ def main():
         test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
         criterion = nn.CrossEntropyLoss()
 
+        if args.know_ablation == 'freeze':
+            print('FREEZE')
+
+            knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+            knowledge_index = knowledge_index.to(args.device)
+
         for epoch in range(args.num_epochs):
             train_epoch_loss = 0
             for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
@@ -613,9 +619,16 @@ def main():
                 target_knowledge = candidate_knowledge_token[:, 0, :]
                 target_knowledge_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
 
-                logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+                if args.know_ablation == 'freeze':
+                    logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
+
+                else:
+                    logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+
+
                 if args.know_ablation == 'negative_sampling': loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
                 if args.know_ablation == 'mlp': loss = criterion(logit, target_knowledge_idx) # For MLP predict
+
 
                 train_epoch_loss += loss
                 optimizer.zero_grad()
