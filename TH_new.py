@@ -615,7 +615,7 @@ def main():
 
                 logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
                 if args.know_ablation == 'negative_sampling': loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
-                # if args.know_ablation == 'mlp': loss = criterion(logit, target_knowledge_idx) # For MLP predict
+                if args.know_ablation == 'mlp': loss = criterion(logit, target_knowledge_idx) # For MLP predict
 
                 train_epoch_loss += loss
                 optimizer.zero_grad()
