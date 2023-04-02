@@ -466,10 +466,10 @@ def main():
     # args.data_cache = False
     args.who = "TH"
     # args.bert_name = 'facebook/bart-base'
-    args.task = 'know'
+    # args.task = 'know'
     # args.usebart = True
     args.max_gen_length = 50
-    args.know_ablation = 'freeze'
+    # args.know_ablation = 'freeze'
 
     checkPath(args.log_dir)
     checkPath(args.model_dir)
