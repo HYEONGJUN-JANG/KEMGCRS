@@ -607,7 +607,7 @@ def main():
                 candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
                 candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
                 target_knowledge = candidate_knowledge_token[:, 0, :]
-                target_knowledge_idx = int(batch['candidate_indice'][:, 0])
+                target_knowledge_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
 
                 logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
                 # loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
