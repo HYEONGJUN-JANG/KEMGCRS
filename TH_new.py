@@ -257,7 +257,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch = defaultdict()
         if self.task == 'know':
             prefix = '<type>' + type + '<topic>' + topic
-            topic_prompt = self.tokenizer.encode('predict the next knowledge: ')[1:]
+            # topic_prompt = self.tokenizer.encode('predict the next knowledge: ')[1:]
+            topic_prompt = []
         elif self.task == 'resp':
             # prefix = '<knowledge>' + self.args.knowledgeDB[target_knowledge_idx]
             prefix = ''
