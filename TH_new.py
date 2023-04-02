@@ -461,6 +461,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     print('done')
 
 def update_moving_average(ma_model, current_model):
+    print('update moving average')
     decay = 0.9
     for current_params, ma_params in zip(current_model.parameters(), ma_model.parameters()):
         old_weight, up_weight = ma_params.data, current_params.data
