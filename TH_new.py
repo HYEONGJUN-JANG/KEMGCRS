@@ -456,7 +456,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
     # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
     write_pkl(obj=jsonlineSave, filename='jsonline.pkl')  # 입출력 저장
-    save_json(args, f"{args.time}_{args.log_name}_inout", jsonlineSave)
+    save_json(args, f"{args.time}_{args.model_name}_inout", jsonlineSave)
     print('done')
 
 
