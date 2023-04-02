@@ -410,13 +410,14 @@ def knowledge_reindexing(args, knowledge_data, retriever):
     return knowledge_index
 
 
-def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer):
+def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index=None):
     # Read knowledge DB
     # knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     # knowledge_index = knowledge_index.to(args.device)
     jsonlineSave = []
     # bert_model = bert_model.to(args.device)
-    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+    if knowledge_index is None:
+        knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     knowledge_index = knowledge_index.to(args.device)
 
     cnt = 0
@@ -633,7 +634,7 @@ def main():
                 optimizer.step()
             print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
-        eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+        eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
 if __name__ == "__main__":
