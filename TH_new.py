@@ -44,12 +44,16 @@ def user_profile_setting(ufDic: dict) -> str:
 
 def process_augment_sample(raw_data, tokenizer, knowledgeDB):
     train_sample = []
+    if tokenizer.eos_token is not None:
+        eos_token = tokenizer.eos_token
+    else:
+        eos_token=tokenizer.sep_token
     for ij in range(len(raw_data)):
         conversation = raw_data[ij]
         augmented_dialog = []
         for i in range(len(conversation['dialog'])):
             role = conversation['role_seq'][i]
-            utterance = conversation['dialog'][i] + tokenizer.eos_token
+            utterance = conversation['dialog'][i] + eos_token
 
             if role == 'System' and len(augmented_dialog) > 0 and conversation['knowledge_seq'][i] != '':
                 flatten_dialog = ''.join(augmented_dialog)
@@ -313,7 +317,6 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         topic_prompt = self.tokenizer.encode('predict the next response: ')[1:]
 
         prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
-
         knowledge_text = self.knowledgeDB[target_knowledge_idx]
 
         max_knowledge_length=30
@@ -441,7 +444,7 @@ def main():
     # args.data_cache = False
     args.who = "TH"
     args.bert_name = 'facebook/bart-base'
-    args.task = 'resp'
+    args.task = 'know'
     # args.usebart = True
     args.max_gen_length = 50
 
@@ -459,7 +462,7 @@ def main():
     args.goalDic = goalDic
     args.topic_num = len(topicDic['int'])
     args.goal_num = len(goalDic['int'])
-
+    args.batch_size = 1
     # Read knowledge DB
     # train_knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'train_knowledge_DB.pickle'))  # TODO: verbalize (TH)
     knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'knowledgeDB.txt'))  # TODO: verbalize (TH)
@@ -484,7 +487,7 @@ def main():
         test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
 
         train_datamodel_resp = GenerationDataset(args, train_dataset_resp, knowledgeDB, tokenizer, mode='train', knowledge='yes')
-        test_datamodel_resp = GenerationDataset(args, test_dataset_resp, knowledgeDB, tokenizer, mode='test', knowledge='no')
+        test_datamodel_resp = GenerationDataset(args, test_dataset_resp, knowledgeDB, tokenizer, mode='test', knowledge='yes')
 
         train_dataloader_resp = DataLoader(train_datamodel_resp, batch_size=args.batch_size, shuffle=True)
         test_dataloader_resp = DataLoader(test_datamodel_resp, batch_size=args.batch_size, shuffle=False)
@@ -569,8 +572,8 @@ def main():
         train_dataset = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
         test_dataset = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
 
-        train_datamodel_know = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='know', knowledge='yes')
-        test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know', knowledge='no')
+        train_datamodel_know = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='know')
+        test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know')
         train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
         test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
 
@@ -578,8 +581,8 @@ def main():
             train_epoch_loss = 0
             for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
                 retriever.train()
-                dialog_token = batch['dialog_token']
-                dialog_mask = batch['dialog_mask']
+                dialog_token = batch['input_ids']
+                dialog_mask = batch['attention_mask']
                 # response = batch['response']
                 candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
                 candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
