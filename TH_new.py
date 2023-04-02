@@ -293,7 +293,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
 
 class GenerationDataset(Dataset):  # knowledge용 데이터셋
-    def __init__(self, args, data_sample, knowledgeDB, tokenizer, mode='train', knowledge='yes'):
+    def __init__(self, args, data_sample, knowledgeDB, tokenizer, mode='train', knowledge=False):
         super(Dataset, self).__init__()
         self.args = args
         self.tokenizer = tokenizer
@@ -301,6 +301,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         self.augmented_raw_sample = data_sample
         self.mode = mode
         self.knowledge = knowledge
+        print(knowledge)
         self.generate_prompt_ids = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize('System:'))
 
     def __getitem__(self, idx):  # TODO 구현 전
@@ -320,7 +321,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         knowledge_text = self.knowledgeDB[target_knowledge_idx]
 
         max_knowledge_length=30
-        if self.knowledge=='yes':
+        if self.knowledge:
             knowledge_text = self.tokenizer('<knowledge>'+self.knowledgeDB[target_knowledge_idx], max_length=max_knowledge_length,
                                 truncation=True).input_ids
         else:
