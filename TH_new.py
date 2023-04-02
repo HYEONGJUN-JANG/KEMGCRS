@@ -621,14 +621,12 @@ def main():
 
                 if args.know_ablation == 'freeze':
                     logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
-
                 else:
                     logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
 
 
                 if args.know_ablation == 'negative_sampling': loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
-                if args.know_ablation == 'mlp': loss = criterion(logit, target_knowledge_idx) # For MLP predict
-
+                else: loss = criterion(logit, target_knowledge_idx) # For MLP predict
 
                 train_epoch_loss += loss
                 optimizer.zero_grad()
