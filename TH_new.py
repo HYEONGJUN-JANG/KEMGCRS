@@ -596,6 +596,7 @@ def main():
         test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know')
         train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
         test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
+        criterion = nn.CrossEntropyLoss()
 
         for epoch in range(args.num_epochs):
             train_epoch_loss = 0
