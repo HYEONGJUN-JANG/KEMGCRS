@@ -612,7 +612,7 @@ def main():
 
                 logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
                 # loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
-                loss = criterion(dot_score, target_knowledge_idx)
+                loss = criterion(logit, target_knowledge_idx)
                 train_epoch_loss += loss
                 optimizer.zero_grad()
                 loss.backward()
