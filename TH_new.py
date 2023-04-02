@@ -1,3 +1,4 @@
+import copy
 import json
 import sys
 import logging
@@ -142,9 +143,16 @@ class Retriever(nn.Module):
         super(Retriever, self).__init__()
         self.args = args
         self.query_bert = query_bert  # Knowledge text 처리를 위한 BERT
+        if args.know_ablation == 'negative_sampling':
+            self.key_bert = query_bert
+        else:
+            self.key_bert = copy.deepcopy((query_bert))
+            self.key_bert.requires_grad = False
+
         self.gpt_model = gpt_model
         self.hidden_size = args.hidden_size
         self.topic_proj = nn.Linear(self.hidden_size, args.topic_num)
+        self.know_proj = nn.Linear(self.hidden_size, self.args.knowledge_num)
 
     def forward(self, token_seq, mask):
         if self.args.usebart:
@@ -196,16 +204,22 @@ class Retriever(nn.Module):
             dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
 
         # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
-        candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B*(K+1), L]
-        candidate_knowledge_mask = candidate_knowledge_mask.view(-1, self.args.max_length)  # [B*(K+1), L]
 
-        if self.args.usebart:
-            knowledge_index = self.query_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
-        else:
-            knowledge_index = self.query_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask).last_hidden_state[:, 0, :]  # [B, d]
 
-        knowledge_index = knowledge_index.view(batch_size, -1, dialog_emb.size(-1))
-        logit = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2)  # [B, 1, d] * [B, K+1, d] = [B, K+1]
+        if self.args.know_ablation == 'mlp':
+            logit = self.know_proj(dialog_emb)
+        elif self.args.know_ablation == 'negative_sampling':
+            candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B*(K+1), L]
+            candidate_knowledge_mask = candidate_knowledge_mask.view(-1, self.args.max_length)  # [B*(K+1), L]
+
+            if self.args.usebart:
+                knowledge_index = self.query_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
+            else:
+                knowledge_index = self.query_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask).last_hidden_state[:, 0, :]  # [B, d]
+
+            knowledge_index = knowledge_index.view(batch_size, -1, dialog_emb.size(-1))
+            logit = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2)  # [B, 1, d] * [B, K+1, d] = [B, K+1]
+
         return logit
 
 
@@ -417,7 +431,11 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         # tokenizer.batch_decode(dialog_token, skip_special_tokens=True)  # 'dialog context'
         # print([knowledgeDB[idx] for idx in target_knowledge]) # target knowledge
         # dot_score = retriever.compute_score(response_token, response_mask, knowledge_index)
-        dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
+        if args.know_ablation == 'negative_sampling':
+            dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
+        elif args.know_ablation == 'mlp':
+            dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+
         top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
 
         input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
@@ -445,9 +463,10 @@ def main():
     # args.data_cache = False
     args.who = "TH"
     # args.bert_name = 'facebook/bart-base'
-    # args.task = 'know'
+    args.task = 'know'
     # args.usebart = True
     args.max_gen_length = 50
+    args.know_ablation = 'mlp'
 
     checkPath(args.log_dir)
     checkPath(args.model_dir)
