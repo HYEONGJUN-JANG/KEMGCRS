@@ -64,6 +64,7 @@ def parseargs():
     parser.add_argument("--output_dir", default='output', type=str, help="The output directory where the model predictions and checkpoints will be written.")
     parser.add_argument("--usekg", action='store_true', help="use know_text for response")  # HJ: Know_text 를 사용하는지 여부
     parser.add_argument("--time", default='', type=str, help="Time for fileName")  # HJ : Log file middle Name
+    parser.add_argument("--loss_rec", default='target', type=str, help="Loss Type")  # HJ : Loss
 
     parser.add_argument("--device", default='0', type=str, help="GPU Device")  # HJ : Log file middle Name
 
@@ -127,7 +128,7 @@ def save_json(args, filename, saved_jsonlines):
         txtlines = []
         for js in saved_jsonlines:  # TODO: Movie recommendation, Food recommendation, POI recommendation, Music recommendation, Q&A, Chat about stars
             goal, topic, tf, dialog, targetkg, resp, pred5 = js['goal_type'], js['topic'], js['tf'], js['dialog'], js['target'], js['response'], js["predict5"]
-            if goal == 'Movie recommendation' or goal=='Food recommendation' or goal=='POI recommendation' or goal=='Music recommendation' or goal=='Q&A' or goal=='Chat about stars':
+            if goal == 'Movie recommendation' or goal=='POI recommendation' or goal=='Music recommendation' or goal=='Q&A' or goal=='Chat about stars':
                 pred_txt = "\n".join(pred5)
                 txt = f"\n---------------------------\n[Goal]: {goal}\t[Topic]: {topic}\t[TF]: {tf}\n[Target Know_text]: {targetkg}\n[PRED_KnowText]\n{pred_txt}\n[Dialog]"
                 for i in dialog.replace("user :", '|user :').replace("system :", "|system : ").split('|'):

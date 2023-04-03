@@ -505,7 +505,7 @@ def main():
     # args.usebart = True
     args.max_gen_length = 50
     # args.know_ablation = 'freeze'
-    # args.pseudo = True
+    args.pseudo = True
 
     print(args.pseudo)
 
