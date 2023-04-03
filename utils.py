@@ -31,9 +31,10 @@ def parseargs():
     parser.add_argument("--ft_topic", action='store_true', help="Whether to Fine-tune on topic.")
     parser.add_argument("--ft_know", action='store_true', help="Whether to Fine-tune on know.")
     parser.add_argument("--earlystop", action='store_true', help="Whether to Use EarlyStopping.")
-    parser.add_argument("--task", default='resp', type=str, help="Choose the task")
+    parser.add_argument("--task", default='know', type=str, help="Choose the task")
     parser.add_argument("--knowledge", action='store_true', help="Whether to Use knowledge in response.")
     parser.add_argument("--know_ablation", default='negative_sampling', type=str, help="Whether to Use knowledge in response.")
+    parser.add_argument("--pseudo", action='store_true', help="Whether to Fine-tune on type.")
 
     parser.add_argument("--data_dir", default='data', type=str, help="The data directory.")
     # parser.add_argument('--data_name', default='en_test.txt', type=str, help="dataset name")
@@ -99,7 +100,7 @@ def parseargs():
         args.data_cache = True
         args.batch_size = 4
         args.log_name = "log_Topic PRF"
-        args.task = 'goal'
+        # args.task = 'goal'
         args.num_epochs = 2
         args.do_finetune = True
         pass  # HJ local

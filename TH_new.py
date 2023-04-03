@@ -298,8 +298,11 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
         # target_knowledge = self.args.knowledgeDB[target_knowledge_idx]
+        if self.args.pseudo:
+            candidate_indice = [target_knowledge_idx] + negative_sampler(self.args, pseudo_knowledge_idx)
+        else:
+            candidate_indice = [target_knowledge_idx] + negative_sampler(self.args, target_knowledge_idx)
 
-        candidate_indice = [target_knowledge_idx] + negative_sampler(self.args, pseudo_knowledge_idx)
         # candidate_knowledge = tokenizer([args.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=args.max_length)
         candidate_knowledge_token = self.tokenizer([self.args.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=self.args.max_length).input_ids
         candidate_knowledge_mask = self.tokenizer([self.args.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=self.args.max_length).attention_mask
@@ -499,6 +502,7 @@ def main():
     # args.usebart = True
     args.max_gen_length = 50
     # args.know_ablation = 'freeze'
+    print(args.pseudo)
 
     checkPath(args.log_dir)
     checkPath(args.model_dir)
