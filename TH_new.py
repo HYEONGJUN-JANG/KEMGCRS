@@ -65,26 +65,31 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
                                      'type': conversation['type'][i],
                                      'topic': conversation['topic'][i],
                                      'situation': conversation['situation'],
-                                     'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i])})
+                                     'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i]),
+                                     'pseudo_knowledge': knowledgeDB.index(conversation['pseudo_knowledge_seq'][i]),
+                                     })
             augmented_dialog.append(utterance)
     return train_sample
 
 
 def dataset_reader(args, data_name='train'):
     conversation_sample = []
-    data_path = os.path.join(args.data_dir, f"en_{data_name}.txt")
+    data_path = os.path.join(args.data_dir, f"en_{data_name}_know.txt")
     with open(data_path, 'r', encoding='UTF-8') as f:
         for line in tqdm(f, desc="Dataset Read", bar_format='{l_bar} | {bar:23} {r_bar}'):
             dialog = json.loads(line)
             conversation = dialog['conversation']
-
             role_seq = ["User", "System"] if dialog['goal_type_list'][0] != 'Greetings' else ["System", "User"]
 
             for i in range(2, len(conversation)):
                 role_seq.append(role_seq[i % 2])
 
             knowledge_seq = dialog['knowledge']
+            pseudo_knowledge_seq = dialog['know_candidates']
+
             knowledge_seq = [' '.join(know) for know in knowledge_seq]
+            pseudo_knowledge_seq = [' '.join(know) for know in pseudo_knowledge_seq]
+
             user_profile = user_profile_setting(dialog['user_profile'])
             situation = dialog['situation']
 
@@ -98,8 +103,10 @@ def dataset_reader(args, data_name='train'):
                 'topic': dialog['goal_topic_list'],
                 'situation': situation,
                 'user_profile': user_profile,
-                'knowledge_seq': knowledge_seq
+                'knowledge_seq': knowledge_seq,
+                'pseudo_knowledge_seq': pseudo_knowledge_seq
             })
+
     return conversation_sample
 
 
@@ -250,8 +257,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
     def __getitem__(self, idx):  # TODO 구현 전
         data = self.augmented_raw_sample[idx]
-        cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge']
-        dialog, user_profile, response, type, topic, situation, target_knowledge_idx = [data[i] for i in cbdicKeys]
+        cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge','pseudo_knowledge']
+        dialog, user_profile, response, type, topic, situation, target_knowledge_idx, pseudo_knowledge_idx = [data[i] for i in cbdicKeys]
         pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
 
         context_batch = defaultdict()
@@ -292,13 +299,14 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         # target_knowledge = self.args.knowledgeDB[target_knowledge_idx]
 
-        candidate_indice = [target_knowledge_idx] + negative_sampler(self.args, target_knowledge_idx)
+        candidate_indice = [target_knowledge_idx] + negative_sampler(self.args, pseudo_knowledge_idx)
         # candidate_knowledge = tokenizer([args.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=args.max_length)
         candidate_knowledge_token = self.tokenizer([self.args.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=self.args.max_length).input_ids
         candidate_knowledge_mask = self.tokenizer([self.args.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=self.args.max_length).attention_mask
         context_batch['candidate_indice'] = candidate_indice  # 이미 Tensor로 받음
         context_batch['candidate_knowledge_token'] = candidate_knowledge_token
         context_batch['candidate_knowledge_mask'] = candidate_knowledge_mask
+        context_batch['target_knowledge'] = target_knowledge_idx  # 이미 Tensor로 받음
 
         for k, v in context_batch.items():
             if not isinstance(v, torch.Tensor):
@@ -432,7 +440,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         topic_idx = batch['topic_idx']
         candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
         target_knowledge = candidate_knowledge_token[:, 0, :]
-        target_knowledge_idx = int(batch['candidate_indice'][:, 0])
+        target_knowledge_idx = batch['target_knowledge']
 
         # tokenizer.batch_decode(dialog_token, skip_special_tokens=True)  # 'dialog context'
         # print([knowledgeDB[idx] for idx in target_knowledge]) # target knowledge
