@@ -454,13 +454,6 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
         top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
 
-        for k in [1, 5, 10]:
-            top_candidate_k = torch.topk(dot_score, k=k, dim=1).indices  # [B, K]
-            correct_k = target_knowledge_idx in top_candidate_k
-            if k == 1: hit1.append(correct_k)
-            if k == 5: hit5.append(correct_k)
-            if k == 10: hit10.append(correct_k)
-
         input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
         target_knowledge_text = tokenizer.batch_decode(target_knowledge, skip_special_tokens=True)  # target knowledge
         retrieved_knowledge_text = [knowledgeDB[idx].lower() for idx in top_candidate[0]]  # list
@@ -473,6 +466,15 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
         jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response, "predict5": retrieved_knowledge_text})
         cnt += 1
+
+        goal = type_idx[0]
+        if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
+            for k in [1, 5, 10]:
+                top_candidate_k = torch.topk(dot_score, k=k, dim=1).indices  # [B, K]
+                correct_k = target_knowledge_idx in top_candidate_k
+                if k == 1: hit1.append(correct_k)
+                if k == 5: hit5.append(correct_k)
+                if k == 10: hit10.append(correct_k)
 
     print(f"Test Hit@1: {np.average(hit1)}")
     print(f"Test Hit@5: {np.average(hit5)}")
