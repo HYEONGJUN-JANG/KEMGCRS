@@ -655,7 +655,7 @@ def main():
                 candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
                 target_knowledge = candidate_knowledge_token[:, 0, :]
                 pseudo_knowledge_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
-                target_knowledge_idx = batch['target_knowledge_idx']  # [B,5,256]
+                target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
                 if args.know_ablation == 'freeze':
                     logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
                 else:
