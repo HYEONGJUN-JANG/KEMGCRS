@@ -445,7 +445,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
         for k in [1, 5, 10]:
             top_candidate_k = torch.topk(dot_score, k=k, dim=1).indices  # [B, K]
-            correct_k = target_knowledge_idx in top_candidate
+            correct_k = target_knowledge_idx in top_candidate_k
             if k == 1: hit1.append(correct_k)
             if k == 5: hit5.append(correct_k)
             if k == 10: hit10.append(correct_k)
@@ -653,7 +653,7 @@ def main():
                 loss.backward()
                 optimizer.step()
             print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
-            if args.know_ablation == 'freeze': update_moving_average(retriever.key_bert, retriever.query_bert)
+            # if args.know_ablation == 'freeze': update_moving_average(retriever.key_bert, retriever.query_bert)
 
         knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
         knowledge_index = knowledge_index.to(args.device)
