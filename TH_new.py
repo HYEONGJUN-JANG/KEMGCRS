@@ -257,7 +257,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
     def __getitem__(self, idx):  # TODO 구현 전
         data = self.augmented_raw_sample[idx]
-        cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge','pseudo_knowledge']
+        cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge', 'pseudo_knowledge']
         dialog, user_profile, response, type, topic, situation, target_knowledge_idx, pseudo_knowledge_idx = [data[i] for i in cbdicKeys]
         pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
 
@@ -422,7 +422,7 @@ def knowledge_reindexing(args, knowledge_data, retriever):
     return knowledge_index
 
 
-def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index=None):
+def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index=None, write=None):
     # Read knowledge DB
     # knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     # knowledge_index = knowledge_index.to(args.device)
@@ -480,9 +480,10 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     print(f"Test Hit@5: {np.average(hit5)}")
     print(f"Test Hit@10: {np.average(hit10)}")
 
-    # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
-    write_pkl(obj=jsonlineSave, filename='jsonline.pkl')  # 입출력 저장
-    save_json(args, f"{args.time}_{args.model_name}_inout", jsonlineSave)
+    if write:
+        # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
+        write_pkl(obj=jsonlineSave, filename='jsonline.pkl')  # 입출력 저장
+        save_json(args, f"{args.time}_{args.model_name}_inout", jsonlineSave)
     print('done')
 
 
@@ -637,12 +638,14 @@ def main():
         train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
         test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
         criterion = nn.CrossEntropyLoss()
+
+        if args.know_ablation == 'freeze':
+            print('FREEZE')
+            knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+            knowledge_index = knowledge_index.to(args.device)
+
         for epoch in range(args.num_epochs):
             train_epoch_loss = 0
-            if args.know_ablation == 'freeze':
-                print('FREEZE')
-                knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
-                knowledge_index = knowledge_index.to(args.device)
             for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
                 retriever.train()
                 dialog_token = batch['input_ids']
@@ -651,8 +654,8 @@ def main():
                 candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
                 candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
                 target_knowledge = candidate_knowledge_token[:, 0, :]
-                target_knowledge_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
-
+                pseudo_knowledge_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
+                target_knowledge_idx = batch['target_knowledge_idx']  # [B,5,256]
                 if args.know_ablation == 'freeze':
                     logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
                 else:
@@ -661,7 +664,15 @@ def main():
                 if args.know_ablation == 'negative_sampling':
                     loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
                 else:
-                    loss = criterion(logit, target_knowledge_idx)  # For MLP predict
+                    loss_pseudo = criterion(logit, pseudo_knowledge_idx)  # For MLP predict
+                    loss_target = criterion(logit, target_knowledge_idx)  # For MLP predict
+
+                if args.loss_rec == 'pseudo':
+                    loss = loss_pseudo
+                elif args.loss_rec == 'target':
+                    loss = loss_target
+                elif args.loss_rec == 'both':
+                    loss = (1 - args.lamb) * loss_pseudo + args.lamb * loss_target
 
                 train_epoch_loss += loss
                 optimizer.zero_grad()
@@ -669,10 +680,10 @@ def main():
                 optimizer.step()
             print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
             # if args.know_ablation == 'freeze': update_moving_average(retriever.key_bert, retriever.query_bert)
-
-        knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
-        knowledge_index = knowledge_index.to(args.device)
-        eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+            knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+            knowledge_index = knowledge_index.to(args.device)
+            eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+        eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
 if __name__ == "__main__":
