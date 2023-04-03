@@ -299,7 +299,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         # target_knowledge = self.args.knowledgeDB[target_knowledge_idx]
         if self.args.pseudo:
-            candidate_indice = [target_knowledge_idx] + negative_sampler(self.args, pseudo_knowledge_idx)
+            candidate_indice = [pseudo_knowledge_idx] + negative_sampler(self.args, pseudo_knowledge_idx)
         else:
             candidate_indice = [target_knowledge_idx] + negative_sampler(self.args, target_knowledge_idx)
 
@@ -504,6 +504,8 @@ def main():
     # args.usebart = True
     args.max_gen_length = 50
     # args.know_ablation = 'freeze'
+    # args.pseudo = True
+
     print(args.pseudo)
 
     checkPath(args.log_dir)
@@ -635,7 +637,6 @@ def main():
         train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
         test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
         criterion = nn.CrossEntropyLoss()
-
         for epoch in range(args.num_epochs):
             train_epoch_loss = 0
             if args.know_ablation == 'freeze':
