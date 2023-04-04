@@ -667,12 +667,12 @@ def main():
                     loss_pseudo = criterion(logit, pseudo_knowledge_idx)  # For MLP predict
                     loss_target = criterion(logit, target_knowledge_idx)  # For MLP predict
 
-                if args.loss_rec == 'pseudo':
-                    loss = loss_pseudo
-                elif args.loss_rec == 'target':
-                    loss = loss_target
-                elif args.loss_rec == 'both':
-                    loss = (1 - args.lamb) * loss_pseudo + args.lamb * loss_target
+                    if args.loss_rec == 'pseudo':
+                        loss = loss_pseudo
+                    elif args.loss_rec == 'target':
+                        loss = loss_target
+                    elif args.loss_rec == 'both':
+                        loss = (1 - args.lamb) * loss_pseudo + args.lamb * loss_target
 
                 train_epoch_loss += loss
                 optimizer.zero_grad()
