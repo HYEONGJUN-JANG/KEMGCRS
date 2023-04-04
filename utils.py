@@ -103,9 +103,9 @@ def parseargs():
         exit()
     args.bert_cache_name = os.path.join(args.home, "cache", args.kencoder_name)
 
-    args.usebart = True
+    # args.usebart = True
     args.do_finetune=True
-    # args.ft_type=True
+    args.ft_type=True
     args.ft_topic=True
     return args
 

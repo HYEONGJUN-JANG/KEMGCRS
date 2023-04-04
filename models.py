@@ -76,17 +76,18 @@ class Retriever(nn.Module):
         dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
         return dot_score
 
-    def goal_selection(self, token_seq, mask, gen_labels): # TODO: 생성 Loss 만들기
+    def goal_selection(self, token_seq, mask, gen_labels=None): # TODO: 생성 Loss 만들기
         if self.args.usebart:
             outputs = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True, labels=gen_labels)
             dialog_emb = outputs.decoder_hidden_states[-1][:,0,:].squeeze(1)
             gen_loss = outputs.loss
-        else:
+        else: # Query_bert == BERT
             dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         dialog_emb = self.goal_proj(dialog_emb)
         # dot_score = torch.matmul(dialog_emb, goal_idx.transpose(1,0)) #[B, N_goal]
-        return gen_loss, dialog_emb if self.args.usebart else dialog_emb
-    def topic_selection(self, token_seq, mask, gen_labels):
+        if self.args.usebart: return gen_loss, dialog_emb
+        else: return dialog_emb
+    def topic_selection(self, token_seq, mask, gen_labels=None):
         if self.args.usebart:
             outputs = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True, labels=gen_labels)
             dialog_emb = outputs.decoder_hidden_states[-1][:,0,:].squeeze(1)
@@ -95,7 +96,10 @@ class Retriever(nn.Module):
             dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]        # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         dialog_emb = self.topic_proj(dialog_emb)
         # dot_score = torch.matmul(dialog_emb, goal_idx.transpose(1,0)) #[B, N_goal]
-        return gen_loss, dialog_emb if self.args.usebart else dialog_emb
+        # return gen_loss, dialog_emb if self.args.usebart else dialog_emb
+        if self.args.usebart: return gen_loss, dialog_emb
+        else: return dialog_emb
+
 
 
 class Model(nn.Module):

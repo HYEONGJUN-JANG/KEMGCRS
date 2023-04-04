@@ -38,18 +38,20 @@ def main():
     checkPath(args.bert_cache_name)
     kencoder = AutoModel.from_pretrained(args.kencoder_name, cache_dir=args.bert_cache_name)
 
-    if args.usebart: qencoder = BartForConditionalGeneration.from_pretrained(args.qencoder_name, cache_dir=args.bart_cache_name)
-    else: qencoder = AutoModel.from_pretrained(args.qencoder_name, cache_dir=args.bert_cache_name)
-
+    if args.usebart:
+        qencoder = BartForConditionalGeneration.from_pretrained(args.qencoder_name, cache_dir=args.bart_cache_name)
+        qtokenizer = AutoTokenizer.from_pretrained(args.qencoder_name)
+    else:
+        qencoder = AutoModel.from_pretrained(args.kencoder_name, cache_dir=args.bert_cache_name)
+        qtokenizer = AutoTokenizer.from_pretrained(args.kencoder_name)
 
     ktokenizer = AutoTokenizer.from_pretrained(args.kencoder_name)
-    qtokenizer = AutoTokenizer.from_pretrained(args.qencoder_name)
-    ktokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
     qtokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
+    ktokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
 
     # if args.usebart: qtokenizer.add_special_tokens(bert_special_tokens_dict)
     kencoder.resize_token_embeddings(len(ktokenizer))
-    qencoder.resize_token_embeddings(len(qtokenizer if args.usebart else ktokenizer))
+    qencoder.resize_token_embeddings(len(qtokenizer))
     args.hidden_size = qencoder.config.hidden_size  # BERT large 쓸 때 대비
 
     # Read knowledge DB
