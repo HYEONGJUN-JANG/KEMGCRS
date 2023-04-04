@@ -416,7 +416,7 @@ def knowledge_reindexing(args, knowledge_data, retriever):
         if args.usebart:
             knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
         else:
-            knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
+            knowledge_emb = retriever.key_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
         knowledge_index.extend(knowledge_emb.cpu().detach())
     knowledge_index = torch.stack(knowledge_index, 0)
     return knowledge_index
@@ -679,7 +679,9 @@ def main():
                 loss.backward()
                 optimizer.step()
             print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
-            # if args.know_ablation == 'freeze': update_moving_average(retriever.key_bert, retriever.query_bert)
+
+            if args.know_ablation == 'freeze': update_moving_average(retriever.key_bert, retriever.query_bert)
+
             knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
             knowledge_index = knowledge_index.to(args.device)
             eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
