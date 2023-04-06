@@ -409,7 +409,7 @@ def train_knowledge_indexing(args, knowledge_data, retriever, optimizer):
     )
     knowledge_index = []
     criterion = nn.CrossEntropyLoss()
-
+    train_epoch_loss=0
     for batch in tqdm(knowledgeDataLoader):
         input_ids = batch[0].to(args.device)
         attention_mask = batch[1].to(args.device)
@@ -422,7 +422,7 @@ def train_knowledge_indexing(args, knowledge_data, retriever, optimizer):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
+    print(f"Knowledge Indexing Loss: {train_epoch_loss}")
 
 
 def knowledge_reindexing(args, knowledge_data, retriever):
