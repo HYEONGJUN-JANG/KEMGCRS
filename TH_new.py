@@ -415,7 +415,7 @@ def train_knowledge_indexing(args, knowledge_data, retriever, optimizer):
         attention_mask = batch[1].to(args.device)
         target_know_idx = batch[2].to(args.device)
 
-        logit = retriever.knowledge_retrieve(input_ids, attention_mask, _, _)
+        logit = retriever.knowledge_retrieve(input_ids, attention_mask, None, None)
         loss = criterion(logit, target_know_idx)
 
         train_epoch_loss += loss
