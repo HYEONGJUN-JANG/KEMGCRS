@@ -140,7 +140,7 @@ class KnowledgeDataset(Dataset):
                                         add_special_tokens=True)
         tokens = torch.LongTensor(tokenized_data.input_ids)
         mask = torch.LongTensor(tokenized_data.attention_mask)
-        return tokens, mask
+        return tokens, mask, item
 
     def __len__(self):
         return len(self.knowledgeDB)
@@ -400,6 +400,31 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         return len(self.augmented_raw_sample)
 
 
+def train_knowledge_indexing(args, knowledge_data, retriever, optimizer):
+    # 모든 know_index를 버트에 태움
+    print('...train knowledge indexing...')
+    knowledgeDataLoader = DataLoader(
+        knowledge_data,
+        batch_size=args.batch_size
+    )
+    knowledge_index = []
+    criterion = nn.CrossEntropyLoss()
+
+    for batch in tqdm(knowledgeDataLoader):
+        input_ids = batch[0].to(args.device)
+        attention_mask = batch[1].to(args.device)
+        target_know_idx = batch[2].to(args.device)
+
+        logit = retriever.knowledge_retrieve(input_ids, attention_mask, _, _)
+        loss = criterion(logit, target_know_idx)
+
+        train_epoch_loss += loss
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+
+
 def knowledge_reindexing(args, knowledge_data, retriever):
     # 모든 know_index를 버트에 태움
     print('...knowledge indexing...')
@@ -645,6 +670,8 @@ def main():
             knowledge_index = knowledge_index.to(args.device)
 
         for epoch in range(args.num_epochs):
+            knowledge_index = train_knowledge_indexing(args, knowledge_data, retriever, optimizer)
+
             train_epoch_loss = 0
             for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
                 retriever.train()
