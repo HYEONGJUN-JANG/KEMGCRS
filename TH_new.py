@@ -527,6 +527,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         #         if k == 1: hit1.append(correct_k)
         #         if k == 5: hit5.append(correct_k)
         #         if k == 10: hit10.append(correct_k)
+    for i in range(10):
+        print("%s\t%s" %(targets[i], pred[i]))
 
     topic_eval(targets, pred)
 
