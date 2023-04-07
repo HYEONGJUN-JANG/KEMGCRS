@@ -528,7 +528,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         #         if k == 5: hit5.append(correct_k)
         #         if k == 10: hit10.append(correct_k)
     for i in range(10):
-        print("%s\t%s" %(targets[i], pred[i]))
+        print("T:%s\tP:%s" %(targets[i], pred[i]))
 
     topic_eval(targets, pred)
 
@@ -708,7 +708,7 @@ def main():
             knowledge_index = knowledge_index.to(args.device)
 
         for epoch in range(args.num_epochs):
-            train_knowledge_indexing(args, knowledge_data, retriever, optimizer2)
+            # train_knowledge_indexing(args, knowledge_data, retriever, optimizer2)
             train_epoch_loss = 0
             for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
                 retriever.train()
