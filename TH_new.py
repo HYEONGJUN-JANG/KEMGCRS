@@ -582,6 +582,8 @@ def main():
         generator = generator.to(args.device)
         criterion = nn.CrossEntropyLoss().to(args.device)
         optimizer = optim.AdamW(generator.parameters(), lr=args.lr)
+        optimizer2 = optim.AdamW(generator.parameters(), lr=args.lr)
+
         # train generate task
         if args.saved_model_path == '':
             for epoch in range(args.num_epochs):
@@ -670,7 +672,7 @@ def main():
             knowledge_index = knowledge_index.to(args.device)
 
         for epoch in range(args.num_epochs):
-            train_knowledge_indexing(args, knowledge_data, retriever, optimizer)
+            train_knowledge_indexing(args, knowledge_data, retriever, optimizer2)
             train_epoch_loss = 0
             for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
                 retriever.train()
