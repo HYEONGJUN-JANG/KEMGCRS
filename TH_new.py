@@ -674,41 +674,41 @@ def main():
             knowledge_index = knowledge_index.to(args.device)
 
         for epoch in range(args.num_epochs):
-            # train_knowledge_indexing(args, knowledge_data, retriever, optimizer2)
-            train_epoch_loss = 0
-            for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-                retriever.train()
-                dialog_token = batch['input_ids']
-                dialog_mask = batch['attention_mask']
-                # response = batch['response']
-                candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
-                candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
-                target_knowledge = candidate_knowledge_token[:, 0, :]
-                pseudo_knowledge_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
-                target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
-                if args.know_ablation == 'freeze':
-                    logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
-                else:
-                    logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
-
-                if args.know_ablation == 'negative_sampling':
-                    loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
-                else:
-                    loss_pseudo = criterion(logit, pseudo_knowledge_idx)  # For MLP predict
-                    loss_target = criterion(logit, target_knowledge_idx)  # For MLP predict
-
-                    if args.loss_rec == 'pseudo':
-                        loss = loss_pseudo
-                    elif args.loss_rec == 'target':
-                        loss = loss_target
-                    elif args.loss_rec == 'both':
-                        loss = (1 - args.lamb) * loss_pseudo + args.lamb * loss_target
-
-                train_epoch_loss += loss
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-            print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+            train_knowledge_indexing(args, knowledge_data, retriever, optimizer2)
+            # train_epoch_loss = 0
+            # for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+            #     retriever.train()
+            #     dialog_token = batch['input_ids']
+            #     dialog_mask = batch['attention_mask']
+            #     # response = batch['response']
+            #     candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
+            #     candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
+            #     target_knowledge = candidate_knowledge_token[:, 0, :]
+            #     pseudo_knowledge_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
+            #     target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
+            #     if args.know_ablation == 'freeze':
+            #         logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
+            #     else:
+            #         logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+            #
+            #     if args.know_ablation == 'negative_sampling':
+            #         loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
+            #     else:
+            #         loss_pseudo = criterion(logit, pseudo_knowledge_idx)  # For MLP predict
+            #         loss_target = criterion(logit, target_knowledge_idx)  # For MLP predict
+            #
+            #         if args.loss_rec == 'pseudo':
+            #             loss = loss_pseudo
+            #         elif args.loss_rec == 'target':
+            #             loss = loss_target
+            #         elif args.loss_rec == 'both':
+            #             loss = (1 - args.lamb) * loss_pseudo + args.lamb * loss_target
+            #
+            #     train_epoch_loss += loss
+            #     optimizer.zero_grad()
+            #     loss.backward()
+            #     optimizer.step()
+            # print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
             # if args.know_ablation == 'freeze': update_moving_average(retriever.key_bert, retriever.query_bert)
 
