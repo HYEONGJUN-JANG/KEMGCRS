@@ -190,7 +190,7 @@ class Retriever(nn.Module):
         dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
         return dot_score
 
-    def knowledge_retrieve(self, token_seq, mask, candidate_knowledge_token, candidate_knowledge_mask):
+    def knowledge_retrieve(self, token_seq, mask, candidate_knowledge_token, candidate_knowledge_mask, ablation=None):
         """
         Args: 뽑아준 negative에 대해서만 dot-product
             token_seq: [B, L]
@@ -201,6 +201,8 @@ class Retriever(nn.Module):
         """
         batch_size = mask.size(0)
 
+        if ablation is None:
+            ablation = self.args.know_ablation
         # dot-product
         # if self.args.usebart:
         #     dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
@@ -214,9 +216,9 @@ class Retriever(nn.Module):
 
         # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
 
-        if self.args.know_ablation == 'mlp':
+        if ablation == 'mlp':
             logit = self.know_proj(dialog_emb)
-        elif self.args.know_ablation == 'negative_sampling':
+        elif ablation == 'negative_sampling':
             candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B*(K+1), L]
             candidate_knowledge_mask = candidate_knowledge_mask.view(-1, self.args.max_length)  # [B*(K+1), L]
 
@@ -415,7 +417,7 @@ def train_knowledge_indexing(args, knowledge_data, retriever, optimizer):
         attention_mask = batch[1].to(args.device)
         target_know_idx = batch[2].to(args.device)
 
-        logit = retriever.knowledge_retrieve(input_ids, attention_mask, None, None)
+        logit = retriever.knowledge_retrieve(input_ids, attention_mask, None, None, ablation='mlp')
         loss = criterion(logit, target_know_idx)
 
         train_epoch_loss += loss
