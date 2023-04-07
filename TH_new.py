@@ -18,7 +18,7 @@ from train_know import train_retriever_idx
 from utils import *
 from models import *
 from data_util import readDic
-
+from train_goal_topic import topic_eval
 
 def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
     truncate_size = max_length - len(prefix) - len(suffix)
@@ -190,7 +190,7 @@ class Retriever(nn.Module):
         dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
         return dot_score
 
-    def knowledge_retrieve(self, token_seq, mask, candidate_knowledge_token, candidate_knowledge_mask, ablation=None):
+    def knowledge_retrieve(self, token_seq, mask, candidate_knowledge_token, candidate_knowledge_mask, ablation=None, labels=None):
         """
         Args: 뽑아준 negative에 대해서만 dot-product
             token_seq: [B, L]
@@ -218,6 +218,8 @@ class Retriever(nn.Module):
 
         if ablation == 'mlp':
             logit = self.know_proj(dialog_emb)
+        elif ablation == 'bart':
+            logit = self.query_bert(input_ids=token_seq, attention_mask=mask, labels=labels).loss
         elif ablation == 'negative_sampling':
             candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B*(K+1), L]
             candidate_knowledge_mask = candidate_knowledge_mask.view(-1, self.args.max_length)  # [B*(K+1), L]
@@ -233,6 +235,10 @@ class Retriever(nn.Module):
             logit = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2)  # [B, 1, d] * [B, K+1, d] = [B, K+1]
 
         return logit
+
+
+def convert_idx_to_docid(idx):
+    return f"docid:{idx}"
 
 
 class DialogDataset(Dataset):  # knowledge용 데이터셋
@@ -311,7 +317,10 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['candidate_indice'] = candidate_indice  # 이미 Tensor로 받음
         context_batch['candidate_knowledge_token'] = candidate_knowledge_token
         context_batch['candidate_knowledge_mask'] = candidate_knowledge_mask
-        context_batch['target_knowledge'] = target_knowledge_idx  # 이미 Tensor로 받음
+        if self.args.know_ablation == 'bart':
+            context_batch['target_knowledge'] = self.tokenizer.encode(convert_idx_to_docid(target_knowledge_idx), truncation=True, padding='max_length', max_length=10)[1:-1]  # 이미 Tensor로 받음
+        else:
+            context_batch['target_knowledge'] = target_knowledge_idx
 
         for k, v in context_batch.items():
             if not isinstance(v, torch.Tensor):
@@ -411,14 +420,18 @@ def train_knowledge_indexing(args, knowledge_data, retriever, optimizer):
     )
     knowledge_index = []
     criterion = nn.CrossEntropyLoss()
-    train_epoch_loss=0
+    train_epoch_loss = 0
     for batch in tqdm(knowledgeDataLoader):
         input_ids = batch[0].to(args.device)
         attention_mask = batch[1].to(args.device)
         target_know_idx = batch[2].to(args.device)
 
-        logit = retriever.knowledge_retrieve(input_ids, attention_mask, None, None, ablation='mlp')
-        loss = criterion(logit, target_know_idx)
+        if args.know_ablation == 'bart':
+            loss = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask, labels=batch['target_knowledge'])
+        else:
+            logit = retriever.knowledge_retrieve(input_ids, attention_mask, None, None, ablation='mlp')
+            loss = criterion(logit, target_know_idx)
+
 
         train_epoch_loss += loss
         optimizer.zero_grad()
@@ -461,6 +474,10 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
     hit1, hit5, hit10 = [], [], []
     cnt = 0
+
+    pred = []
+    targets = []
+
     for batch in tqdm(test_dataloader, desc="Knowledge_Test", bar_format=' {percentage:3.0f} % | {bar:23} {r_bar}'):  # TODO: Knowledge task 분리중
         dialog_token = batch['input_ids']
         dialog_mask = batch['attention_mask']
@@ -477,35 +494,43 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         # dot_score = retriever.compute_score(response_token, response_mask, knowledge_index)
         if args.know_ablation == 'mlp':
             dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+        elif args.know_ablation == 'bart':
+            generated_ids = retriever.query_bert.generate(input_ids=dialog_token, attention_mask=dialog_mask, max_length=10)
+            decoded_ids = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+
+            targets.extend(tokenizer.batch_decode(target_knowledge_idx, skip_special_tokens=True))
+            pred.extend(decoded_ids)
         else:
             dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
-        top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
 
-        input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
-        target_knowledge_text = tokenizer.batch_decode(target_knowledge, skip_special_tokens=True)  # target knowledge
-        retrieved_knowledge_text = [knowledgeDB[idx].lower() for idx in top_candidate[0]]  # list
-        correct = target_knowledge_idx in top_candidate
+        # top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
+        # input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
+        # target_knowledge_text = tokenizer.batch_decode(target_knowledge, skip_special_tokens=True)  # target knowledge
+        # retrieved_knowledge_text = [knowledgeDB[idx].lower() for idx in top_candidate[0]]  # list
+        # correct = target_knowledge_idx in top_candidate
+        #
+        # response = '||'.join(tokenizer.batch_decode(response, skip_special_tokens=True))
+        #
+        # type_idx = [args.goalDic['int'][int(idx)] for idx in type_idx]
+        # topic_idx = [args.topicDic['int'][int(idx)] for idx in topic_idx]
+        #
+        # jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response, "predict5": retrieved_knowledge_text})
+        # cnt += 1
+        #
+        # goal = type_idx[0]
+        # if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
+        #     for k in [1, 5, 10]:
+        #         top_candidate_k = torch.topk(dot_score, k=k, dim=1).indices  # [B, K]
+        #         correct_k = target_knowledge_idx in top_candidate_k
+        #         if k == 1: hit1.append(correct_k)
+        #         if k == 5: hit5.append(correct_k)
+        #         if k == 10: hit10.append(correct_k)
 
-        response = '||'.join(tokenizer.batch_decode(response, skip_special_tokens=True))
+    topic_eval(targets, pred)
 
-        type_idx = [args.goalDic['int'][int(idx)] for idx in type_idx]
-        topic_idx = [args.topicDic['int'][int(idx)] for idx in topic_idx]
-
-        jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response, "predict5": retrieved_knowledge_text})
-        cnt += 1
-
-        goal = type_idx[0]
-        if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
-            for k in [1, 5, 10]:
-                top_candidate_k = torch.topk(dot_score, k=k, dim=1).indices  # [B, K]
-                correct_k = target_knowledge_idx in top_candidate_k
-                if k == 1: hit1.append(correct_k)
-                if k == 5: hit5.append(correct_k)
-                if k == 10: hit10.append(correct_k)
-
-    print(f"Test Hit@1: {np.average(hit1)}")
-    print(f"Test Hit@5: {np.average(hit5)}")
-    print(f"Test Hit@10: {np.average(hit10)}")
+    # print(f"Test Hit@1: {np.average(hit1)}")
+    # print(f"Test Hit@5: {np.average(hit5)}")
+    # print(f"Test Hit@10: {np.average(hit10)}")
 
     if write:
         # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
@@ -534,7 +559,7 @@ def main():
     # args.know_ablation = 'freeze'
     # args.pseudo = True
 
-    print(args.pseudo)
+    print(f"PSEUDO: {args.pseudo}")
 
     checkPath(args.log_dir)
     checkPath(args.model_dir)
@@ -639,10 +664,15 @@ def main():
 
     if 'know' in args.task:
         # KNOWLEDGE TASk
-        args.bert_name = 'bert-base-uncased'
-        args.usebart = False
+        args.bert_name = 'facebook/bart-base'
+        args.know_ablation = 'bart'
+        args.batch_size = 1
+        # args.usebart = False
 
-        bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
+        if 'bart' in args.bert_name:
+            bert_model = BartForConditionalGeneration.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
+        else:
+            bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
         tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
         tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
         bert_model.resize_token_embeddings(len(tokenizer))
@@ -675,40 +705,44 @@ def main():
 
         for epoch in range(args.num_epochs):
             train_knowledge_indexing(args, knowledge_data, retriever, optimizer2)
-            # train_epoch_loss = 0
-            # for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-            #     retriever.train()
-            #     dialog_token = batch['input_ids']
-            #     dialog_mask = batch['attention_mask']
-            #     # response = batch['response']
-            #     candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
-            #     candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
-            #     target_knowledge = candidate_knowledge_token[:, 0, :]
-            #     pseudo_knowledge_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
-            #     target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
-            #     if args.know_ablation == 'freeze':
-            #         logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
-            #     else:
-            #         logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
-            #
-            #     if args.know_ablation == 'negative_sampling':
-            #         loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
-            #     else:
-            #         loss_pseudo = criterion(logit, pseudo_knowledge_idx)  # For MLP predict
-            #         loss_target = criterion(logit, target_knowledge_idx)  # For MLP predict
-            #
-            #         if args.loss_rec == 'pseudo':
-            #             loss = loss_pseudo
-            #         elif args.loss_rec == 'target':
-            #             loss = loss_target
-            #         elif args.loss_rec == 'both':
-            #             loss = (1 - args.lamb) * loss_pseudo + args.lamb * loss_target
-            #
-            #     train_epoch_loss += loss
-            #     optimizer.zero_grad()
-            #     loss.backward()
-            #     optimizer.step()
-            # print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+            train_epoch_loss = 0
+            for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+                retriever.train()
+                dialog_token = batch['input_ids']
+                dialog_mask = batch['attention_mask']
+                # response = batch['response']
+                candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
+                candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
+                target_knowledge = candidate_knowledge_token[:, 0, :]
+                pseudo_knowledge_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
+                target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
+                if args.know_ablation == 'freeze':
+                    logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
+                elif args.know_ablation == 'bart':
+                    loss = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask, labels=batch['target_knowledge'])
+                else:
+                    logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+
+                if args.know_ablation == 'negative_sampling':
+                    loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
+                elif args.know_ablation == 'bart':
+                    pass
+                else:
+                    loss_pseudo = criterion(logit, pseudo_knowledge_idx)  # For MLP predict
+                    loss_target = criterion(logit, target_knowledge_idx)  # For MLP predict
+
+                    if args.loss_rec == 'pseudo':
+                        loss = loss_pseudo
+                    elif args.loss_rec == 'target':
+                        loss = loss_target
+                    elif args.loss_rec == 'both':
+                        loss = (1 - args.lamb) * loss_pseudo + args.lamb * loss_target
+
+                train_epoch_loss += loss
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+            print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
             # if args.know_ablation == 'freeze': update_moving_average(retriever.key_bert, retriever.query_bert)
 
