@@ -427,7 +427,7 @@ def train_knowledge_indexing(args, knowledge_data, retriever, optimizer):
         target_know_idx = batch[2].to(args.device)
 
         if args.know_ablation == 'bart':
-            loss = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask, labels=batch['target_knowledge'])
+            loss = retriever.knowledge_retrieve(input_ids, attention_mask, None, None, labels=batch['target_knowledge'])
         else:
             logit = retriever.knowledge_retrieve(input_ids, attention_mask, None, None, ablation='mlp')
             loss = criterion(logit, target_know_idx)
