@@ -140,7 +140,9 @@ class KnowledgeDataset(Dataset):
                                         add_special_tokens=True)
         tokens = torch.LongTensor(tokenized_data.input_ids)
         mask = torch.LongTensor(tokenized_data.attention_mask)
-        return tokens, mask, item
+        docid = self.tokenizer.encode(convert_idx_to_docid(item), truncation=True, padding='max_length', max_length=10)[1:-1]  # 이미 Tensor로 받음
+        docid = torch.LongTensor(docid)
+        return tokens, mask, docid
 
     def __len__(self):
         return len(self.knowledgeDB)
@@ -427,7 +429,7 @@ def train_knowledge_indexing(args, knowledge_data, retriever, optimizer):
         target_know_idx = batch[2].to(args.device)
 
         if args.know_ablation == 'bart':
-            loss = retriever.knowledge_retrieve(input_ids, attention_mask, None, None, labels=batch['target_knowledge'])
+            loss = retriever.knowledge_retrieve(input_ids, attention_mask, None, None, labels=target_know_idx)
         else:
             logit = retriever.knowledge_retrieve(input_ids, attention_mask, None, None, ablation='mlp')
             loss = criterion(logit, target_know_idx)
