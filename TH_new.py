@@ -668,7 +668,7 @@ def main():
         # KNOWLEDGE TASk
         args.bert_name = 'facebook/bart-base'
         args.know_ablation = 'bart'
-        args.batch_size = 1
+        # args.batch_size = 1
         # args.usebart = False
 
         if 'bart' in args.bert_name:
