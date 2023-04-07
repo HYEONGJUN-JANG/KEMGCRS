@@ -240,7 +240,7 @@ class Retriever(nn.Module):
 
 
 def convert_idx_to_docid(idx):
-    return f"docid:{idx}"
+    return f"{idx}"
 
 
 class DialogDataset(Dataset):  # knowledge용 데이터셋
