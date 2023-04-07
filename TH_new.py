@@ -649,7 +649,7 @@ def main():
         retriever = Retriever(args, bert_model)
         retriever = retriever.to(args.device)
         optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
-        optimizer2 = optim.AdamW(generator.parameters(), lr=args.lr)
+        optimizer2 = optim.AdamW(retriever.parameters(), lr=args.lr)
 
         knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
         args.knowledge_num = len(knowledgeDB)
