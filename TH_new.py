@@ -314,6 +314,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         # target_knowledge = self.args.knowledgeDB[target_knowledge_idx]
         if self.args.pseudo:
+            candidate_positives_idx = candidate_positives_idx[:self.args.pseudo_pos_num]
             pseudo_positive = random.choice(candidate_positives_idx)
             candidate_indice = [pseudo_positive] + negative_sampler(self.args, target_knowledge_idx)
         else:

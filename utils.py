@@ -35,6 +35,7 @@ def parseargs():
     parser.add_argument("--knowledge", action='store_true', help="Whether to Use knowledge in response.")
     parser.add_argument("--know_ablation", default='negative_sampling', type=str, help="Whether to Use knowledge in response.")
     parser.add_argument("--pseudo", action='store_true', help="Whether to Fine-tune on type.")
+    parser.add_argument('--pseudo_pos_num', default=5, type=int, help="pseudo_pos_num")
 
     parser.add_argument("--data_dir", default='data', type=str, help="The data directory.")
     # parser.add_argument('--data_name', default='en_test.txt', type=str, help="dataset name")
