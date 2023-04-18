@@ -66,7 +66,7 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
                                      'topic': conversation['topic'][i],
                                      'situation': conversation['situation'],
                                      'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i]),
-                                     'pseudo_knowledge': knowledgeDB.index(conversation['pseudo_knowledge_seq'][i]),
+                                     'candidate_positives': [knowledgeDB.index(cand) for cand in conversation['pseudo_knowledge_seq'][i]],
                                      })
             augmented_dialog.append(utterance)
     return train_sample
@@ -74,7 +74,7 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
 
 def dataset_reader(args, data_name='train'):
     conversation_sample = []
-    data_path = os.path.join(args.data_dir, f"en_{data_name}_know.txt")
+    data_path = os.path.join(args.data_dir, f"en_{data_name}_know_cand.txt")
     with open(data_path, 'r', encoding='UTF-8') as f:
         for line in tqdm(f, desc="Dataset Read", bar_format='{l_bar} | {bar:23} {r_bar}'):
             dialog = json.loads(line)
@@ -85,10 +85,15 @@ def dataset_reader(args, data_name='train'):
                 role_seq.append(role_seq[i % 2])
 
             knowledge_seq = dialog['knowledge']
-            pseudo_knowledge_seq = dialog['know_candidates']
+            positive_candidates_list = dialog['know_candidates']
+
+            for idx, positive_candidates in enumerate(positive_candidates_list):
+                if len(positive_candidates) > 0:
+                    positive_candidates_list[idx] = [' '.join(candidate) for candidate in positive_candidates]
+                    # positive_candidates_list[idx] = [args.knowledgeDB.index(candidate) for candidate in positive_candidates]
 
             knowledge_seq = [' '.join(know) for know in knowledge_seq]
-            pseudo_knowledge_seq = [' '.join(know) for know in pseudo_knowledge_seq]
+            # pseudo_knowledge_seq = [' '.join(know) for know in pseudo_knowledge_seq]
 
             user_profile = user_profile_setting(dialog['user_profile'])
             situation = dialog['situation']
@@ -104,7 +109,7 @@ def dataset_reader(args, data_name='train'):
                 'situation': situation,
                 'user_profile': user_profile,
                 'knowledge_seq': knowledge_seq,
-                'pseudo_knowledge_seq': pseudo_knowledge_seq
+                'pseudo_knowledge_seq': positive_candidates_list
             })
 
     return conversation_sample
@@ -267,8 +272,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
     def __getitem__(self, idx):  # TODO 구현 전
         data = self.augmented_raw_sample[idx]
-        cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge', 'pseudo_knowledge']
-        dialog, user_profile, response, type, topic, situation, target_knowledge_idx, pseudo_knowledge_idx = [data[i] for i in cbdicKeys]
+        cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge', 'candidate_positives']
+        dialog, user_profile, response, type, topic, situation, target_knowledge_idx, candidate_positives_idx = [data[i] for i in cbdicKeys]
         pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
 
         context_batch = defaultdict()
@@ -309,13 +314,15 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         # target_knowledge = self.args.knowledgeDB[target_knowledge_idx]
         if self.args.pseudo:
-            candidate_indice = [pseudo_knowledge_idx] + negative_sampler(self.args, pseudo_knowledge_idx)
+            pseudo_positive = random.choice(candidate_positives_idx)
+            candidate_indice = [pseudo_positive] + negative_sampler(self.args, target_knowledge_idx)
         else:
             candidate_indice = [target_knowledge_idx] + negative_sampler(self.args, target_knowledge_idx)
 
         # candidate_knowledge = tokenizer([args.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=args.max_length)
         candidate_knowledge_token = self.tokenizer([self.args.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=self.args.max_length).input_ids
         candidate_knowledge_mask = self.tokenizer([self.args.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=self.args.max_length).attention_mask
+
         context_batch['candidate_indice'] = candidate_indice  # 이미 Tensor로 받음
         context_batch['candidate_knowledge_token'] = candidate_knowledge_token
         context_batch['candidate_knowledge_mask'] = candidate_knowledge_mask
@@ -505,32 +512,32 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         else:
             dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
 
-        # top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
-        # input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
-        # target_knowledge_text = tokenizer.batch_decode(target_knowledge, skip_special_tokens=True)  # target knowledge
-        # retrieved_knowledge_text = [knowledgeDB[idx].lower() for idx in top_candidate[0]]  # list
-        # correct = target_knowledge_idx in top_candidate
-        #
-        # response = '||'.join(tokenizer.batch_decode(response, skip_special_tokens=True))
-        #
-        # type_idx = [args.goalDic['int'][int(idx)] for idx in type_idx]
-        # topic_idx = [args.topicDic['int'][int(idx)] for idx in topic_idx]
-        #
-        # jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response, "predict5": retrieved_knowledge_text})
-        # cnt += 1
-        #
-        # goal = type_idx[0]
-        # if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
-        #     for k in [1, 5, 10]:
-        #         top_candidate_k = torch.topk(dot_score, k=k, dim=1).indices  # [B, K]
-        #         correct_k = target_knowledge_idx in top_candidate_k
-        #         if k == 1: hit1.append(correct_k)
-        #         if k == 5: hit5.append(correct_k)
-        #         if k == 10: hit10.append(correct_k)
-    for i in range(10):
-        print("T:%s\tP:%s" %(targets[i], pred[i]))
+        top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
+        input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
+        target_knowledge_text = tokenizer.batch_decode(target_knowledge, skip_special_tokens=True)  # target knowledge
+        retrieved_knowledge_text = [knowledgeDB[idx].lower() for idx in top_candidate[0]]  # list
+        correct = target_knowledge_idx in top_candidate
 
-    topic_eval(targets, pred)
+        response = '||'.join(tokenizer.batch_decode(response, skip_special_tokens=True))
+
+        type_idx = [args.goalDic['int'][int(idx)] for idx in type_idx]
+        topic_idx = [args.topicDic['int'][int(idx)] for idx in topic_idx]
+
+        jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response, "predict5": retrieved_knowledge_text})
+        cnt += 1
+
+        goal = type_idx[0]
+        if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
+            for k in [1, 5, 10]:
+                top_candidate_k = torch.topk(dot_score, k=k, dim=1).indices  # [B, K]
+                correct_k = target_knowledge_idx in top_candidate_k
+                if k == 1: hit1.append(correct_k)
+                if k == 5: hit5.append(correct_k)
+                if k == 10: hit10.append(correct_k)
+    # for i in range(10):
+    #     print("T:%s\tP:%s" %(targets[i], pred[i]))
+
+    # topic_eval(targets, pred)
 
     # print(f"Test Hit@1: {np.average(hit1)}")
     # print(f"Test Hit@5: {np.average(hit5)}")
@@ -558,10 +565,10 @@ def main():
     args.who = "TH"
     # args.bert_name = 'facebook/bart-base'
     # args.task = 'know'
-    # args.usebart = True
+    args.usebart = False
     args.max_gen_length = 50
     # args.know_ablation = 'freeze'
-    # args.pseudo = True
+    args.pseudo = True
 
     print(f"PSEUDO: {args.pseudo}")
 
@@ -668,10 +675,10 @@ def main():
 
     if 'know' in args.task:
         # KNOWLEDGE TASk
-        args.bert_name = 'facebook/bart-base'
-        args.know_ablation = 'bart'
+        args.bert_name = 'bert-base-uncased'
+        args.know_ablation = 'freeze'
         # args.batch_size = 1
-        # args.usebart = False
+        args.usebart = False
 
         if 'bart' in args.bert_name:
             bert_model = BartForConditionalGeneration.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
@@ -708,7 +715,7 @@ def main():
             knowledge_index = knowledge_index.to(args.device)
 
         for epoch in range(args.num_epochs):
-            # train_knowledge_indexing(args, knowledge_data, retriever, optimizer2)
+            train_knowledge_indexing(args, knowledge_data, retriever, optimizer2)
             train_epoch_loss = 0
             for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
                 retriever.train()
