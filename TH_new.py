@@ -569,8 +569,7 @@ def main():
     args.max_gen_length = 50
     # args.know_ablation = 'freeze'
     args.pseudo = True
-
-    print(f"PSEUDO: {args.pseudo}")
+    print(args)
 
     checkPath(args.log_dir)
     checkPath(args.model_dir)
