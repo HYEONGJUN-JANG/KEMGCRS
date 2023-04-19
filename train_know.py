@@ -47,18 +47,23 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
             target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
 
-            logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
-
             if args.know_ablation == 'target':
+                logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
                 loss = criterion(logit, target_knowledge_idx)  # For MLP predict
 
             elif args.know_ablation == 'pseudo':
-                # loss = criterion(logit, pseudo_positive_idx)  # For MLP predict
-                logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
-                predicted_positive = logit[:, 0]  # [B]
-                predicted_negative = logit[:, 1:]  # [B, K]
-                relative_preference = predicted_positive.unsqueeze(1) - predicted_negative  # [B, K]
-                loss = -relative_preference.sigmoid().log().sum(dim=1).mean()
+                dialog_token = dialog_token.unsqueeze(1).repeat(1, batch['candidate_indice'].size(1), 1).view(-1, dialog_mask.size(1)) # [B, K, L] -> [B * K, L]
+                dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['candidate_indice'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
+                logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
+
+                pseudo_positive_idx = batch['candidate_indice'].view(-1)  # [B * K]
+
+                loss = criterion(logit, pseudo_positive_idx)  # For MLP predict
+                # logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+                # predicted_positive = logit[:, 0]  # [B]
+                # predicted_negative = logit[:, 1:]  # [B, K]
+                # relative_preference = predicted_positive.unsqueeze(1) - predicted_negative  # [B, K]
+                # loss = -relative_preference.sigmoid().log().sum(dim=1).mean()
 
             # args.loss_rec = 'bpr'
             # if args.loss_rec == 'cross_entropy':
