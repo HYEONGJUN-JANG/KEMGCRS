@@ -1,8 +1,12 @@
+import json
+import os
+
 import torch
 from collections import defaultdict
 import random
 
 from torch.nn.utils.rnn import pad_sequence
+from tqdm import tqdm
 
 
 def readDic(filename, out=None):
@@ -47,98 +51,94 @@ def v2conv(conv, istopic=True, isgoal=True, iskg=True):
 
 def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
     truncate_size = max_length - len(prefix) - len(suffix)
-    # input_ids = prefix + input_ids[-truncate_size:] + suffix
-    # input_ids = input_ids + [0] * (max_length - len(input_ids))
-    # return input_ids
-    if truncate_size <= len(input_ids): input_ids = prefix + input_ids[len(input_ids) - truncate_size:] + suffix
-    else: input_ids = prefix + input_ids + suffix
+    if truncate_size <= len(input_ids):
+        input_ids = prefix + input_ids[len(input_ids) - truncate_size:] + suffix
+    else:
+        input_ids = prefix + input_ids + suffix
     return input_ids + [0] * (max_length - len(input_ids))
 
-# TODO: 나중에 data loader 를 직접 만들어서 쓸 수도 있을 듯
-def batchify(args, batch, tokenizer=None, task=''):
-    """
-    :param args: args
-    :param batch: batch
-    :param tokenizer: tokenizer
-    :param task: task {'type','topic','know'}
-    :return: Tensor[ dialog_token, dialog_mask, response, type, topic, candidate_indice(Optional) ]
-    """
-    # Input batches are all string
-    dialog, user_profile, response, type, topic, situation, target_knowledge = [batch[i] for i in ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge']]
-    context_batch = defaultdict()
-    suffix_list=[]
-    for i in range(len(dialog)): # batch 수 만큼
-        suffix = ' '
-        if task == 'type':
-            suffix = tokenizer.sep_token
-        elif task == 'topic':
-            suffix = '<type>' + type[i] + '<user_profile>' + user_profile[i]
-        elif task == 'know':
-            if isinstance(topic[i], list): topic[i] = ','.join(topic[i])
-            suffix = tokenizer.sep_token + '<situation>' + situation[i] + '<type>' + type[i] + '<topic>' + topic[i] + "predict the next goal:"
-        else : # Rescponse
+
+def user_profile_setting(ufDic: dict) -> str:
+    uf = ''
+    for i, key in enumerate(ufDic.keys()):
+        one = ufDic[key]
+        if i == 0 or key[0].lower() != "a":
             pass
-        suffix_list.append(suffix)
-
-    input_sentences = [s+'<dialog>'+d for d, s in zip(dialog, suffix_list)]
-    input_sentences = tokenizer(input_sentences, add_special_tokens=False).input_ids
-    topic_prompt = tokenizer.encode('predict the next goal: ')[1:]
-    input_sentences = [[tokenizer.cls_token_id] + sentence[-args.max_length+len(topic_prompt)+1:] + topic_prompt for sentence in input_sentences]
-    input_sentences = [input_ids + [tokenizer.pad_token_id] * (args.max_length-len(input_ids)) for input_ids in input_sentences]
-
-
-
-    # suffix_list_token = tokenizer(suffix_list, add_special_tokens=False)
-    # dialog_list_token = tokenizer(dialog, add_special_tokens=False)
-    # input_token = [tokenizer.cls_token + s+d + " predict the next topic:" + tokenizer.eos_token for s, d in zip(suffix_list_token.input_ids, dialog_list_token.input_ids)]
-    # input_encoding = tokenizer(input_token)
-    context_batch['dialog_token'] = torch.LongTensor(input_sentences).to(args.device)
-    attention_mask = context_batch['dialog_token'].ne(tokenizer.pad_token_id)
-    context_batch['dialog_mask'] = attention_mask
-
-    # tokenized_dialog = tokenizer(input_token, truncation=True, padding='max_length', max_length=args.max_length)
-    # tokenized_dialog = tokenizer(dialog, add_special_tokens=False)
-    # tokenized_suffix = tokenizer(suffix_list, add_special_tokens=False, max_length=args.max_length//4, truncation=True)
-    # truncationPadding
-    context_batch['response'] = tokenizer(response, add_special_tokens=True, max_length=args.max_length, padding='max_length', truncation=True).input_ids
-    # context_batch['dialog_token'] = [truncationPadding(input_ids=dialog_inputids, prefix=[tokenizer.cls_token_id], suffix=suffix_inputids, max_length=args.max_length) for dialog_inputids, suffix_inputids in zip(tokenized_dialog.input_ids, tokenized_suffix.input_ids)]
-    # context_batch['dialog_mask'] = [truncationPadding(input_ids=dialoginputids, prefix=[1], suffix=suffix_inputids, max_length=args.max_length) for dialoginputids, suffix_inputids in zip(tokenized_dialog.attention_mask, tokenized_suffix.attention_mask)]
-    # context_batch['dialog_token'] = tokenized_dialog.input_ids
-    # context_batch['dialog_mask'] = tokenized_dialog.attention_mask
-
-    context_batch['type'] = [args.goalDic['str'][i] for i in type]  # index로 바꿈
-    context_batch['topic_idx'] = [args.topicDic['str'][i] for i in topic]  # index로 바꿈
-    context_batch['topic'] = tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
-    # context_batch['topic'] = [[token_id if token_id != tokenizer.pad_token_id else -100 for token_id in topic] for topic
-    #               in context_batch['topic']]
-
-    if task == 'know':
-        target_knowledge = target_knowledge.tolist()
-        candidate_indice = [[know] + negative_sampler(args, know) for know in target_knowledge]
-        # candidate_knowledge = tokenizer([args.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=args.max_length)
-        candidate_knowledge_token = [[tokenizer(args.knowledgeDB[i], truncation=True, padding='max_length', max_length=args.max_length).input_ids for i in idx] for idx in candidate_indice]
-        candidate_knowledge_mask = [[tokenizer(args.knowledgeDB[i], truncation=True, padding='max_length', max_length=args.max_length).attention_mask for i in idx] for idx in candidate_indice]
-        context_batch['candidate_indice'] = candidate_indice  # 이미 Tensor로 받음
-        context_batch['candidate_knowledge_token']=candidate_knowledge_token
-        context_batch['candidate_knowledge_mask']=candidate_knowledge_mask
-        # [target, cand1, cand2, cand3, cand4]
-
-    for k, v in context_batch.items():
-        if not isinstance(v, torch.Tensor):
-            context_batch[k] = torch.as_tensor(v, device=args.device)
-            # context_batch[k] = torch.as_tensor(v)
-    return context_batch
-    # Tensor[dialog_token, dialog_mask, response, type, topic, candidate_indice(Optional)]
+        else:
+            uf += ' | '
+        if type(one) == list:
+            uf += f"{key}: {', '.join(one[:-5])}"
+        else:
+            uf += f"{key}: {one}"
+    return uf
 
 
-def negative_sampler(args, target_knowledge):
-    # candidate_entity = self.knowledgeDB[target_knowledge][0]
-    # candiate_all_list = self.knowledgeDB_entity_values[candidate_entity]
-    # negative_indice = random.choices(candiate_all_list, k=self.args.negative_num if len(candiate_all_list) > self.args.negative_num else len(candiate_all_list))
-    total_knowledge_num = args.knowledge_num
-    negative_indice = []
-    while len(negative_indice) < args.negative_num:
-        negative_idx = random.randint(0, total_knowledge_num-1)
-        if (negative_idx not in negative_indice) and (negative_idx != target_knowledge):
-            negative_indice.append(negative_idx)
-    return negative_indice
+def process_augment_sample(raw_data, tokenizer, knowledgeDB):
+    train_sample = []
+    if tokenizer.eos_token is not None:
+        eos_token = tokenizer.eos_token
+    else:
+        eos_token = tokenizer.sep_token
+    for ij in range(len(raw_data)):
+        conversation = raw_data[ij]
+        augmented_dialog = []
+        for i in range(len(conversation['dialog'])):
+            role = conversation['role_seq'][i]
+            utterance = conversation['dialog'][i] + eos_token
+
+            if role == 'System' and len(augmented_dialog) > 0 and conversation['knowledge_seq'][i] != '':
+                flatten_dialog = ''.join(augmented_dialog)
+                train_sample.append({'dialog': flatten_dialog,
+                                     'user_profile': conversation['user_profile'],
+                                     'response': utterance,
+                                     'type': conversation['type'][i],
+                                     'topic': conversation['topic'][i],
+                                     'situation': conversation['situation'],
+                                     'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i]),
+                                     'candidate_positives': [knowledgeDB.index(cand) for cand in conversation['pseudo_knowledge_seq'][i]],
+                                     })
+            augmented_dialog.append(utterance)
+    return train_sample
+
+
+def dataset_reader(args, data_name='train'):
+    conversation_sample = []
+    data_path = os.path.join(args.data_dir, f"en_{data_name}_know_cand.txt")
+    with open(data_path, 'r', encoding='UTF-8') as f:
+        for line in tqdm(f, desc="Dataset Read", bar_format='{l_bar} | {bar:23} {r_bar}'):
+            dialog = json.loads(line)
+            conversation = dialog['conversation']
+            role_seq = ["User", "System"] if dialog['goal_type_list'][0] != 'Greetings' else ["System", "User"]
+
+            for i in range(2, len(conversation)):
+                role_seq.append(role_seq[i % 2])
+
+            knowledge_seq = dialog['knowledge']
+            positive_candidates_list = dialog['know_candidates']
+
+            for idx, positive_candidates in enumerate(positive_candidates_list):
+                if len(positive_candidates) > 0:
+                    positive_candidates_list[idx] = [' '.join(candidate) for candidate in positive_candidates]
+                    # positive_candidates_list[idx] = [args.knowledgeDB.index(candidate) for candidate in positive_candidates]
+
+            knowledge_seq = [' '.join(know) for know in knowledge_seq]
+            # pseudo_knowledge_seq = [' '.join(know) for know in pseudo_knowledge_seq]
+
+            user_profile = user_profile_setting(dialog['user_profile'])
+            situation = dialog['situation']
+
+            for i in range(len(conversation)):  # HJ: [1],[2] 같은 text 제거, conversation 추가해넣는코드
+                conversation[i] = conversation[i] if conversation[i][0] != '[' else conversation[i][4:]
+                conversation[i] = role_seq[i] + ": " + conversation[i]
+            conversation_sample.append({
+                'dialog': conversation,
+                'role_seq': role_seq,
+                'type': dialog['goal_type_list'],
+                'topic': dialog['goal_topic_list'],
+                'situation': situation,
+                'user_profile': user_profile,
+                'knowledge_seq': knowledge_seq,
+                'pseudo_knowledge_seq': positive_candidates_list
+            })
+
+    return conversation_sample

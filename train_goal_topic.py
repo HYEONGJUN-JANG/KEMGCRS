@@ -5,7 +5,6 @@ from tqdm import tqdm
 import os
 import torch.nn.functional as F
 
-from data_util import batchify
 from metric import EarlyStopping
 from utils import write_pkl, save_json, checkGPU
 import torch.optim as optim
