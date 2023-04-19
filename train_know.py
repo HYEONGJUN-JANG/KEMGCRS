@@ -27,8 +27,10 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     knowledge_index = knowledge_index.to(args.device)
 
     for epoch in range(args.num_epochs):
-        if args.update_freq == -1:  update_freq = len(train_dataloader)
-        update_freq = min(len(train_dataloader), update_freq)
+        if args.update_freq == -1:
+            update_freq = len(train_dataloader)
+        else:
+            update_freq = min(len(train_dataloader), args.update_freq)
 
         train_epoch_loss = 0
         num_update = 0
