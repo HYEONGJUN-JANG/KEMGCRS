@@ -8,6 +8,7 @@ import numpy as np
 def knowledge_reindexing(args, knowledge_data, retriever):
     # 모든 know_index를 버트에 태움
     print('...knowledge indexing...')
+    retriever.eval()
     knowledgeDataLoader = DataLoader(
         knowledge_data,
         batch_size=args.batch_size
