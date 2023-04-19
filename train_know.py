@@ -81,9 +81,9 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
         with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
             f.write(f'EPOCH: {epoch}\n')
-            f.write(f"Test Hit@1: {best_hit[0]}\n")
-            f.write(f"Test Hit@5: {best_hit[1]}\n")
-            f.write(f"Test Hit@10: {best_hit[2]}\n")
+            f.write(f"Test Hit@1: {hit1}\n")
+            f.write(f"Test Hit@5: {hit5}\n")
+            f.write(f"Test Hit@10: {hit10}\n")
 
         if hit10 > eval_metric[0]:
             eval_metric[0] = hit10
