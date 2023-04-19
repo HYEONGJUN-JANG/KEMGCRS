@@ -83,7 +83,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             f.write(f'EPOCH: {epoch}\n')
             f.write(f"Test Hit@1: {hit1}\n")
             f.write(f"Test Hit@5: {hit5}\n")
-            f.write(f"Test Hit@10: {hit10}\n")
+            f.write(f"Test Hit@10: {hit10}\n\n")
 
         if hit10 > eval_metric[0]:
             eval_metric[0] = hit10
