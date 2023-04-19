@@ -29,6 +29,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
     best_hit = [[], [], []]
     eval_metric = [-1]
+    result_path = f"{args.time}_{args.model_name}_result"
 
     for epoch in range(args.num_epochs):
         if args.update_freq == -1:
@@ -78,6 +79,12 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
         hit1, hit5, hit10 = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
+        with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
+            f.write(f'EPOCH: {epoch}\n')
+            f.write(f"Test Hit@1: {best_hit[0]}\n")
+            f.write(f"Test Hit@5: {best_hit[1]}\n")
+            f.write(f"Test Hit@10: {best_hit[2]}\n")
+
         if hit10 > eval_metric[0]:
             eval_metric[0] = hit10
             best_hit[0] = hit1
@@ -85,15 +92,16 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             best_hit[2] = hit10
 
     print(f'BEST RESULT')
-    print(f"BEST Test Hit@1: {np.average(hit1)}")
-    print(f"BEST Test Hit@5: {np.average(hit5)}")
-    print(f"BEST Test Hit@10: {np.average(hit10)}")
+    print(f"BEST Test Hit@1: {best_hit[0]}")
+    print(f"BEST Test Hit@5: {best_hit[1]}")
+    print(f"BEST Test Hit@10: {best_hit[2]}")
 
     checkPath('results')
-    with open(os.path.join('results', f"{args.time}_{args.model_name}_inout"), 'w', encoding='utf-8') as f:
-        f.write(f"BEST Test Hit@1: {np.average(hit1)}\n")
-        f.write(f"BEST Test Hit@5: {np.average(hit5)}\n")
-        f.write(f"BEST Test Hit@10: {np.average(hit10)}\n")
+    with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
+        f.write('BEST RESULT')
+        f.write(f"BEST Test Hit@1: {best_hit[0]}\n")
+        f.write(f"BEST Test Hit@5: {best_hit[1]}\n")
+        f.write(f"BEST Test Hit@10: {best_hit[2]}\n")
 
 
 
