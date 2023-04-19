@@ -58,7 +58,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 predicted_positive = logit[:, 0]  # [B]
                 predicted_negative = logit[:, 1:]  # [B, K]
                 relative_preference = predicted_positive.unsqueeze(1) - predicted_negative  # [B, K]
-                loss = -relative_preference.sigmoid().log().mean()
+                loss = -relative_preference.sigmoid().log().sum(dim=1).mean()
 
             # args.loss_rec = 'bpr'
             # if args.loss_rec == 'cross_entropy':
