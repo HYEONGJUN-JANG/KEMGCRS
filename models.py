@@ -41,7 +41,6 @@ class Retriever(nn.Module):
         모든 key vector에서 올라온 벡터를 통해 계산처리
         """
         dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
-        # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
         return dot_score
 

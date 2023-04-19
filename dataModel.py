@@ -115,13 +115,13 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # candiate_all_list = self.knowledgeDB_entity_values[candidate_entity]
         # negative_indice = random.choices(candiate_all_list, k=self.args.negative_num if len(candiate_all_list) > self.args.negative_num else len(candiate_all_list))
         total_knowledge_num = args.knowledge_num
-        negative_indice = list(range(total_knowledge_num))
-        negative_indice = list(set(negative_indice)-set(candidate_positives_idx))
-        # negative_indice = []
-        # while len(negative_indice) < args.negative_num:
-        #     negative_idx = random.randint(0, total_knowledge_num - 1)
-        #     if (negative_idx not in negative_indice) and (negative_idx != target_knowledge):
-        #         negative_indice.append(negative_idx)
+        # negative_indice = list(range(total_knowledge_num))
+        # negative_indice = list(set(negative_indice)-set(candidate_positives_idx))
+        negative_indice = []
+        while len(negative_indice) < args.negative_num:
+            negative_idx = random.randint(0, total_knowledge_num - 1)
+            if (negative_idx not in negative_indice) and (negative_idx != target_knowledge):
+                negative_indice.append(negative_idx)
         return negative_indice
 
     def __getitem__(self, idx):  # TODO 구현 전

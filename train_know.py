@@ -46,16 +46,12 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             print(args.know_ablation)
 
             if args.know_ablation == 'target':
-                print('fuck')
                 logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
                 loss = criterion(logit, target_knowledge_idx)  # For MLP predict
-
             elif args.know_ablation == 'pseudo':
                 logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask, ablation="pseudo")
                 loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
-            else:
-                print('fuck fuck')
-                print(args.know_ablation)
+
 
             train_epoch_loss += loss
             optimizer.zero_grad()
