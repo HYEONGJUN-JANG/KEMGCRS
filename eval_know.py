@@ -51,6 +51,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         target_knowledge_idx = batch['target_knowledge']
 
         dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
+
         top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
         input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
         target_knowledge_text = tokenizer.batch_decode(target_knowledge, skip_special_tokens=True)  # target knowledge
