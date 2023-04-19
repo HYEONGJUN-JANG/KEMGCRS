@@ -136,7 +136,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         elif self.args.input_prompt == 'dialog_goal':
             prefix = '<type>' + type + self.tokenizer.sep_token
         elif self.args.input_prompt == 'dialog_topic':
-            prefix = '<topic>' + topic + + self.tokenizer.sep_token
+            prefix = '<topic>' + topic + self.tokenizer.sep_token
         elif self.args.input_prompt == 'dialog_goal_topic':
             prefix = '<type>' + type + '<topic>' + topic + self.tokenizer.sep_token
         else:
