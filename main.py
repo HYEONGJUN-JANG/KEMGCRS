@@ -22,32 +22,32 @@ from data_util import readDic, dataset_reader, process_augment_sample
 from train_goal_topic import topic_eval
 
 
-def train_knowledge_indexing(args, knowledge_data, retriever, optimizer):
-    # 모든 know_index를 버트에 태움
-    print('...train knowledge indexing...')
-    knowledgeDataLoader = DataLoader(
-        knowledge_data,
-        batch_size=args.batch_size
-    )
-    knowledge_index = []
-    criterion = nn.CrossEntropyLoss()
-    train_epoch_loss = 0
-    for batch in tqdm(knowledgeDataLoader):
-        input_ids = batch[0].to(args.device)
-        attention_mask = batch[1].to(args.device)
-        target_know_idx = batch[2].to(args.device)
-
-        if args.know_ablation == 'bart':
-            loss = retriever.knowledge_retrieve(input_ids, attention_mask, None, None, labels=target_know_idx)
-        else:
-            logit = retriever.knowledge_retrieve(input_ids, attention_mask, None, None, ablation='mlp')
-            loss = criterion(logit, target_know_idx)
-
-        train_epoch_loss += loss
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-    print(f"Knowledge Indexing Loss: {train_epoch_loss}")
+# def train_knowledge_indexing(args, knowledge_data, retriever, optimizer):
+#     # 모든 know_index를 버트에 태움
+#     print('...train knowledge indexing...')
+#     knowledgeDataLoader = DataLoader(
+#         knowledge_data,
+#         batch_size=args.batch_size
+#     )
+#     knowledge_index = []
+#     criterion = nn.CrossEntropyLoss()
+#     train_epoch_loss = 0
+#     for batch in tqdm(knowledgeDataLoader):
+#         input_ids = batch[0].to(args.device)
+#         attention_mask = batch[1].to(args.device)
+#         target_know_idx = batch[2].to(args.device)
+#
+#         if args.know_ablation == 'bart':
+#             loss = retriever.knowledge_retrieve(input_ids, attention_mask, None, None, labels=target_know_idx)
+#         else:
+#             logit = retriever.knowledge_retrieve(input_ids, attention_mask, None, None, ablation='mlp')
+#             loss = criterion(logit, target_know_idx)
+#
+#         train_epoch_loss += loss
+#         optimizer.zero_grad()
+#         loss.backward()
+#         optimizer.step()
+#     print(f"Knowledge Indexing Loss: {train_epoch_loss}")
 
 
 def main():
@@ -57,10 +57,7 @@ def main():
     args.who = "TH"
     # args.bert_name = 'facebook/bart-base'
     # args.task = 'know'
-    args.usebart = False
     args.max_gen_length = 50
-    args.know_ablation = 'target'
-    args.pseudo = True
     print(args)
 
     checkPath(args.log_dir)
