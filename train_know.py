@@ -90,7 +90,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     print(f"BEST Test Hit@10: {np.average(hit10)}")
 
     checkPath('results')
-    with open(os.path.join('result', f"{args.time}_{args.model_name}_inout"), 'w', encoding='utf-8') as f:
+    with open(os.path.join('results', f"{args.time}_{args.model_name}_inout"), 'w', encoding='utf-8') as f:
         f.write(f"BEST Test Hit@1: {np.average(hit1)}\n")
         f.write(f"BEST Test Hit@5: {np.average(hit5)}\n")
         f.write(f"BEST Test Hit@10: {np.average(hit10)}\n")
