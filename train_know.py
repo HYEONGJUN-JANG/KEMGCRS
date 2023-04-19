@@ -7,6 +7,7 @@ from metric import EarlyStopping
 from utils import *
 from models import *
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,10 +27,11 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     knowledge_index = knowledge_index.to(args.device)
 
     for epoch in range(args.num_epochs):
-        # train_knowledge_indexing(args, knowledge_data, retriever, optimizer2)
+        if args.update_freq == -1:  update_freq = len(train_dataloader)
+        update_freq = min(len(train_dataloader), update_freq)
+
         train_epoch_loss = 0
         num_update = 0
-        update_freq = min(len(train_dataloader), args.update_freq)
         for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
             retriever.train()
             dialog_token = batch['input_ids']
@@ -57,6 +59,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
             if num_update > update_freq:
                 update_key_bert(retriever.key_bert, retriever.query_bert)
+                num_update=0
 
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
         eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리

@@ -36,7 +36,7 @@ def parseargs():
     parser.add_argument("--know_ablation", default='target', type=str, help="know_ablation", choices=['target', 'pseudo'])
     parser.add_argument("--pseudo", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument('--pseudo_pos_num', default=5, type=int, help="pseudo_pos_num")
-    parser.add_argument('--update_freq', default=100000, type=int, help="update_freq")
+    parser.add_argument('--update_freq', default=-1, type=int, help="update_freq")
 
     parser.add_argument("--data_dir", default='data', type=str, help="The data directory.")
     # parser.add_argument('--data_name', default='en_test.txt', type=str, help="dataset name")
