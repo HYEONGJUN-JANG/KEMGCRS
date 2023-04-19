@@ -44,6 +44,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
 
             if args.know_ablation == 'target':
+                print(args.know_ablation)
                 logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
                 loss = criterion(logit, target_knowledge_idx)  # For MLP predict
 
@@ -59,7 +60,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
             if num_update > update_freq:
                 update_key_bert(retriever.key_bert, retriever.query_bert)
-                num_update=0
+                num_update = 0
 
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
         eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
