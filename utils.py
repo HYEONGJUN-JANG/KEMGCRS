@@ -59,14 +59,14 @@ def parseargs():
     parser.add_argument('--max_length', default=256, type=int, help="dataset name")
     parser.add_argument('--batch_size', default=2, type=int, help="batch size")
     parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate')
-    parser.add_argument('--negative_num', default=4, type=int, help="negative_num")
+    parser.add_argument('--negative_num', default=1, type=int, help="negative_num")
 
     parser.add_argument('--hidden_size', default=768, type=int, help="hidden size")
     parser.add_argument('--num_epochs', default=10, type=int, help="Number of epoch")
     parser.add_argument("--output_dir", default='output', type=str, help="The output directory where the model predictions and checkpoints will be written.")
     parser.add_argument("--usekg", action='store_true', help="use know_text for response")  # HJ: Know_text 를 사용하는지 여부
     parser.add_argument("--time", default='', type=str, help="Time for fileName")  # HJ : Log file middle Name
-    parser.add_argument("--loss_rec", default='target', type=str, help="Loss Type")  # HJ : Loss
+    parser.add_argument("--loss_rec", default='cross_entropy', type=str, help="Loss Type")  # HJ : Loss
     parser.add_argument('--lamb', type=float, default=0.8, help='lambda for loss target')
 
     parser.add_argument("--device", default='0', type=str, help="GPU Device")  # HJ : Log file middle Name

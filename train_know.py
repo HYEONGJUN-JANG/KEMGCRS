@@ -41,16 +41,34 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             # response = batch['response']
             candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
             candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
+            pseudo_positive_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
+
             # target_knowledge = candidate_knowledge_token[:, 0, :]
-            pseudo_knowledge_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
+
             target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
 
             logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
 
             if args.know_ablation == 'target':
                 loss = criterion(logit, target_knowledge_idx)  # For MLP predict
+
             elif args.know_ablation == 'pseudo':
-                loss = criterion(logit, pseudo_knowledge_idx)  # For MLP predict
+                # loss = criterion(logit, pseudo_positive_idx)  # For MLP predict
+                logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+                predicted_positive = logit[:, 0]  # [B]
+                predicted_negative = logit[:, 1:]  # [B, K]
+                relative_preference = predicted_positive.unsqueeze(1) - predicted_negative  # [B, K]
+                loss = -relative_preference.sigmoid().log().mean()
+
+            # args.loss_rec = 'bpr'
+            # if args.loss_rec == 'cross_entropy':
+            #     pass
+            # elif args.loss_rec == 'bpr':
+            #     logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+            #     predicted_positive = logit[:, 0]  # [B]
+            #     predicted_negative = logit[:, 1:]  # [B, K]
+            #     relative_preference = predicted_positive.unsqueeze(1) - predicted_negative  # [B, K]
+            #     loss = -relative_preference.sigmoid().log().mean()
 
             train_epoch_loss += loss
             optimizer.zero_grad()
