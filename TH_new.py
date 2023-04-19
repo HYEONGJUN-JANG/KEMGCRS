@@ -278,7 +278,17 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         context_batch = defaultdict()
         if self.task == 'know':
-            prefix = '<type>' + type + '<topic>' + topic
+            if self.args.input_prompt == 'dialog':
+                prefix = ''
+            elif self.args.input_prompt == 'dialog|goal':
+                prefix = '<type>' + type
+            elif self.args.input_prompt == 'dialog|topic':
+                prefix = '<topic>' + topic
+            elif self.args.input_prompt == 'dialog|goal|topic':
+                prefix = '<type>' + type + '<topic>' + topic
+            else:
+                assert Exception
+
             # topic_prompt = self.tokenizer.encode('predict the next knowledge: ')[1:]
             topic_prompt = []
         elif self.task == 'resp':
@@ -540,9 +550,9 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
     # topic_eval(targets, pred)
 
-    # print(f"Test Hit@1: {np.average(hit1)}")
-    # print(f"Test Hit@5: {np.average(hit5)}")
-    # print(f"Test Hit@10: {np.average(hit10)}")
+    print(f"Test Hit@1: {np.average(hit1)}")
+    print(f"Test Hit@5: {np.average(hit5)}")
+    print(f"Test Hit@10: {np.average(hit10)}")
 
     if write:
         # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
@@ -717,6 +727,7 @@ def main():
         for epoch in range(args.num_epochs):
             # train_knowledge_indexing(args, knowledge_data, retriever, optimizer2)
             train_epoch_loss = 0
+            num_update = 0
             for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
                 retriever.train()
                 dialog_token = batch['input_ids']
