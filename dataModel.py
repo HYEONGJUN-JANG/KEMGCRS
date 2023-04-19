@@ -164,7 +164,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         candidate_positives_idx = candidate_positives_idx[:self.args.pseudo_pos_num]
         pseudo_positive = random.choice(candidate_positives_idx)
-        candidate_indice = [pseudo_positive] + self.negative_sampler(self.args, pseudo_positive)
+        candidate_indice = [pseudo_positive] + self.negative_sampler(pseudo_positive)
 
         # candidate_knowledge = tokenizer([args.knowledgeDB[idx] for idx in candidate_indice], truncation=True, padding='max_length', max_length=args.max_length)
         candidate_knowledge_text = [self.args.knowledgeDB[idx] for idx in candidate_indice]
