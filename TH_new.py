@@ -280,11 +280,11 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         if self.task == 'know':
             if self.args.input_prompt == 'dialog':
                 prefix = ''
-            elif self.args.input_prompt == 'dialog|goal':
+            elif self.args.input_prompt == 'dialog_goal':
                 prefix = '<type>' + type
-            elif self.args.input_prompt == 'dialog|topic':
+            elif self.args.input_prompt == 'dialog_topic':
                 prefix = '<topic>' + topic
-            elif self.args.input_prompt == 'dialog|goal|topic':
+            elif self.args.input_prompt == 'dialog_goal_topic':
                 prefix = '<type>' + type + '<topic>' + topic
             else:
                 assert Exception

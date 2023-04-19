@@ -81,7 +81,7 @@ def parseargs():
 
     # TH
     parser.add_argument('--retrieve', default='negative', type=str, help="retrieve")
-    parser.add_argument('--input_prompt', default='dialog', type=str, help="input_prompt", choices=['dialog', 'dialog|goal', 'dialog|topic', 'dialog|goal|topic'])
+    parser.add_argument('--input_prompt', default='dialog', type=str, help="input_prompt", choices=['dialog', 'dialog_goal', 'dialog_topic', 'dialog_goal_topic'])
 
     args = parser.parse_args()
     args.model_dir = os.path.join(args.model_dir, args.device)
