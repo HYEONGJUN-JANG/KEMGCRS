@@ -40,18 +40,15 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
             candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
             # target_knowledge = candidate_knowledge_token[:, 0, :]
-            # pseudo_knowledge_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
+            pseudo_knowledge_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
             target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
 
-            print(args.know_ablation)
+            logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
 
             if args.know_ablation == 'target':
-                logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
                 loss = criterion(logit, target_knowledge_idx)  # For MLP predict
             elif args.know_ablation == 'pseudo':
-                logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask, ablation="pseudo")
-                loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
-
+                loss = criterion(logit, pseudo_knowledge_idx)  # For MLP predict
 
             train_epoch_loss += loss
             optimizer.zero_grad()
