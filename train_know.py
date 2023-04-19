@@ -7,6 +7,7 @@ from metric import EarlyStopping
 from utils import *
 from models import *
 import logging
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,9 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     knowledge_index = knowledge_index.to(args.device)
+
+    best_hit = [[], [], []]
+    eval_metric = [-1]
 
     for epoch in range(args.num_epochs):
         if args.update_freq == -1:
@@ -88,4 +92,26 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 knowledge_index = knowledge_index.to(args.device)
 
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
-        eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+
+        hit1, hit5, hit10 = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+
+        if hit10 > eval_metric[0]:
+            eval_metric[0] = hit10
+            best_hit[0] = hit1
+            best_hit[1] = hit5
+            best_hit[2] = hit10
+
+    print(f'BEST RESULT')
+    print(f"BEST Test Hit@1: {np.average(hit1)}")
+    print(f"BEST Test Hit@5: {np.average(hit5)}")
+    print(f"BEST Test Hit@10: {np.average(hit10)}")
+
+    if not os.path.exists('results'): os.makedirs('results')
+
+    with open(os.path.join('result', f"{args.time}_{args.model_name}_inout"), 'w', encoding='utf-8') as f:
+        f.write(f"BEST Test Hit@1: {np.average(hit1)}\n")
+        f.write(f"BEST Test Hit@5: {np.average(hit5)}\n")
+        f.write(f"BEST Test Hit@10: {np.average(hit10)}\n")
+
+
+

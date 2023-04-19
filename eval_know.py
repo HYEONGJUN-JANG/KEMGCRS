@@ -88,3 +88,5 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         write_pkl(obj=jsonlineSave, filename='jsonline.pkl')  # 입출력 저장
         save_json(args, f"{args.time}_{args.model_name}_inout", jsonlineSave)
     print('done')
+
+    return [np.average(hit1), np.average(hit5), np.average(hit10)]
