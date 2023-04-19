@@ -59,25 +59,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 dialog_token = dialog_token.unsqueeze(1).repeat(1, batch['candidate_indice'].size(1), 1).view(-1, dialog_mask.size(1)) # [B, K, L] -> [B * K, L]
                 dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['candidate_indice'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
                 logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
-
                 pseudo_positive_idx = batch['candidate_indice'].view(-1)  # [B * K]
-
                 loss = criterion(logit, pseudo_positive_idx)  # For MLP predict
-                # logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
-                # predicted_positive = logit[:, 0]  # [B]
-                # predicted_negative = logit[:, 1:]  # [B, K]
-                # relative_preference = predicted_positive.unsqueeze(1) - predicted_negative  # [B, K]
-                # loss = -relative_preference.sigmoid().log().sum(dim=1).mean()
-
-            # args.loss_rec = 'bpr'
-            # if args.loss_rec == 'cross_entropy':
-            #     pass
-            # elif args.loss_rec == 'bpr':
-            #     logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
-            #     predicted_positive = logit[:, 0]  # [B]
-            #     predicted_negative = logit[:, 1:]  # [B, K]
-            #     relative_preference = predicted_positive.unsqueeze(1) - predicted_negative  # [B, K]
-            #     loss = -relative_preference.sigmoid().log().mean()
 
             train_epoch_loss += loss
             optimizer.zero_grad()
@@ -106,8 +89,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     print(f"BEST Test Hit@5: {np.average(hit5)}")
     print(f"BEST Test Hit@10: {np.average(hit10)}")
 
-    if not os.path.exists('results'): os.makedirs('results')
-
+    checkPath('results')
     with open(os.path.join('result', f"{args.time}_{args.model_name}_inout"), 'w', encoding='utf-8') as f:
         f.write(f"BEST Test Hit@1: {np.average(hit1)}\n")
         f.write(f"BEST Test Hit@5: {np.average(hit5)}\n")
