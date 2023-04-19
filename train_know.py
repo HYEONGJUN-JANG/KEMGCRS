@@ -69,12 +69,13 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             optimizer.step()
             num_update += 1
 
-            if num_update > update_freq:
-                update_key_bert(retriever.key_bert, retriever.query_bert)
-                num_update = 0
-                knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
-                knowledge_index = knowledge_index.to(args.device)
-
+            # if num_update > update_freq:
+            #     update_key_bert(retriever.key_bert, retriever.query_bert)
+            #     num_update = 0
+            #     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+            #     knowledge_index = knowledge_index.to(args.device)
+        knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+        knowledge_index = knowledge_index.to(args.device)
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
         hit1, hit5, hit10 = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
