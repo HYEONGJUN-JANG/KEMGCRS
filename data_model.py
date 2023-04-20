@@ -161,7 +161,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
-        candidate_positives_idx = candidate_positives_idx[:self.args.pseudo_pos_num]
+        # candidate_positives_idx = candidate_positives_idx[:self.args.pseudo_pos_num]
         # pseudo_positive = random.choice(candidate_positives_idx)
         pseudo_positive = candidate_positives_idx[self.args.pseudo_pos_rank - 1]
         # pseudo_negative = self.negative_sampler(pseudo_positive)
