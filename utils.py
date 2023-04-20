@@ -44,7 +44,7 @@ def parseargs():
     parser.add_argument('--k_idx_name', default='knowledge_index.npy', type=str, help="knowledge index file name in data_dir")
 
     ## Model BERT or BART
-    parser.add_argument("--type_aware", action='store_false', help="Whether to Use Type-aware Matching")
+    parser.add_argument("--type_aware", action='store_true', help="Whether to Use Type-aware Matching")
     parser.add_argument('--kencoder_name', default='bert-base-uncased', type=str, help="Knowledge Encoder Model Name")
     parser.add_argument('--qencoder_name', default='facebook/bart-base', type=str, help="Query Encoder Model Name")
 
