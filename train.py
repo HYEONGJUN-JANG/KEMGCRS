@@ -6,9 +6,9 @@ from torch.utils.data import DataLoader
 from transformers import AutoModel, AutoTokenizer
 import data
 from config import bert_special_tokens_dict
-from dataModel import KnowledgeDataset, DialogDataset
+from data_model import KnowledgeDataset, DialogDataset
 from eval_know import eval_know
-from train_know import train_retriever_idx
+from train_know import train_know
 from utils import *
 from models import *
 from data_util import readDic

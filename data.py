@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from dataModel import KnowledgeDataset
+from data_model import KnowledgeDataset
 import numpy as np
 import json
 import data_hj

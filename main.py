@@ -13,7 +13,7 @@ from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer, BartForConditionalGeneration, GPT2LMHeadModel, GPT2Config
 import data
 from config import bert_special_tokens_dict, gpt_special_tokens_dict
-from dataModel import GenerationDataset, DialogDataset, KnowledgeDataset
+from data_model import GenerationDataset, DialogDataset, KnowledgeDataset
 from eval_know import eval_know, knowledge_reindexing
 from train_know import train_know
 from utils import *

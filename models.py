@@ -20,6 +20,8 @@ class Retriever(nn.Module):
         self.topic_proj = nn.Linear(self.hidden_size, args.topic_num)
         self.linear_proj = nn.Linear(self.hidden_size, 128)
         self.know_proj = nn.Linear(self.hidden_size, self.args.knowledge_num)
+        self.goal_embedding = nn.Embedding(self.args.goal_num, self.args.hidden_size)
+        nn.init.normal_(self.goal_embedding.weight, 0, self.args.hidden_size ** -0.5)
 
     def forward(self, token_seq, mask):
         dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
@@ -31,13 +33,18 @@ class Retriever(nn.Module):
 
         return outputs[0]
 
-    def compute_know_score(self, token_seq, mask, knowledge_index):
+    def compute_know_score(self, token_seq, mask, knowledge_index, type_idx):
         """
         eval_know.computing_score에서
         모든 key vector에서 올라온 벡터를 통해 계산처리
         """
         dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
-        dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
+        type_emb = self.goal_embedding(type_idx)  # [B, d]
+
+        if self.args.type_aware:
+            dot_score = torch.matmul(dialog_emb * type_emb, knowledge_index.transpose(1, 0))  # [B, N]
+        else:
+            dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
         return dot_score
 
     def knowledge_retrieve(self, token_seq, mask, candidate_knowledge_token, candidate_knowledge_mask, ablation=None, labels=None):
