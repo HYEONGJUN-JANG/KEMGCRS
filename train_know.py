@@ -1,5 +1,6 @@
 import sys
 
+import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from torch import optim
@@ -59,8 +60,9 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             # response = batch['response']
             candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
             candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
-            pseudo_positive_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
-
+            # pseudo_positive_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
+            # pseudo_positive = batch['pseudo_positive']
+            # pseudo_negative = batch['pseudo_negative']
             # target_knowledge = candidate_knowledge_token[:, 0, :]
 
             target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
@@ -70,11 +72,19 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 loss = criterion(logit, target_knowledge_idx)  # For MLP predict
 
             elif args.know_ablation == 'pseudo':
-                dialog_token = dialog_token.unsqueeze(1).repeat(1, batch['candidate_indice'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
-                dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['candidate_indice'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
+                dialog_token = dialog_token.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
+                dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
                 logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
-                pseudo_positive_idx = batch['candidate_indice'].view(-1)  # [B * K]
-                loss = criterion(logit, pseudo_positive_idx)  # For MLP predict
+                pseudo_target = batch['pseudo_target'].view(-1)  # [B * K]
+                loss = criterion(logit, pseudo_target)  # For MLP predict
+
+                logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
+                predicted_positive = logit[:, 0]
+                predicted_negative = logit[:, 1]
+                relative_preference = predicted_positive-predicted_negative
+                loss_bpr = -relative_preference.sigmoid().log().mean()
+
+                loss = loss + loss_bpr
 
             train_epoch_loss += loss
             optimizer.zero_grad()

@@ -162,11 +162,15 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
         # candidate_positives_idx = candidate_positives_idx[:self.args.pseudo_pos_num]
+        sampled_pair = sorted(random.sample(list(range(len(candidate_positives_idx))), k=2))
+        pseudo_positive = candidate_positives_idx[sampled_pair[0]]
+        pseudo_negative = candidate_positives_idx[sampled_pair[1]]
+
         # pseudo_positive = random.choice(candidate_positives_idx)
-        pseudo_positive = candidate_positives_idx[self.args.pseudo_pos_rank - 1]
+        # pseudo_positive = candidate_positives_idx[self.args.pseudo_pos_rank - 1]
         # pseudo_negative = self.negative_sampler(pseudo_positive)
 
-        candidate_indice = [pseudo_positive]
+        candidate_indice = [pseudo_positive, pseudo_negative]
         candidate_knowledge_text = [self.args.knowledgeDB[idx] for idx in candidate_indice]
         candidate_knowledge = self.tokenizer(candidate_knowledge_text, truncation=True, padding='max_length', max_length=self.args.max_length)
         candidate_knowledge_token = candidate_knowledge.input_ids
@@ -176,6 +180,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['candidate_knowledge_token'] = candidate_knowledge_token
         context_batch['candidate_knowledge_mask'] = candidate_knowledge_mask
 
+        context_batch['pseudo_target'] = [candidate_positives_idx[0]]
         context_batch['target_knowledge'] = target_knowledge_idx
 
         for k, v in context_batch.items():

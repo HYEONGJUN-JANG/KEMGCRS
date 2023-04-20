@@ -44,18 +44,17 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         dialog_token = batch['input_ids']
         dialog_mask = batch['attention_mask']
         response = batch['response']
-        candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
+        # candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
         type_idx = batch['type']
         topic_idx = batch['topic_idx']
-        candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
-        target_knowledge = candidate_knowledge_token[:, 0, :]
+        # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
         target_knowledge_idx = batch['target_knowledge']
 
         dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, type_idx)
 
         top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
         input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
-        target_knowledge_text = tokenizer.batch_decode(target_knowledge, skip_special_tokens=True)  # target knowledge
+        target_knowledge_text = tokenizer.batch_decode(target_knowledge_idx, skip_special_tokens=True)  # target knowledge
         retrieved_knowledge_text = [knowledgeDB[idx].lower() for idx in top_candidate[0]]  # list
         correct = target_knowledge_idx in top_candidate
 
