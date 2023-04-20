@@ -84,7 +84,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 relative_preference = predicted_positive-predicted_negative
                 loss_bpr = -relative_preference.sigmoid().log().mean()
 
-                loss = loss + loss_bpr
+                loss = loss + args.loss_bpr * loss_bpr
 
             train_epoch_loss += loss
             optimizer.zero_grad()
