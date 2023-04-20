@@ -27,7 +27,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     knowledge_index = knowledge_index.to(args.device)
 
-    best_hit = [[], [], []]
+    best_hit = [[], [], [], []]
     eval_metric = [-1]
     result_path = f"{args.time}_{args.model_name}_result"
 
@@ -57,7 +57,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 loss = criterion(logit, target_knowledge_idx)  # For MLP predict
 
             elif args.know_ablation == 'pseudo':
-                dialog_token = dialog_token.unsqueeze(1).repeat(1, batch['candidate_indice'].size(1), 1).view(-1, dialog_mask.size(1)) # [B, K, L] -> [B * K, L]
+                dialog_token = dialog_token.unsqueeze(1).repeat(1, batch['candidate_indice'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
                 dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['candidate_indice'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
                 logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index)
                 pseudo_positive_idx = batch['candidate_indice'].view(-1)  # [B * K]
@@ -78,31 +78,28 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         knowledge_index = knowledge_index.to(args.device)
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
-        hit1, hit5, hit10 = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+        hit1, hit5, hit10, hit20 = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
         with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
             f.write(f'EPOCH: {epoch}\n')
-            f.write(f"Test Hit@1: %.4f\n" % hit1)
-            f.write(f"Test Hit@5: %.4f\n" % hit5)
-            f.write(f"Test Hit@10: %.4f\n\n" % hit10)
+            f.write(f"Hit@1\tHit@5\tHit@10\tHit@20\n")
+            f.write(f"%.4f\t%.4f\t%.4f\t%.4f\n\n" % (hit1, hit5, hit10, hit20))
 
         if hit10 > eval_metric[0]:
-            eval_metric[0] = hit10
+            eval_metric[0] = hit1
             best_hit[0] = hit1
             best_hit[1] = hit5
             best_hit[2] = hit10
+            best_hit[3] = hit20
 
     print(f'BEST RESULT')
     print(f"BEST Test Hit@1: {best_hit[0]}")
     print(f"BEST Test Hit@5: {best_hit[1]}")
     print(f"BEST Test Hit@10: {best_hit[2]}")
+    print(f"BEST Test Hit@20: {best_hit[3]}")
 
     checkPath('results')
     with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
-        f.write('BEST RESULT')
-        f.write("BEST Test Hit@1: %.4f\n" % best_hit[0])
-        f.write("BEST Test Hit@5: %.4f\n" % best_hit[1])
-        f.write("BEST Test Hit@10: %.4f\n"% best_hit[2])
-
-
-
+        f.write('BEST RESULT\n')
+        f.write(f"Hit@1\tHit@5\tHit@10\tHit@20\n")
+        f.write(f"%.4f\t%.4f\t%.4f\t%.4f\n" % (best_hit[0], best_hit[1], best_hit[2], best_hit[3]))

@@ -34,7 +34,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     knowledge_index = knowledge_index.to(args.device)
 
-    hit1, hit5, hit10 = [], [], []
+    hit1, hit5, hit10, hit20 = [], [], [], []
     cnt = 0
 
     pred = []
@@ -69,20 +69,23 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
         goal = type_idx[0]
         if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
-            for k in [1, 5, 10]:
+            for k in [1, 5, 10, 20]:
                 top_candidate_k = torch.topk(dot_score, k=k, dim=1).indices  # [B, K]
                 correct_k = target_knowledge_idx in top_candidate_k
                 if k == 1: hit1.append(correct_k)
                 if k == 5: hit5.append(correct_k)
                 if k == 10: hit10.append(correct_k)
+                if k == 20: hit20.append(correct_k)
+
     # for i in range(10):
     #     print("T:%s\tP:%s" %(targets[i], pred[i]))
 
     # topic_eval(targets, pred)
 
-    print(f"Test Hit@1: {np.average(hit1)}")
-    print(f"Test Hit@5: {np.average(hit5)}")
-    print(f"Test Hit@10: {np.average(hit10)}")
+    print(f"Test Hit@1: %.4f" % np.average(hit1))
+    print(f"Test Hit@5: %.4f" % np.average(hit5))
+    print(f"Test Hit@10: %.4f" % np.average(hit10))
+    print(f"Test Hit@20: %.4f" % np.average(hit20))
 
     if write:
         # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
@@ -90,4 +93,4 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         save_json(args, f"{args.time}_{args.model_name}_inout", jsonlineSave)
     print('done')
 
-    return [np.average(hit1), np.average(hit5), np.average(hit10)]
+    return [np.average(hit1), np.average(hit5), np.average(hit10), np.average(hit20)]
