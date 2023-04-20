@@ -30,6 +30,16 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     best_hit = [[], [], [], []]
     eval_metric = [-1]
     result_path = f"{args.time}_{args.model_name}_result"
+    with open(os.path.join('results', result_path), 'a', encoding='utf-8') as result_f:
+        result_f.write(
+            '\n=================================================\n')
+        result_f.write(get_time_kst())
+        result_f.write('\n')
+        # result_f.write('Argument List:' + str(sys.argv) + '\n')
+        for i, v in vars(args).items():
+            result_f.write(f'{i}:{v} || ')
+        result_f.write('\n')
+        result_f.write('[METRIC]\tHit@1\tHit@5\tHit@10\tHit@20\n')
 
     for epoch in range(args.num_epochs):
         if args.update_freq == -1:
@@ -82,9 +92,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         hit1, hit5, hit10, hit20 = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
         with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
-            f.write(f'EPOCH: {epoch}\n')
-            f.write(f"Hit@1\tHit@5\tHit@10\tHit@20\n")
-            f.write(f"%.4f\t%.4f\t%.4f\t%.4f\n\n" % (hit1, hit5, hit10, hit20))
+            f.write(f"%d\t%.4f\t%.4f\t%.4f\t%.4f\n\n" % (epoch, hit1, hit5, hit10, hit20))
 
         if hit10 > eval_metric[0]:
             eval_metric[0] = hit1
@@ -101,6 +109,4 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
     checkPath('results')
     with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
-        f.write('BEST RESULT\n')
-        f.write(f"Hit@1\tHit@5\tHit@10\tHit@20\n")
-        f.write(f"%.4f\t%.4f\t%.4f\t%.4f\n" % (best_hit[0], best_hit[1], best_hit[2], best_hit[3]))
+        f.write(f"[BEST]\t%.4f\t%.4f\t%.4f\t%.4f\n" % (best_hit[0], best_hit[1], best_hit[2], best_hit[3]))
