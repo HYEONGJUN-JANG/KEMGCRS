@@ -41,7 +41,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         # for i, v in vars(args).items():
         #     result_f.write(f'{i}:{v} || ')
         result_f.write('\n')
-        result_f.write('[METRIC]\tHit@1\tHit@5\tHit@10\tHit@20\n')
+        result_f.write('[EPOCH]\tHit@1\tHit@5\tHit@10\tHit@20\n')
 
     for epoch in range(args.num_epochs):
         if args.update_freq == -1:
@@ -94,7 +94,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         hit1, hit5, hit10, hit20 = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
         with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
-            f.write(f"%d\t%.4f\t%.4f\t%.4f\t%.4f\n\n" % (epoch, hit1, hit5, hit10, hit20))
+            f.write(f"%d\t%.4f\t%.4f\t%.4f\t%.4f\n" % (epoch, hit1, hit5, hit10, hit20))
 
         if hit10 > eval_metric[0]:
             eval_metric[0] = hit1
