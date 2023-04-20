@@ -1,3 +1,5 @@
+import sys
+
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from torch import optim
@@ -35,9 +37,9 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             '\n=================================================\n')
         result_f.write(get_time_kst())
         result_f.write('\n')
-        # result_f.write('Argument List:' + str(sys.argv) + '\n')
-        for i, v in vars(args).items():
-            result_f.write(f'{i}:{v} || ')
+        result_f.write('Argument List:' + str(sys.argv) + '\n')
+        # for i, v in vars(args).items():
+        #     result_f.write(f'{i}:{v} || ')
         result_f.write('\n')
         result_f.write('[METRIC]\tHit@1\tHit@5\tHit@10\tHit@20\n')
 
