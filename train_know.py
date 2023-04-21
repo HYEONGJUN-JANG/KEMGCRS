@@ -128,7 +128,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             f.write(f"%d\t%.4f\t%.4f\t%.4f\t%.4f\n" % (epoch, hit1, hit5, hit10, hit20))
 
         if hit10 > eval_metric[0]:
-            eval_metric[0] = hit1
+            eval_metric[0] = hit10
             best_hit[0] = hit1
             best_hit[1] = hit5
             best_hit[2] = hit10

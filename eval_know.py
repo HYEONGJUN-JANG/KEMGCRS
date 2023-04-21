@@ -91,6 +91,5 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         print(f"Test Hit@5: %.4f" % np.average(hit5))
         print(f"Test Hit@10: %.4f" % np.average(hit10))
         print(f"Test Hit@20: %.4f" % np.average(hit20))
-    print('done')
 
     return [np.average(hit1), np.average(hit5), np.average(hit10), np.average(hit20)]
