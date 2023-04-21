@@ -170,7 +170,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # pseudo_positive = candidate_positives_idx[self.args.pseudo_pos_rank - 1]
         # pseudo_negative = self.negative_sampler(pseudo_positive)
 
-        candidate_indice = candidate_positives_idx
+        candidate_indice = [candidate_positives_idx[self.args.pseudo_pos_rank]]
+
         candidate_knowledge_text = [self.args.knowledgeDB[idx] for idx in candidate_indice]
         candidate_knowledge = self.tokenizer(candidate_knowledge_text, truncation=True, padding='max_length', max_length=self.args.max_length)
         candidate_knowledge_token = candidate_knowledge.input_ids
