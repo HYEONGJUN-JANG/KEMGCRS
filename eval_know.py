@@ -66,8 +66,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
             jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response, "predict5": retrieved_knowledge_text})
 
-        for score, target, goal_idx in zip(dot_score, target_knowledge_idx, type_idx):
-            goal = args.goalDic['int'][int(goal_idx)]
+        for score, target, goal in zip(dot_score, target_knowledge_idx, type_idx):
+            # goal = args.goalDic['int'][int(goal_idx)]
             if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
                 for k in [1, 5, 10, 20]:
                     top_candidate_k = torch.topk(score, k=k).indices  # [B, K]
