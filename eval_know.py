@@ -83,15 +83,15 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
     # topic_eval(targets, pred)
 
-    print(f"Test Hit@1: %.4f" % np.average(hit1))
-    print(f"Test Hit@5: %.4f" % np.average(hit5))
-    print(f"Test Hit@10: %.4f" % np.average(hit10))
-    print(f"Test Hit@20: %.4f" % np.average(hit20))
-
     if write:
         # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
         write_pkl(obj=jsonlineSave, filename='jsonline.pkl')  # 입출력 저장
         save_json(args, f"{args.time}_{args.model_name}_inout", jsonlineSave)
+    else:
+        print(f"Test Hit@1: %.4f" % np.average(hit1))
+        print(f"Test Hit@5: %.4f" % np.average(hit5))
+        print(f"Test Hit@10: %.4f" % np.average(hit10))
+        print(f"Test Hit@20: %.4f" % np.average(hit20))
     print('done')
 
     return [np.average(hit1), np.average(hit5), np.average(hit10), np.average(hit20)]
