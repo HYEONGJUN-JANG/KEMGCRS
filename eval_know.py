@@ -52,29 +52,31 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
         dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, type_idx)
 
-        top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
-        input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
-        target_knowledge_text = tokenizer.batch_decode(target_knowledge_idx, skip_special_tokens=True)  # target knowledge
-        retrieved_knowledge_text = [knowledgeDB[idx].lower() for idx in top_candidate[0]]  # list
-        correct = target_knowledge_idx in top_candidate
+        if write:
+            top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
+            input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
+            target_knowledge_text = tokenizer.batch_decode(target_knowledge_idx, skip_special_tokens=True)  # target knowledge
+            retrieved_knowledge_text = [knowledgeDB[idx].lower() for idx in top_candidate[0]]  # list
+            correct = target_knowledge_idx in top_candidate
 
-        response = '||'.join(tokenizer.batch_decode(response, skip_special_tokens=True))
+            response = '||'.join(tokenizer.batch_decode(response, skip_special_tokens=True))
 
-        type_idx = [args.goalDic['int'][int(idx)] for idx in type_idx]
-        topic_idx = [args.topicDic['int'][int(idx)] for idx in topic_idx]
+            type_idx = [args.goalDic['int'][int(idx)] for idx in type_idx]
+            topic_idx = [args.topicDic['int'][int(idx)] for idx in topic_idx]
 
-        jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response, "predict5": retrieved_knowledge_text})
-        cnt += 1
+            jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response, "predict5": retrieved_knowledge_text})
 
-        goal = type_idx[0]
-        if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
-            for k in [1, 5, 10, 20]:
-                top_candidate_k = torch.topk(dot_score, k=k, dim=1).indices  # [B, K]
-                correct_k = target_knowledge_idx in top_candidate_k
-                if k == 1: hit1.append(correct_k)
-                if k == 5: hit5.append(correct_k)
-                if k == 10: hit10.append(correct_k)
-                if k == 20: hit20.append(correct_k)
+        else:
+            for score, target, goal_idx in zip(dot_score, target_knowledge_idx, type_idx):
+                goal = args.goalDic['int'][int(goal_idx)]
+                if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
+                    for k in [1, 5, 10, 20]:
+                        top_candidate_k = torch.topk(score, k=k).indices  # [B, K]
+                        correct_k = target in top_candidate_k
+                        if k == 1:  hit1.append(correct_k)
+                        if k == 5: hit5.append(correct_k)
+                        if k == 10: hit10.append(correct_k)
+                        if k == 20: hit20.append(correct_k)
 
     # for i in range(10):
     #     print("T:%s\tP:%s" %(targets[i], pred[i]))
