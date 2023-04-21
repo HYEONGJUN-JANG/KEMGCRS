@@ -78,12 +78,14 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 pseudo_target = batch['pseudo_target'][:, 0]  # [B * K]
                 loss = criterion(logit, pseudo_target)  # For MLP predict
                 select_mask = torch.zeros_like(logit)
+                lmb = 0.5
                 for i in range(batch['pseudo_target'].size(1) - 1):
                     pseudo_target = batch['pseudo_target'][:, i+1]  # [B * K]
                     exclude = batch['pseudo_target'][:, i]
                     select_mask[torch.arange(logit.size(0)), exclude] = -1e10
                     select_logit = logit + select_mask
-                    loss += criterion(select_logit, pseudo_target)  # For MLP predict
+                    loss += lmb * criterion(select_logit, pseudo_target)  # For MLP predict
+                    lmb *= lmb
 
                 # logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
                 # predicted_positive = logit[:, 0]
