@@ -66,17 +66,16 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
             jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response, "predict5": retrieved_knowledge_text})
 
-        else:
-            for score, target, goal_idx in zip(dot_score, target_knowledge_idx, type_idx):
-                goal = args.goalDic['int'][int(goal_idx)]
-                if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
-                    for k in [1, 5, 10, 20]:
-                        top_candidate_k = torch.topk(score, k=k).indices  # [B, K]
-                        correct_k = target in top_candidate_k
-                        if k == 1:  hit1.append(correct_k)
-                        if k == 5: hit5.append(correct_k)
-                        if k == 10: hit10.append(correct_k)
-                        if k == 20: hit20.append(correct_k)
+        for score, target, goal_idx in zip(dot_score, target_knowledge_idx, type_idx):
+            goal = args.goalDic['int'][int(goal_idx)]
+            if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
+                for k in [1, 5, 10, 20]:
+                    top_candidate_k = torch.topk(score, k=k).indices  # [B, K]
+                    correct_k = target in top_candidate_k
+                    if k == 1:  hit1.append(correct_k)
+                    if k == 5: hit5.append(correct_k)
+                    if k == 10: hit10.append(correct_k)
+                    if k == 20: hit20.append(correct_k)
 
     # for i in range(10):
     #     print("T:%s\tP:%s" %(targets[i], pred[i]))
