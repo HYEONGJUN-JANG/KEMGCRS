@@ -103,7 +103,7 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
 
 def dataset_reader(args, data_name='train'):
     conversation_sample = []
-    data_path = os.path.join(args.data_dir, f"en_{data_name}_know_cand.txt")
+    data_path = os.path.join(args.data_dir, f"en_{data_name}_know_cand2.txt")
     with open(data_path, 'r', encoding='UTF-8') as f:
         for line in tqdm(f, desc="Dataset Read", bar_format='{l_bar} | {bar:23} {r_bar}'):
             dialog = json.loads(line)
