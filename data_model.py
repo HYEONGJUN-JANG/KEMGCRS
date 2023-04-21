@@ -181,7 +181,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['candidate_knowledge_token'] = candidate_knowledge_token
         context_batch['candidate_knowledge_mask'] = candidate_knowledge_mask
 
-        context_batch['pseudo_target'] = candidate_positives_idx
+        context_batch['pseudo_target'] = [candidate_positives_idx[self.args.pseudo_pos_rank]]
         context_batch['target_knowledge'] = target_knowledge_idx
 
         for k, v in context_batch.items():
