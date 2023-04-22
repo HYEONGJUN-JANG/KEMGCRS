@@ -35,7 +35,7 @@ def parseargs():
     parser.add_argument("--knowledge", action='store_true', help="Whether to Use knowledge in response.")
     parser.add_argument("--know_ablation", default='pseudo', type=str, help="know_ablation", choices=['target', 'pseudo'])
     parser.add_argument("--pseudo", action='store_true', help="Whether to Fine-tune on type.")
-    parser.add_argument('--pseudo_pos_num', default=3, type=int, help="pseudo_pos_num")
+    parser.add_argument('--pseudo_pos_num', default=1, type=int, help="pseudo_pos_num")
     parser.add_argument('--pseudo_pos_rank', default=1, type=int, help="pseudo_pos_rank")
 
     parser.add_argument('--update_freq', default=-1, type=int, help="update_freq")
@@ -63,7 +63,7 @@ def parseargs():
     parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate')
     parser.add_argument('--loss_bpr', type=float, default=0.0, help='Learning rate')
 
-    parser.add_argument('--negative_num', default=4, type=int, help="negative_num")
+    parser.add_argument('--negative_num', default=1, type=int, help="negative_num")
 
     parser.add_argument('--hidden_size', default=768, type=int, help="hidden size")
     parser.add_argument('--num_epochs', default=10, type=int, help="Number of epoch")
@@ -106,7 +106,7 @@ def parseargs():
         pass  # HJ KT-server
     elif sysChecker() == "Windows":
         args.data_cache = True
-        args.batch_size = 4
+        # args.batch_size = 4
         args.log_name = "log_Topic PRF"
         # args.task = 'goal'
         args.num_epochs = 2

@@ -169,9 +169,9 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         # pseudo_positive = random.choice(candidate_positives_idx)
         # pseudo_positive = candidate_positives_idx[self.args.pseudo_pos_rank - 1]
-        # pseudo_negative = self.negative_sampler(pseudo_positive)
+        pseudo_negative = self.negative_sampler(candidate_knowledges)
 
-        candidate_indice = candidate_knowledges  # [candidate_positives_idx[self.args.pseudo_pos_rank]]
+        candidate_indice = candidate_knowledges + pseudo_negative  # [candidate_positives_idx[self.args.pseudo_pos_rank]]
 
         candidate_knowledge_text = [self.args.knowledgeDB[idx] for idx in candidate_indice]
         candidate_knowledge = self.tokenizer(candidate_knowledge_text, truncation=True, padding='max_length', max_length=self.args.max_length)
@@ -182,7 +182,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['candidate_knowledge_token'] = candidate_knowledge_token
         context_batch['candidate_knowledge_mask'] = candidate_knowledge_mask
 
-        context_batch['pseudo_targets'] = candidate_knowledges  # [candidate_positives_idx[self.args.pseudo_pos_rank]]
+        context_batch['pseudo_targets'] = [candidate_knowledges[0]]  # [candidate_positives_idx[self.args.pseudo_pos_rank]]
         context_batch['pseudo_confidences'] = candidate_confidences
 
         context_batch['target_knowledge'] = target_knowledge_idx

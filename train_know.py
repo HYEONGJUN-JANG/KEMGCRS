@@ -58,8 +58,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             dialog_mask = batch['attention_mask']
             goal_type = batch['type']
             # response = batch['response']
-            # candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
-            # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
+            candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,2,256]
+            candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,2,256]
             # pseudo_positive_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
             # pseudo_positive = batch['pseudo_positive']
             # pseudo_negative = batch['pseudo_negative']
@@ -85,7 +85,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                             exclude = batch['pseudo_targets'][:, j]
                             pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
                     # loss += (1.0 ** i) * criterion(logit + pseudo_mask, pseudo_target)  # For MLP predict
-                    loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
+                    loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target) * pseudo_confidence)
 
                 # pseudo_target = batch['pseudo_target'][:, 0]  # [B * K]
                 # loss = criterion(logit, pseudo_target)  # For MLP predict
@@ -102,12 +102,15 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 #     loss += lmb * criterion(select_logit, pseudo_target)  # For MLP predict
                 #     lmb *= lmb
 
-                # logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
+                logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
+                binary_target = torch.zeros_like(logit)
+                binary_target[:, 0] = 1
+                loss_rerank = nn.BCELoss()(torch.sigmoid(logit), binary_target)
                 # predicted_positive = logit[:, 0]
                 # predicted_negative = logit[:, 1]
                 # relative_preference = predicted_positive-predicted_negative
                 # loss_bpr = -relative_preference.sigmoid().log().mean()
-                # loss = loss + args.loss_bpr * loss_bpr
+                loss = loss + loss_rerank
 
             train_epoch_loss += loss
             optimizer.zero_grad()

@@ -9,16 +9,17 @@ class Retriever(nn.Module):
         super(Retriever, self).__init__()
         self.args = args
         self.query_bert = query_bert  # Knowledge text 처리를 위한 BERT
-        if args.know_ablation == 'negative_sampling':
-            self.key_bert = query_bert
-        else:
-            self.key_bert = copy.deepcopy(self.query_bert)
-            self.key_bert.requires_grad = False
+        # if args.know_ablation == 'negative_sampling':
+        #     self.key_bert = query_bert
+        # else:
+        #     self.key_bert = copy.deepcopy(self.query_bert)
+        #     self.key_bert.requires_grad = False
+        self.rerank_bert = copy.deepcopy(self.query_bert)
 
         self.gpt_model = gpt_model
         self.hidden_size = args.hidden_size
         self.topic_proj = nn.Linear(self.hidden_size, args.topic_num)
-        self.linear_proj = nn.Linear(self.hidden_size, 128)
+        self.linear_proj = nn.Linear(self.hidden_size, 1)
         self.know_proj = nn.Linear(self.hidden_size, self.args.knowledge_num)
         self.goal_embedding = nn.Embedding(self.args.goal_num, self.args.hidden_size)
         nn.init.normal_(self.goal_embedding.weight, 0, self.args.hidden_size ** -0.5)
@@ -61,14 +62,17 @@ class Retriever(nn.Module):
         # else:
         #     dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
 
-        dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
-        candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B*(K+1), L]
-        candidate_knowledge_mask = candidate_knowledge_mask.view(-1, self.args.max_length)  # [B*(K+1), L]
+        # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        candidate_knowledge_token = torch.cat([token_seq.unsqueeze(1).repeat(1, candidate_knowledge_mask.size(1), 1), candidate_knowledge_token], dim=2)
+        candidate_knowledge_mask = torch.cat([mask.unsqueeze(1).repeat(1, candidate_knowledge_mask.size(1), 1), candidate_knowledge_mask], dim=2)
 
-        knowledge_index = self.query_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask).last_hidden_state[:, 0, :]  # [B*(K+1), L]
-        knowledge_index = knowledge_index.view(batch_size, -1, dialog_emb.size(-1))  # [B, K+1, d]
+        candidate_knowledge_token = candidate_knowledge_token.view(-1, candidate_knowledge_token.size(2))  # [B*(K+1), L]
+        candidate_knowledge_mask = candidate_knowledge_mask.view(-1, candidate_knowledge_mask.size(2))  # [B*(K+1), L]
+
+        knowledge_index = self.rerank_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask).last_hidden_state[:, 0, :]  # [B*(K+1), L]
+        knowledge_index = knowledge_index.view(batch_size, -1, self.args.hidden_size)  # [B, K+1, d]
         # dialog_emb = self.linear_proj(dialog_emb)
         # knowledge_index = self.linear_proj(knowledge_index)
-        logit = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2)  # [B, 1, d] * [B, K+1, d] = [B, K+1]
-
+        # logit = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2)  # [B, 1, d] * [B, K+1, d] = [B, K+1]
+        logit = self.linear_proj(knowledge_index).squeeze(-1)  # [B, K]
         return logit
