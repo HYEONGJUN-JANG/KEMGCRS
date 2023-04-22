@@ -126,8 +126,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
     def __getitem__(self, idx):  # TODO 구현 전
         data = self.augmented_raw_sample[idx]
-        cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge', 'candidate_positives']
-        dialog, user_profile, response, type, topic, situation, target_knowledge_idx, candidate_positives_idx = [data[i] for i in cbdicKeys]
+        cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge', 'candidate_knowledges', 'candidate_confidences']
+        dialog, user_profile, response, type, topic, situation, target_knowledge_idx, candidate_knowledges, candidate_confidences = [data[i] for i in cbdicKeys]
         pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
 
         context_batch = defaultdict()
@@ -161,7 +161,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
-        candidate_positives_idx = candidate_positives_idx[:self.args.pseudo_pos_num]
+        candidate_knowledges = candidate_knowledges[:self.args.pseudo_pos_num]
+        candidate_confidences = candidate_confidences[:self.args.pseudo_pos_num]
         # sampled_pair = sorted(random.sample(list(range(len(candidate_positives_idx))), k=2))
         # pseudo_positive = candidate_positives_idx[sampled_pair[0]]
         # pseudo_negative = candidate_positives_idx[sampled_pair[1]]
@@ -170,7 +171,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # pseudo_positive = candidate_positives_idx[self.args.pseudo_pos_rank - 1]
         # pseudo_negative = self.negative_sampler(pseudo_positive)
 
-        candidate_indice = candidate_positives_idx  # [candidate_positives_idx[self.args.pseudo_pos_rank]]
+        candidate_indice = candidate_knowledges  # [candidate_positives_idx[self.args.pseudo_pos_rank]]
 
         candidate_knowledge_text = [self.args.knowledgeDB[idx] for idx in candidate_indice]
         candidate_knowledge = self.tokenizer(candidate_knowledge_text, truncation=True, padding='max_length', max_length=self.args.max_length)
@@ -181,7 +182,9 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['candidate_knowledge_token'] = candidate_knowledge_token
         context_batch['candidate_knowledge_mask'] = candidate_knowledge_mask
 
-        context_batch['pseudo_target'] = candidate_positives_idx  #  [candidate_positives_idx[self.args.pseudo_pos_rank]]
+        context_batch['pseudo_targets'] = candidate_knowledges  #  [candidate_positives_idx[self.args.pseudo_pos_rank]]
+        context_batch['pseudo_confidences'] = candidate_confidences
+
         context_batch['target_knowledge'] = target_knowledge_idx
 
         for k, v in context_batch.items():

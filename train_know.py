@@ -24,7 +24,7 @@ def update_key_bert(key_bert, query_bert):
 
 
 def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer):
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(reduction='none')
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
 
     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
@@ -58,8 +58,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             dialog_mask = batch['attention_mask']
             goal_type = batch['type']
             # response = batch['response']
-            candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
-            candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
+            # candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
+            # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
             # pseudo_positive_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
             # pseudo_positive = batch['pseudo_positive']
             # pseudo_negative = batch['pseudo_negative']
@@ -76,14 +76,16 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
                 logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
                 loss = 0
-                for i in range(batch['pseudo_target'].size(1)):
+                for i in range(batch['pseudo_targets'].size(1)):
                     pseudo_mask = torch.zeros_like(logit)
-                    pseudo_target = batch['pseudo_target'][:, i]  # [B]
-                    for j in range(batch['pseudo_target'].size(1)):
+                    pseudo_target = batch['pseudo_targets'][:, i]  # [B]
+                    pseudo_confidence = batch['pseudo_confidences'][:, i]
+                    for j in range(batch['pseudo_targets'].size(1)):
                         if j != i:
-                            exclude = batch['pseudo_target'][:, j]
+                            exclude = batch['pseudo_targets'][:, j]
                             pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
-                    loss += (1.0 ** i) * criterion(logit + pseudo_mask, pseudo_target)  # For MLP predict
+                    # loss += (1.0 ** i) * criterion(logit + pseudo_mask, pseudo_target)  # For MLP predict
+                    loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target) * pseudo_confidence)
 
                 # pseudo_target = batch['pseudo_target'][:, 0]  # [B * K]
                 # loss = criterion(logit, pseudo_target)  # For MLP predict
