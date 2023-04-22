@@ -45,8 +45,10 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         dialog_mask = batch['attention_mask']
         response = batch['response']
         # candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
-        type_idx = batch['type']
-        topic_idx = batch['topic_idx']
+
+        type_idx = [args.goalDic['int'][int(idx)] for idx in batch['type']]
+        topic_idx = [args.topicDic['int'][int(idx)] for idx in batch['topic_idx']]
+
         # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
         target_knowledge_idx = batch['target_knowledge']
 
@@ -61,8 +63,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
             response = '||'.join(tokenizer.batch_decode(response, skip_special_tokens=True))
 
-            type_idx = [args.goalDic['int'][int(idx)] for idx in type_idx]
-            topic_idx = [args.topicDic['int'][int(idx)] for idx in topic_idx]
+
 
             jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response, "predict5": retrieved_knowledge_text})
 
