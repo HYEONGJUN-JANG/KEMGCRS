@@ -83,7 +83,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                         if j != i:
                             exclude = batch['pseudo_target'][:, j]
                             pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
-                    loss += (0.5 ** i) * criterion(logit + pseudo_mask, pseudo_target)  # For MLP predict
+                    loss += (1.0 ** i) * criterion(logit + pseudo_mask, pseudo_target)  # For MLP predict
 
                 # pseudo_target = batch['pseudo_target'][:, 0]  # [B * K]
                 # loss = criterion(logit, pseudo_target)  # For MLP predict
