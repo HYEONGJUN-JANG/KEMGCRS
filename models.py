@@ -63,8 +63,8 @@ class Retriever(nn.Module):
         #     dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
 
         # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
-        candidate_knowledge_token = torch.cat([token_seq.unsqueeze(1).repeat(1, candidate_knowledge_mask.size(1), 1), candidate_knowledge_token], dim=2)
-        candidate_knowledge_mask = torch.cat([mask.unsqueeze(1).repeat(1, candidate_knowledge_mask.size(1), 1), candidate_knowledge_mask], dim=2)
+        candidate_knowledge_token = torch.cat([token_seq.unsqueeze(1).repeat(1, candidate_knowledge_mask.size(1), 1), candidate_knowledge_token], dim=-1)
+        candidate_knowledge_mask = torch.cat([mask.unsqueeze(1).repeat(1, candidate_knowledge_mask.size(1), 1), candidate_knowledge_mask], dim=-1)
 
         candidate_knowledge_token = candidate_knowledge_token.view(-1, candidate_knowledge_token.size(2))  # [B*(K+1), L]
         candidate_knowledge_mask = candidate_knowledge_mask.view(-1, candidate_knowledge_mask.size(2))  # [B*(K+1), L]

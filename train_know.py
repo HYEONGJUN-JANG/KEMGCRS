@@ -27,8 +27,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     criterion = nn.CrossEntropyLoss(reduction='none')
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
 
-    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
-    knowledge_index = knowledge_index.to(args.device)
+    # knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+    # knowledge_index = knowledge_index.to(args.device)
 
     best_hit = [[], [], [], []]
     eval_metric = [-1]
@@ -52,71 +52,71 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
         train_epoch_loss = 0
         num_update = 0
-        for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-            retriever.train()
-            dialog_token = batch['input_ids']
-            dialog_mask = batch['attention_mask']
-            goal_type = batch['type']
-            # response = batch['response']
-            candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,2,256]
-            candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,2,256]
-            # pseudo_positive_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
-            # pseudo_positive = batch['pseudo_positive']
-            # pseudo_negative = batch['pseudo_negative']
-            # target_knowledge = candidate_knowledge_token[:, 0, :]
-
-            target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
-
-            if args.know_ablation == 'target':
-                logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
-                loss = criterion(logit, target_knowledge_idx)  # For MLP predict
-
-            elif args.know_ablation == 'pseudo':
-                # dialog_token = dialog_token.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
-                # dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
-                logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
-                loss = 0
-                for i in range(batch['pseudo_targets'].size(1)):
-                    pseudo_mask = torch.zeros_like(logit)
-                    pseudo_target = batch['pseudo_targets'][:, i]  # [B]
-                    pseudo_confidence = batch['pseudo_confidences'][:, i]
-                    for j in range(batch['pseudo_targets'].size(1)):
-                        if j != i:
-                            exclude = batch['pseudo_targets'][:, j]
-                            pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
-                    # loss += (1.0 ** i) * criterion(logit + pseudo_mask, pseudo_target)  # For MLP predict
-                    loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target) * pseudo_confidence)
-
-                # pseudo_target = batch['pseudo_target'][:, 0]  # [B * K]
-                # loss = criterion(logit, pseudo_target)  # For MLP predict
-                # select_mask = torch.zeros_like(logit)
-                # for i in range(batch['pseudo_target'].size(1)):
-                #     exclude = batch['pseudo_target'][:, i]
-                #     select_mask[torch.arange(logit.size(0)), exclude] = -1e10
-                # lmb = 0.5
-                # for i in range(batch['pseudo_target'].size(1) - 1):
-                #     pseudo_target = batch['pseudo_target'][:, i + 1]  # [B * K]
-                #     exclude = batch['pseudo_target'][:, i]
-                #     select_mask[torch.arange(logit.size(0)), exclude] = -1e10
-                #     select_logit = logit + select_mask
-                #     loss += lmb * criterion(select_logit, pseudo_target)  # For MLP predict
-                #     lmb *= lmb
-
-                logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
-                binary_target = torch.zeros_like(logit)
-                binary_target[:, 0] = 1
-                loss_rerank = nn.BCELoss()(torch.sigmoid(logit), binary_target)
-                # predicted_positive = logit[:, 0]
-                # predicted_negative = logit[:, 1]
-                # relative_preference = predicted_positive-predicted_negative
-                # loss_bpr = -relative_preference.sigmoid().log().mean()
-                loss = loss + loss_rerank
-
-            train_epoch_loss += loss
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            num_update += 1
+        # for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+        #     retriever.train()
+        #     dialog_token = batch['input_ids']
+        #     dialog_mask = batch['attention_mask']
+        #     goal_type = batch['type']
+        #     # response = batch['response']
+        #     candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,2,256]
+        #     candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,2,256]
+        #     # pseudo_positive_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
+        #     # pseudo_positive = batch['pseudo_positive']
+        #     # pseudo_negative = batch['pseudo_negative']
+        #     # target_knowledge = candidate_knowledge_token[:, 0, :]
+        #
+        #     target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
+        #
+        #     if args.know_ablation == 'target':
+        #         logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
+        #         loss = criterion(logit, target_knowledge_idx)  # For MLP predict
+        #
+        #     elif args.know_ablation == 'pseudo':
+        #         # dialog_token = dialog_token.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
+        #         # dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
+        #         logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
+        #         loss = 0
+        #         for i in range(batch['pseudo_targets'].size(1)):
+        #             pseudo_mask = torch.zeros_like(logit)
+        #             pseudo_target = batch['pseudo_targets'][:, i]  # [B]
+        #             pseudo_confidence = batch['pseudo_confidences'][:, i]
+        #             for j in range(batch['pseudo_targets'].size(1)):
+        #                 if j != i:
+        #                     exclude = batch['pseudo_targets'][:, j]
+        #                     pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
+        #             # loss += (1.0 ** i) * criterion(logit + pseudo_mask, pseudo_target)  # For MLP predict
+        #             loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target) * pseudo_confidence)
+        #
+        #         # pseudo_target = batch['pseudo_target'][:, 0]  # [B * K]
+        #         # loss = criterion(logit, pseudo_target)  # For MLP predict
+        #         # select_mask = torch.zeros_like(logit)
+        #         # for i in range(batch['pseudo_target'].size(1)):
+        #         #     exclude = batch['pseudo_target'][:, i]
+        #         #     select_mask[torch.arange(logit.size(0)), exclude] = -1e10
+        #         # lmb = 0.5
+        #         # for i in range(batch['pseudo_target'].size(1) - 1):
+        #         #     pseudo_target = batch['pseudo_target'][:, i + 1]  # [B * K]
+        #         #     exclude = batch['pseudo_target'][:, i]
+        #         #     select_mask[torch.arange(logit.size(0)), exclude] = -1e10
+        #         #     select_logit = logit + select_mask
+        #         #     loss += lmb * criterion(select_logit, pseudo_target)  # For MLP predict
+        #         #     lmb *= lmb
+        #
+        #         logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
+        #         binary_target = torch.zeros_like(logit)
+        #         binary_target[:, 0] = 1
+        #         loss_rerank = nn.BCELoss()(torch.sigmoid(logit), binary_target)
+        #         # predicted_positive = logit[:, 0]
+        #         # predicted_negative = logit[:, 1]
+        #         # relative_preference = predicted_positive-predicted_negative
+        #         # loss_bpr = -relative_preference.sigmoid().log().mean()
+        #         loss = loss + loss_rerank
+        #
+        #     train_epoch_loss += loss
+        #     optimizer.zero_grad()
+        #     loss.backward()
+        #     optimizer.step()
+        #     num_update += 1
 
             # if num_update > update_freq:
             #     update_key_bert(retriever.key_bert, retriever.query_bert)
