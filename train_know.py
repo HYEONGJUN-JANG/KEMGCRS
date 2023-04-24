@@ -88,7 +88,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     # if args.pseudo_confidence:
                     #     loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target) * pseudo_confidence)
                     # else:
-                    loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
+                    loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target) * pseudo_confidence)
 
                 # pseudo_target = batch['pseudo_target'][:, 0]  # [B * K]
                 # loss = criterion(logit, pseudo_target)  # For MLP predict
