@@ -140,7 +140,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         hit1, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_chat_result, hit_poi_result = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
         with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
-            f.write(f"EPOCH:\t%d\n")
+            f.write(f"EPOCH:\t%d\n", epoch)
             f.write(f"Overall\t%.4f\t%.4f\t%.4f\t%.4f\n" % (hit1, hit5, hit10, hit20))
             f.write("Movie recommendation\t" + "\t".join(hit_movie_result) + "\n")
             f.write("Music recommendation\t" + "\t".join(hit_music_result) + "\n")
