@@ -100,6 +100,22 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     #     print("T:%s\tP:%s" %(targets[i], pred[i]))
 
     # topic_eval(targets, pred)
+    hit1 = np.average(hit1)
+    hit5 = np.average(hit5)
+    hit10 = np.average(hit10)
+    hit20 = np.average(hit20)
+
+    hit_movie_result = [np.average(hit1_goal["Movie recommendation"]), np.average(hit5_goal["Movie recommendation"]), np.average(hit10_goal["Movie recommendation"]), np.average(hit20_goal["Movie recommendation"])]
+    hit_music_result = [np.average(hit1_goal["Music recommendation"]), np.average(hit5_goal["Music recommendation"]), np.average(hit10_goal["Music recommendation"]), np.average(hit20_goal["Music recommendation"])]
+    hit_qa_result = [np.average(hit1_goal["Q&A"]), np.average(hit5_goal["Q&A"]), np.average(hit10_goal["Q&A"]), np.average(hit20_goal["Q&A"])]
+    hit_chat_result = [np.average(hit1_goal["Chat about stars"]), np.average(hit5_goal["Chat about stars"]), np.average(hit10_goal["Chat about stars"]), np.average(hit20_goal["Chat about stars"])]
+    hit_poi_result = [np.average(hit1_goal["POI recommendation"]), np.average(hit5_goal["POI recommendation"]), np.average(hit10_goal["POI recommendation"]), np.average(hit20_goal["POI recommendation"])]
+
+    hit_movie_result = ["%.4f" % hit for hit in hit_movie_result]
+    hit_music_result = ["%.4f" % hit for hit in hit_music_result]
+    hit_qa_result = ["%.4f" % hit for hit in hit_qa_result]
+    hit_chat_result = ["%.4f" % hit for hit in hit_chat_result]
+    hit_poi_result = ["%.4f" % hit for hit in hit_poi_result]
 
     if write:
         # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
@@ -111,22 +127,10 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         print(f"Test Hit@10: %.4f" % np.average(hit10))
         print(f"Test Hit@20: %.4f" % np.average(hit20))
 
-        hit_movie_result = [np.average(hit1_goal["Movie recommendation"]), np.average(hit5_goal["Movie recommendation"]), np.average(hit10_goal["Movie recommendation"]), np.average(hit20_goal["Movie recommendation"])]
-        hit_music_result = [np.average(hit1_goal["Music recommendation"]), np.average(hit5_goal["Music recommendation"]), np.average(hit10_goal["Music recommendation"]), np.average(hit20_goal["Music recommendation"])]
-        hit_qa_result = [np.average(hit1_goal["Q&A"]), np.average(hit5_goal["Q&A"]), np.average(hit10_goal["Q&A"]), np.average(hit20_goal["Q&A"])]
-        hit_chat_result = [np.average(hit1_goal["Chat about stars"]), np.average(hit5_goal["Chat about stars"]), np.average(hit10_goal["Chat about stars"]), np.average(hit20_goal["Chat about stars"])]
-        hit_poi_result = [np.average(hit1_goal["POI recommendation"]), np.average(hit5_goal["POI recommendation"]), np.average(hit10_goal["POI recommendation"]), np.average(hit20_goal["POI recommendation"])]
-
-        hit_movie_result = ["%.4f" % hit for hit in hit_movie_result]
-        hit_music_result = ["%.4f" % hit for hit in hit_music_result]
-        hit_qa_result = ["%.4f" % hit for hit in hit_qa_result]
-        hit_chat_result = ["%.4f" % hit for hit in hit_chat_result]
-        hit_poi_result = ["%.4f" % hit for hit in hit_poi_result]
-
         print("Movie recommendation\t" + "\t".join(hit_movie_result))
         print("Music recommendation\t" + "\t".join(hit_music_result))
         print("Q&A\t" + "\t".join(hit_qa_result))
         print("Chat about stars\t" + "\t".join(hit_chat_result))
         print("POI recommendation\t" + "\t".join(hit_poi_result))
 
-    return [np.average(hit1), np.average(hit5), np.average(hit10), np.average(hit20), hit_movie_result, hit_music_result, hit_qa_result, hit_chat_result, hit_poi_result]
+    return [hit1, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_chat_result, hit_poi_result]
