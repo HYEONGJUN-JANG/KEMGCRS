@@ -125,8 +125,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
         print("Movie recommendation\t" + "\t".join(hit_movie_result))
         print("Music recommendation\t" + "\t".join(hit_music_result))
-        print("QA\t" + "\t".join(hit_qa_result))
+        print("Q&A\t" + "\t".join(hit_qa_result))
         print("Chat about stars\t" + "\t".join(hit_chat_result))
-        print("Q&A\t" + "\t".join(hit_poi_result))
+        print("POI recommendation\t" + "\t".join(hit_poi_result))
 
     return [np.average(hit1), np.average(hit5), np.average(hit10), np.average(hit20), hit_movie_result, hit_music_result, hit_qa_result, hit_chat_result, hit_poi_result]

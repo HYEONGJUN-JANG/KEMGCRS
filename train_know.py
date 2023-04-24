@@ -143,9 +143,9 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             f.write(f"%d\t%.4f\t%.4f\t%.4f\t%.4f\n" % (epoch, hit1, hit5, hit10, hit20))
             f.write("Movie recommendation\t" + "\t".join(hit_movie_result) + "\n")
             f.write("Music recommendation\t" + "\t".join(hit_music_result) + "\n")
-            f.write("QA\t" + "\t".join(hit_qa_result) + "\n")
+            f.write("Q&A\t" + "\t".join(hit_qa_result) + "\n")
             f.write("Chat about stars\t" + "\t".join(hit_chat_result) + "\n")
-            f.write("Q&A\t" + "\t".join(hit_poi_result) + "\n\n")
+            f.write("POI recommendation\t" + "\t".join(hit_poi_result) + "\n\n")
 
         if hit10 > eval_metric[0]:
             eval_metric[0] = hit10
@@ -172,4 +172,4 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         f.write("Music recommendation\t" + "\t".join(best_hit_music) + "\n")
         f.write("QA\t" + "\t".join(best_hit_qa) + "\n")
         f.write("Chat about stars\t" + "\t".join(best_hit_chat) + "\n")
-        f.write("Q&A\t" + "\t".join(best_hit_poi) + "\n")
+        f.write("POI recommendation\t" + "\t".join(best_hit_poi) + "\n")
