@@ -27,8 +27,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     criterion = nn.CrossEntropyLoss(reduction='none')
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
 
-    # knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
-    # knowledge_index = knowledge_index.to(args.device)
+    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+    knowledge_index = knowledge_index.to(args.device)
 
     best_hit = [[], [], [], []]
     eval_metric = [-1]
