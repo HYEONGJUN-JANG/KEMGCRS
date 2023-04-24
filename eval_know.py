@@ -67,16 +67,16 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
         for idx, (score, target, goal) in enumerate(zip(dot_score, target_knowledge_idx, type_idx)):
             # goal = args.goalDic['int'][int(goal_idx)]
-            top_candidate = torch.topk(score, k=args.know_topk, dim=0).indices  # [K]
-            candidate_knowledge_text = [args.knowledgeDB[int(idx)] for idx in top_candidate]  # [K, .]
-            candidate_knowledge = tokenizer(candidate_knowledge_text, truncation=True, padding='max_length', max_length=args.max_length, return_tensors='pt')
-            candidate_knowledge_token = candidate_knowledge.input_ids.to(args.device)  # [K, L]
-            candidate_knowledge_mask = candidate_knowledge.attention_mask.to(args.device)  # [K, L]
-            re_rank_score = retriever.knowledge_retrieve(dialog_token[idx].unsqueeze(0), dialog_mask[idx].unsqueeze(0), candidate_knowledge_token.unsqueeze(0), candidate_knowledge_mask.unsqueeze(0)).squeeze(0)  # [K]
+            # top_candidate = torch.topk(score, k=args.know_topk, dim=0).indices  # [K]
+            # candidate_knowledge_text = [args.knowledgeDB[int(idx)] for idx in top_candidate]  # [K, .]
+            # candidate_knowledge = tokenizer(candidate_knowledge_text, truncation=True, padding='max_length', max_length=args.max_length, return_tensors='pt')
+            # candidate_knowledge_token = candidate_knowledge.input_ids.to(args.device)  # [K, L]
+            # candidate_knowledge_mask = candidate_knowledge.attention_mask.to(args.device)  # [K, L]
+            # re_rank_score = retriever.knowledge_retrieve(dialog_token[idx].unsqueeze(0), dialog_mask[idx].unsqueeze(0), candidate_knowledge_token.unsqueeze(0), candidate_knowledge_mask.unsqueeze(0)).squeeze(0)  # [K]
 
             if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
                 for k in [1, 5, 10, 20]:
-                    top_candidate_k = torch.topk(re_rank_score, k=k).indices  # [B, K]
+                    top_candidate_k = torch.topk(dot_score, k=k).indices  # [B, K]
                     correct_k = target in top_candidate_k
                     if k == 1:  hit1.append(correct_k)
                     if k == 5: hit5.append(correct_k)

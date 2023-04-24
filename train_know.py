@@ -102,15 +102,16 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 #     loss += lmb * criterion(select_logit, pseudo_target)  # For MLP predict
                 #     lmb *= lmb
 
-                logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
-                binary_target = torch.zeros_like(logit)
-                binary_target[:, 0] = 1
-                loss_rerank = nn.BCELoss()(torch.sigmoid(logit), binary_target)
+                # logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
+                # binary_target = torch.zeros_like(logit)
+                # binary_target[:, 0] = 1
+                # loss_rerank = nn.BCELoss()(torch.sigmoid(logit), binary_target)
+                # loss = loss + loss_rerank
+
                 # predicted_positive = logit[:, 0]
                 # predicted_negative = logit[:, 1]
                 # relative_preference = predicted_positive-predicted_negative
                 # loss_bpr = -relative_preference.sigmoid().log().mean()
-                loss = loss + loss_rerank
 
             train_epoch_loss += loss
             optimizer.zero_grad()
