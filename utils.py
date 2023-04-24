@@ -75,7 +75,7 @@ def parseargs():
 
     parser.add_argument("--device", default='0', type=str, help="GPU Device")  # HJ : Log file middle Name
 
-    parser.add_argument('--know_topk', default=3, type=int, help="Number of retrieval know text")  # HJ: Know_text retrieve Top-k
+    parser.add_argument('--know_topk', default=20, type=int, help="Number of retrieval know text")  # HJ: Know_text retrieve Top-k
     parser.add_argument('--topic_topk', default=5, type=int, help="Number of Top-k Topics")  # HJ: Topic Top-k
     parser.add_argument('--home', default='', type=str, help="Project home directory")  # HJ: Project Home directory
     parser.add_argument('--log_dir', default='logs', type=str, help="logging file directory")  # HJ: log file directory
