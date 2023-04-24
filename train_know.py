@@ -140,7 +140,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         hit1, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_chat_result, hit_poi_result = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
         with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
-            f.write(f"%d\t%.4f\t%.4f\t%.4f\t%.4f\n" % (epoch, hit1, hit5, hit10, hit20))
+            f.write(f"EPOCH:\t%d\n")
+            f.write(f"Overall\t%.4f\t%.4f\t%.4f\t%.4f\n" % (epoch, hit1, hit5, hit10, hit20))
             f.write("Movie recommendation\t" + "\t".join(hit_movie_result) + "\n")
             f.write("Music recommendation\t" + "\t".join(hit_music_result) + "\n")
             f.write("Q&A\t" + "\t".join(hit_qa_result) + "\n")
@@ -167,7 +168,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
     checkPath('results')
     with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
-        f.write(f"[BEST]\t%.4f\t%.4f\t%.4f\t%.4f\n" % (best_hit[0], best_hit[1], best_hit[2], best_hit[3]))
+        f.write(f"[BEST]\n")
+        f.write(f"Overall\t%.4f\t%.4f\t%.4f\t%.4f\n" % (best_hit[0], best_hit[1], best_hit[2], best_hit[3]))
         f.write("Movie recommendation\t" + "\t".join(best_hit_movie) + "\n")
         f.write("Music recommendation\t" + "\t".join(best_hit_music) + "\n")
         f.write("QA\t" + "\t".join(best_hit_qa) + "\n")
