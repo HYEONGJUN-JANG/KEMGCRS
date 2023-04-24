@@ -31,6 +31,12 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     knowledge_index = knowledge_index.to(args.device)
 
     best_hit = [[], [], [], []]
+    best_hit_movie = [[], [], [], []]
+    best_hit_poi = [[], [], [], []]
+    best_hit_music = [[], [], [], []]
+    best_hit_qa = [[], [], [], []]
+    best_hit_chat = [[], [], [], []]
+
     eval_metric = [-1]
     result_path = f"{args.time}_{args.model_name}_result"
     with open(os.path.join('results', result_path), 'a', encoding='utf-8') as result_f:
@@ -131,12 +137,15 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         knowledge_index = knowledge_index.to(args.device)
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
-        hit1, hit5, hit10, hit20, hit1_goal_result, hit5_goal_result, hit10_goal_result, hit20_goal_result = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+        hit1, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_chat_result, hit_poi_result = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
         with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
             f.write(f"%d\t%.4f\t%.4f\t%.4f\t%.4f\n" % (epoch, hit1, hit5, hit10, hit20))
-            result_by_goal = '\n'.join(["%s\t%.4f\t%.4f\t%.4f\t%.4f" % (h1r[0], h1r[1], h2r[1], h3r[1], h4r[1]) for h1r, h2r, h3r, h4r in zip(hit1_goal_result, hit5_goal_result, hit10_goal_result, hit20_goal_result)])
-            f.write(result_by_goal + "\n")
+            f.write("Movie recommendation\t" + "\t".join(hit_movie_result) + "\n")
+            f.write("Music recommendation\t" + "\t".join(hit_music_result) + "\n")
+            f.write("QA\t" + "\t".join(hit_qa_result) + "\n")
+            f.write("Chat about stars\t" + "\t".join(hit_chat_result) + "\n")
+            f.write("Q&A\t" + "\t".join(hit_poi_result) + "\n")
 
         if hit10 > eval_metric[0]:
             eval_metric[0] = hit10
@@ -144,6 +153,11 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             best_hit[1] = hit5
             best_hit[2] = hit10
             best_hit[3] = hit20
+            best_hit_movie = hit_movie_result
+            best_hit_poi = hit_poi_result
+            best_hit_music = hit_music_result
+            best_hit_qa = hit_qa_result
+            best_hit_chat = hit_chat_result
 
     print(f'BEST RESULT')
     print(f"BEST Test Hit@1: {best_hit[0]}")
@@ -154,3 +168,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     checkPath('results')
     with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
         f.write(f"[BEST]\t%.4f\t%.4f\t%.4f\t%.4f\n" % (best_hit[0], best_hit[1], best_hit[2], best_hit[3]))
+        f.write("Movie recommendation\t" + "\t".join(best_hit_movie) + "\n")
+        f.write("Music recommendation\t" + "\t".join(best_hit_music) + "\n")
+        f.write("QA\t" + "\t".join(best_hit_qa) + "\n")
+        f.write("Chat about stars\t" + "\t".join(best_hit_chat) + "\n")
+        f.write("Q&A\t" + "\t".join(best_hit_poi) + "\n")
