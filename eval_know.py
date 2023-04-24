@@ -115,4 +115,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         hit10_goal_result = [(goal, np.average(hit10_goal[goal])) for goal in goal_list]
         hit20_goal_result = [(goal, np.average(hit20_goal[goal])) for goal in goal_list]
 
+        result_by_goal = '\n'.join(["%s\t%.4f\t%.4f\t%.4f\t%.4f" % (h1r[0], h1r[1], h2r[1], h3r[1], h4r[1]) for h1r, h2r, h3r, h4r in zip(hit1_goal_result, hit5_goal_result, hit10_goal_result, hit20_goal_result)])
+        print(result_by_goal)
+
     return [np.average(hit1), np.average(hit5), np.average(hit10), np.average(hit20), hit1_goal_result, hit5_goal_result, hit10_goal_result, hit20_goal_result]
