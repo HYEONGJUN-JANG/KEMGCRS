@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -34,7 +36,10 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     knowledge_index = knowledge_index.to(args.device)
 
+    goal_list = ['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A', 'Chat about stars']
+    hit1_goal, hit5_goal, hit10_goal, hit20_goal = defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
     hit1, hit5, hit10, hit20 = [], [], [], []
+
     cnt = 0
 
     pred = []
@@ -78,10 +83,18 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
                 for k in [1, 5, 10, 20]:
                     top_candidate_k = torch.topk(dot_score, k=k).indices  # [B, K]
                     correct_k = target in top_candidate_k
-                    if k == 1:  hit1.append(correct_k)
-                    if k == 5: hit5.append(correct_k)
-                    if k == 10: hit10.append(correct_k)
-                    if k == 20: hit20.append(correct_k)
+                    if k == 1:
+                        hit1.append(correct_k)
+                        hit1_goal[goal].append(correct_k)
+                    if k == 5:
+                        hit5.append(correct_k)
+                        hit5_goal[goal].append(correct_k)
+                    if k == 10:
+                        hit10.append(correct_k)
+                        hit10_goal[goal].append(correct_k)
+                    if k == 20:
+                        hit20.append(correct_k)
+                        hit20_goal[goal].append(correct_k)
 
     # for i in range(10):
     #     print("T:%s\tP:%s" %(targets[i], pred[i]))
@@ -97,5 +110,9 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         print(f"Test Hit@5: %.4f" % np.average(hit5))
         print(f"Test Hit@10: %.4f" % np.average(hit10))
         print(f"Test Hit@20: %.4f" % np.average(hit20))
+        hit1_goal_result = [(goal, np.average(hit1_goal[goal])) for goal in goal_list]
+        hit5_goal_result = [(goal, np.average(hit5_goal[goal])) for goal in goal_list]
+        hit10_goal_result = [(goal, np.average(hit10_goal[goal])) for goal in goal_list]
+        hit20_goal_result = [(goal, np.average(hit20_goal[goal])) for goal in goal_list]
 
-    return [np.average(hit1), np.average(hit5), np.average(hit10), np.average(hit20)]
+    return [np.average(hit1), np.average(hit5), np.average(hit10), np.average(hit20), hit1_goal_result, hit5_goal_result, hit10_goal_result, hit20_goal_result]

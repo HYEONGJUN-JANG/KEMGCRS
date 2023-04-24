@@ -131,10 +131,12 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         knowledge_index = knowledge_index.to(args.device)
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
-        hit1, hit5, hit10, hit20 = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+        hit1, hit5, hit10, hit20, hit1_goal_result, hit5_goal_result, hit10_goal_result, hit20_goal_result = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
         with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
             f.write(f"%d\t%.4f\t%.4f\t%.4f\t%.4f\n" % (epoch, hit1, hit5, hit10, hit20))
+            result_by_goal = '\n'.join(["%s\t%.4f\t%.4f\t%.4f\t%.4f" % (h1r[0], h1r[1], h2r[1], h3r[1], h4r[1]) for h1r, h2r, h3r, h4r in zip(hit1_goal_result, hit5_goal_result, hit10_goal_result, hit20_goal_result)])
+            f.write(result_by_goal + "\n")
 
         if hit10 > eval_metric[0]:
             eval_metric[0] = hit10
