@@ -145,7 +145,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             f.write("Music recommendation\t" + "\t".join(hit_music_result) + "\n")
             f.write("QA\t" + "\t".join(hit_qa_result) + "\n")
             f.write("Chat about stars\t" + "\t".join(hit_chat_result) + "\n")
-            f.write("Q&A\t" + "\t".join(hit_poi_result) + "\n")
+            f.write("Q&A\t" + "\t".join(hit_poi_result) + "\n\n")
 
         if hit10 > eval_metric[0]:
             eval_metric[0] = hit10
