@@ -63,7 +63,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
             response = '||'.join(tokenizer.batch_decode(response, skip_special_tokens=True))
 
-            jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': '||'.join(target_knowledge_text), 'response': response, "predict5": retrieved_knowledge_text})
+            jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': target_knowledge_text, 'response': response, "predict5": retrieved_knowledge_text})
 
         for idx, (score, target, goal) in enumerate(zip(dot_score, target_knowledge_idx, type_idx)):
             # goal = args.goalDic['int'][int(goal_idx)]
