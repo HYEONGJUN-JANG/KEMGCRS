@@ -37,6 +37,7 @@ def parseargs():
     parser.add_argument("--pseudo", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument('--pseudo_pos_num', default=1, type=int, help="pseudo_pos_num")
     parser.add_argument('--pseudo_pos_rank', default=1, type=int, help="pseudo_pos_rank")
+    parser.add_argument("--pseudo_confidence", action='store_true', help="Whether to Fine-tune on type.")
 
     parser.add_argument('--update_freq', default=-1, type=int, help="update_freq")
 
