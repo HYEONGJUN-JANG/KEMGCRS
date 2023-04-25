@@ -35,7 +35,7 @@ def parseargs():
     parser.add_argument("--knowledge", action='store_true', help="Whether to Use knowledge in response.")
     parser.add_argument("--know_ablation", default='pseudo', type=str, help="know_ablation", choices=['target', 'pseudo'])
     parser.add_argument("--pseudo", action='store_true', help="Whether to Fine-tune on type.")
-    parser.add_argument('--pseudo_pos_num', default=2, type=int, help="pseudo_pos_num")
+    parser.add_argument('--pseudo_pos_num', default=3, type=int, help="pseudo_pos_num")
     parser.add_argument('--pseudo_pos_rank', default=1, type=int, help="pseudo_pos_rank")
     parser.add_argument("--pseudo_confidence", action='store_true', help="Whether to Fine-tune on type.")
 
@@ -138,7 +138,7 @@ def save_json(args, filename, saved_jsonlines):
             goal, topic, tf, dialog, targetkg, resp, pred5 = js['goal_type'], js['topic'], js['tf'], js['dialog'], js['target'], js['response'], js["predict5"]
             if goal == 'Movie recommendation' or goal=='POI recommendation' or goal=='Music recommendation' or goal=='Q&A' or goal=='Chat about stars':
                 pred_txt = "\n".join(pred5)
-                txt = f"\n---------------------------\n[Goal]: {goal}\t[Topic]: {topic}\t[TF]: {tf}\n[Target Know_text]: {targetkg}\n[PRED_KnowText]\n{pred_txt}\n[Dialog]"
+                txt = f"\n---------------------------\n[Goal]: {goal}\t[Topic]: {topic}\t[TF]: {tf}\n[Target Know_text]: {targetkg}\n[PRED_KnowText]\n{pred_txt}\n[Dialog]\n"
                 for i in dialog.replace("user :", '|user :').replace("system :", "|system : ").split('|'):
                     txt += f"{i}\n"
                 txt += f"[Response]: {resp}\n"
