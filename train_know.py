@@ -24,7 +24,7 @@ def update_key_bert(key_bert, query_bert):
 
 
 def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer):
-    criterion = nn.CrossEntropyLoss(reduction='none')
+    criterion = nn.CrossEntropyLoss(reduction='none', ignore_index=0)
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
 
     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
@@ -82,29 +82,32 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
                 logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
                 loss = 0
-                g_logit = torch.mean(torch.gather(logit, 1, batch['pseudo_targets']), dim=1)
-                pseudo_mask = torch.zeros_like(logit)
-                for i in range(batch['pseudo_targets'].size(1)):
-                    pseudo_target = batch['pseudo_targets'][:, i]  # [B]
-                    pseudo_mask[torch.arange(logit.size(0)), pseudo_target] = -1e10
-                pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
-                logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
-                # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
-                loss = (-torch.log_softmax(logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
+                # g_logit = torch.mean(torch.gather(logit, 1, batch['pseudo_targets']), dim=1)
+                # pseudo_mask = torch.zeros_like(logit)
+                #
                 # for i in range(batch['pseudo_targets'].size(1)):
-                #     pseudo_mask = torch.zeros_like(logit)
                 #     pseudo_target = batch['pseudo_targets'][:, i]  # [B]
-                #     pseudo_confidence = batch['pseudo_confidences'][:, i]
-                #     for j in range(batch['pseudo_targets'].size(1)):
-                #         if j < i:
-                #             exclude = batch['pseudo_targets'][:, j]
-                #             pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
-                    # loss += (1.0 ** i) * criterion(logit + pseudo_mask, pseudo_target)  # For MLP predict
-                    # if args.pseudo_confidence:
-                    #     loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target) * pseudo_confidence)
-                    # else:
-                    # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
+                #     pseudo_mask[torch.arange(logit.size(0)), pseudo_target] = -1e10
+                # pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
+                # logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
+                # # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
+                # loss = (-torch.log_softmax(logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
+
+                for i in range(batch['pseudo_targets'].size(1)):
+                    pseudo_mask = torch.zeros_like(logit)
+                    pseudo_mask[:, 0] = -1e10
+                    pseudo_target = batch['pseudo_targets'][:, i]  # [B]
+                    pseudo_confidence = batch['pseudo_confidences'][:, i]
+                    for j in range(batch['pseudo_targets'].size(1)):
+                        if j < i:
+                            exclude = batch['pseudo_targets'][:, j]
+                            pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
+                    loss += (1.0 ** i) * torch.mean(criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
+                # if args.pseudo_confidence:
+                #     loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target) * pseudo_confidence)
+                # else:
+                # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
 
                 # pseudo_target = batch['pseudo_target'][:, 0]  # [B * K]
                 # loss = criterion(logit, pseudo_target)  # For MLP predict
