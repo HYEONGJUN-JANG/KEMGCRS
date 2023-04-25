@@ -100,7 +100,10 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     pseudo_target = batch['pseudo_targets'][:, i]  # [B]
                     pseudo_confidence = batch['pseudo_confidences'][:, i]
                     for j in range(batch['pseudo_targets'].size(1)):
-                        if j < i:
+                        # if j < i:
+                        #     exclude = batch['pseudo_targets'][:, j]
+                        #     pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
+                        if j != i:
                             exclude = batch['pseudo_targets'][:, j]
                             pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
                     loss += (1.0 ** i) * torch.mean(criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
