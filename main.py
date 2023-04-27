@@ -49,6 +49,14 @@ from train_goal_topic import topic_eval
 #         optimizer.step()
 #     print(f"Knowledge Indexing Loss: {train_epoch_loss}")
 
+def split_validation(train_dataset_raw):
+    sidx = np.arange(len(train_dataset_raw))
+    np.random.shuffle(sidx)
+    n_train = int(np.round(len(train_dataset_raw) * (1. - 0.1)))
+    valid_dataset = train_dataset_raw[n_train:]
+    train_dataset = train_dataset_raw[:n_train]
+    return train_dataset, valid_dataset
+
 
 def main():
     # TH 작업 main
@@ -180,15 +188,16 @@ def main():
         # train_dataset_raw = dataset_reader(args, 'train')
         # test_dataset_raw = dataset_reader(args, 'test')
         train_dataset = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
+        train_dataset, valid_dataset = split_validation(train_dataset)
         test_dataset = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
 
         train_datamodel_know = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='know')
         test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know')
         train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
-        valid_dataloader = DataLoader(test_datamodel_know, batch_size=args.batch_size, shuffle=False)
+        valid_dataloader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False)
         test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
 
-        train_know(args, train_dataloader, train_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
+        train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
         # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
