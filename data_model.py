@@ -161,20 +161,21 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
-        random_idx = random.randrange(min(self.args.pseudo_pos_num, len(candidate_knowledges)))
-        candidate_knowledges = [candidate_knowledges[random_idx]]
-        candidate_confidences = [candidate_confidences[random_idx]]
+        # random_idx = random.randrange(min(self.args.pseudo_pos_num, len(candidate_knowledges)))
+        # candidate_knowledges = [candidate_knowledges[random_idx]]
+        # candidate_confidences = [candidate_confidences[random_idx]]
 
-        # group_num = min(2, len(candidate_knowledges))
-        # random_idx = random.sample(list(range(min(self.args.pseudo_pos_num, len(candidate_knowledges)))), k=group_num)
-        # candidate_knowledges = [candidate_knowledges[idx] for idx in random_idx]
-        # candidate_confidences = [candidate_confidences[idx] for idx in random_idx]
+        group_num = min(2, len(candidate_knowledges))
+        random_idx = random.sample(list(range(min(self.args.pseudo_pos_num, len(candidate_knowledges)))), k=group_num)
+        candidate_knowledges = [candidate_knowledges[idx] for idx in random_idx]
+        candidate_confidences = [candidate_confidences[idx] for idx in random_idx]
 
         # candidate_knowledges = candidate_knowledges[:self.args.pseudo_pos_num]
         # candidate_confidences = candidate_confidences[:self.args.pseudo_pos_num]
 
-        candidate_knowledges = candidate_knowledges + [0] * (self.args.pseudo_pos_num - len(candidate_knowledges))
-        candidate_confidences = candidate_confidences + [0] * (self.args.pseudo_pos_num - len(candidate_confidences))
+        # candidate_knowledges = candidate_knowledges + [0] * (self.args.pseudo_pos_num - len(candidate_knowledges))
+        # candidate_confidences = candidate_confidences + [0] * (self.args.pseudo_pos_num - len(candidate_confidences))
+
         # sampled_pair = sorted(random.sample(list(range(len(candidate_positives_idx))), k=2))
         # pseudo_positive = candidate_positives_idx[sampled_pair[0]]
         # pseudo_negative = candidate_positives_idx[sampled_pair[1]]
