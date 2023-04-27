@@ -76,5 +76,5 @@ class Retriever(nn.Module):
         # dialog_emb = self.linear_proj(dialog_emb)
         # knowledge_index = self.linear_proj(knowledge_index)
         logit = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2)  # [B, 1, d] * [B, K+1, d] = [B, K+1]
-        logit = (logit / torch.norm(logit, dim=1, keepdim=True)+1e-20)
+        logit = ((logit / 0.1) / torch.norm(logit, dim=1, keepdim=True) + 1e-20)
         return logit
