@@ -179,8 +179,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             f.write("Chat about stars\t" + "\t".join(hit_chat_result) + "\n")
             f.write("POI recommendation\t" + "\t".join(hit_poi_result) + "\n\n")
 
-        if hit10 > eval_metric[0]:
-            eval_metric[0] = hit10
+        if hit1 > eval_metric[0]:
+            eval_metric[0] = hit1
             best_hit[0] = hit1
             best_hit[1] = hit5
             best_hit[2] = hit10
