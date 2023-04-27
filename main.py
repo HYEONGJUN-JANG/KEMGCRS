@@ -188,8 +188,8 @@ def main():
         valid_dataloader = DataLoader(test_datamodel_know, batch_size=args.batch_size, shuffle=False)
         test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
 
-        train_know(args, test_dataloader, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
-        eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+        train_know(args, train_dataloader, train_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
+        # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
 if __name__ == "__main__":
