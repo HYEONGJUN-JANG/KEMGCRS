@@ -67,17 +67,14 @@ class Retriever(nn.Module):
         # else:
         #     dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
 
-        # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
-        candidate_knowledge_token = torch.cat([token_seq.unsqueeze(1).repeat(1, candidate_knowledge_mask.size(1), 1), candidate_knowledge_token], dim=-1)
-        candidate_knowledge_mask = torch.cat([mask.unsqueeze(1).repeat(1, candidate_knowledge_mask.size(1), 1), candidate_knowledge_mask], dim=-1)
+        dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B*(K+1), L]
+        candidate_knowledge_mask = candidate_knowledge_mask.view(-1, self.args.max_length)  # [B*(K+1), L]
 
-        candidate_knowledge_token = candidate_knowledge_token.view(-1, candidate_knowledge_token.size(2))  # [B*(K+1), L]
-        candidate_knowledge_mask = candidate_knowledge_mask.view(-1, candidate_knowledge_mask.size(2))  # [B*(K+1), L]
-
-        knowledge_index = self.rerank_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask).last_hidden_state[:, 0, :]  # [B*(K+1), L]
-        knowledge_index = knowledge_index.view(batch_size, -1, self.args.hidden_size)  # [B, K+1, d]
+        knowledge_index = self.query_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask).last_hidden_state[:, 0, :]  # [B*(K+1), L]
+        knowledge_index = knowledge_index.view(batch_size, -1, dialog_emb.size(-1))  # [B, K+1, d]
         # dialog_emb = self.linear_proj(dialog_emb)
         # knowledge_index = self.linear_proj(knowledge_index)
-        # logit = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2)  # [B, 1, d] * [B, K+1, d] = [B, K+1]
-        logit = self.linear_proj(knowledge_index).squeeze(-1)  # [B, K]
+        logit = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2)  # [B, 1, d] * [B, K+1, d] = [B, K+1]
+
         return logit
