@@ -148,8 +148,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # predicted_negative = logit[:, 1]
                 # relative_preference = predicted_positive-predicted_negative
                 # loss = -relative_preference.sigmoid().log().mean()
-                loss = (-torch.log_softmax(logit, dim=1).select(dim=1, index=0)).mean()
-
+                loss = (-torch.log_softmax(logit/2, dim=1).select(dim=1, index=0)).mean()
 
             train_epoch_loss += loss
             optimizer.zero_grad()
