@@ -64,7 +64,7 @@ def parseargs():
     parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate')
     parser.add_argument('--loss_bpr', type=float, default=0.0, help='Learning rate')
 
-    parser.add_argument('--negative_num', default=1, type=int, help="negative_num")
+    parser.add_argument('--negative_num', default=4, type=int, help="negative_num")
 
     parser.add_argument('--hidden_size', default=768, type=int, help="hidden size")
     parser.add_argument('--num_epochs', default=10, type=int, help="Number of epoch")
