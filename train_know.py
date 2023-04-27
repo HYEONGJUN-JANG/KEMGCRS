@@ -29,7 +29,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     knowledge_index = knowledge_index.to(args.device)
-    eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
     best_hit = [[], [], [], []]
     best_hit_movie = [[], [], [], []]
@@ -98,22 +98,31 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
                 # # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
                 # loss = (-torch.log_softmax(logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
+                pseudo_mask = torch.zeros_like(logit)
+                pseudo_mask[:, 0] = -1e10
+                Pd = torch.softmax(logit + pseudo_mask, dim=1)
+                pseudo_soft_label = torch.zeros_like(logit)
+                for j in range(batch['pseudo_targets'].size(1)):
+                    pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
+                Qd = pseudo_soft_label / torch.sum(pseudo_soft_label, dim=1, keepdim=True)
+                # kl_div = torch.sum(Pd * (Pd / Qd).log(), dim=1)
+                loss = nn.KLDivLoss(reduction='batchmean')((Qd + 1e-10).log(), Pd + 1e-10)
+                # loss = 0
+                # for i in range(batch['pseudo_targets'].size(1)):
+                #     pseudo_mask = torch.zeros_like(logit)
+                #     pseudo_mask[:, 0] = -1e10
+                #     pseudo_target = batch['pseudo_targets'][:, i]  # [B]
+                #     pseudo_confidence = batch['pseudo_confidences'][:, i]
+                #     for j in range(batch['pseudo_targets'].size(1)):
+                #         if j < i:
+                #             exclude = batch['pseudo_targets'][:, j]
+                #             pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
+                #         # if j != i:
+                #         #     exclude = batch['pseudo_targets'][:, j]
+                #         #     pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
+                #     # loss_list.append(torch.mean(criterion(logit + pseudo_mask, pseudo_target)))
+                #     loss += (1 ** i) * torch.mean(pseudo_confidence * criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
 
-                loss = 0
-                for i in range(batch['pseudo_targets'].size(1)):
-                    pseudo_mask = torch.zeros_like(logit)
-                    pseudo_mask[:, 0] = -1e10
-                    pseudo_target = batch['pseudo_targets'][:, i]  # [B]
-                    pseudo_confidence = batch['pseudo_confidences'][:, i]
-                    for j in range(batch['pseudo_targets'].size(1)):
-                        if j < i:
-                            exclude = batch['pseudo_targets'][:, j]
-                            pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
-                        # if j != i:
-                        #     exclude = batch['pseudo_targets'][:, j]
-                        #     pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
-                    # loss_list.append(torch.mean(criterion(logit + pseudo_mask, pseudo_target)))
-                    loss += (1 ** i) * torch.mean(pseudo_confidence * criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
                 # loss = torch.mean(loss_list)
                 # if args.pseudo_confidence:
                 #     loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target) * pseudo_confidence)
