@@ -143,7 +143,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
             assert Exception
 
         prefix_encoding = self.tokenizer.encode(prefix)[1:-1][:30]
-        input_sentence = self.tokenizer('<dialog>' + dialog, add_special_tokens=False).input_ids
+        input_sentence = self.tokenizer('<dialog>' + dialog + response, add_special_tokens=False).input_ids
 
         input_sentence = [self.tokenizer.cls_token_id] + prefix_encoding + input_sentence[-(self.args.max_length - len(prefix_encoding) - 1):]
         input_sentence = input_sentence + [pad_token_id] * (self.args.max_length - len(input_sentence))
@@ -161,16 +161,16 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
-        # random_idx = random.randrange(min(self.args.pseudo_pos_num, len(candidate_knowledges)))
-        group_num = min(2, len(candidate_knowledges))
-        random_idx = random.sample(list(range(min(self.args.pseudo_pos_num, len(candidate_knowledges)))), k=group_num)
+        random_idx = random.randrange(min(self.args.pseudo_pos_num, len(candidate_knowledges)))
+        # group_num = min(2, len(candidate_knowledges))
+        # random_idx = random.sample(list(range(min(self.args.pseudo_pos_num, len(candidate_knowledges)))), k=group_num)
 
         # candidate_knowledges = candidate_knowledges[:self.args.pseudo_pos_num]
         # candidate_confidences = candidate_confidences[:self.args.pseudo_pos_num]
-        # candidate_knowledges = [candidate_knowledges[random_idx]]
-        # candidate_confidences = [candidate_confidences[random_idx]]
-        candidate_knowledges = [candidate_knowledges[idx] for idx in random_idx]
-        candidate_confidences = [candidate_confidences[idx] for idx in random_idx]
+        candidate_knowledges = [candidate_knowledges[random_idx]]
+        candidate_confidences = [candidate_confidences[random_idx]]
+        # candidate_knowledges = [candidate_knowledges[idx] for idx in random_idx]
+        # candidate_confidences = [candidate_confidences[idx] for idx in random_idx]
 
         candidate_knowledges = candidate_knowledges + [0] * (self.args.pseudo_pos_num - len(candidate_knowledges))
         candidate_confidences = candidate_confidences + [0] * (self.args.pseudo_pos_num - len(candidate_confidences))
