@@ -108,7 +108,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
                 Qd = (pseudo_soft_label) / torch.sum(pseudo_soft_label, dim=1, keepdim=True)
                 # kl_div = torch.sum(Pd * (Pd / Qd).log(), dim=1)
-                loss = nn.KLDivLoss(reduction='batchmean')(Qd.log(), Pd)
+                loss = nn.KLDivLoss(reduction='sum')(Qd.log(), Pd)
                 # loss = 0
                 # for i in range(batch['pseudo_targets'].size(1)):
                 #     pseudo_mask = torch.zeros_like(logit)
