@@ -198,11 +198,11 @@ def main():
         test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know')
 
         train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
-        valid_dataloader = DataLoader(valid_datamodel_know, batch_size=args.batch_size, shuffle=False)
+        valid_dataloader = DataLoader(test_datamodel_know, batch_size=args.batch_size, shuffle=False)
         test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
 
-        train_know(args, train_dataloader, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
-        # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+        train_know(args, valid_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
+        eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
 if __name__ == "__main__":
