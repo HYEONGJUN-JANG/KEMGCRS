@@ -98,13 +98,15 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
                 # # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
                 # loss = (-torch.log_softmax(logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
-                # pseudo_mask = torch.zeros_like(logit)
+                pseudo_mask = torch.zeros_like(logit)
                 # pseudo_mask[:, 0] = -1e10
                 Pd = torch.softmax(logit, dim=1)
-                pseudo_soft_label = torch.zeros_like(logit)
+                pseudo_soft_label = torch.zeros_like(logit) + 1e-10
                 for j in range(batch['pseudo_targets'].size(1)):
                     pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
-                Qd = pseudo_soft_label / torch.sum(pseudo_soft_label, dim=1, keepdim=True) + 1e-10
+                    pseudo_mask[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = 1
+
+                Qd = (pseudo_soft_label) / torch.sum(pseudo_soft_label, dim=1, keepdim=True)
                 # kl_div = torch.sum(Pd * (Pd / Qd).log(), dim=1)
                 loss = nn.KLDivLoss(reduction='batchmean')(Qd.log(), Pd)
                 # loss = 0
