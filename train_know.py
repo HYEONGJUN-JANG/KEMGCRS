@@ -114,7 +114,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                         #     pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
                     loss_list.append(torch.mean(criterion(logit + pseudo_mask, pseudo_target)))
                     # loss += (1 ** i) * torch.mean(criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
-                loss = torch.mean(loss)
+                loss = torch.mean(loss_list)
                 # if args.pseudo_confidence:
                 #     loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target) * pseudo_confidence)
                 # else:
