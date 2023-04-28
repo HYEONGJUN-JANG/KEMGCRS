@@ -103,14 +103,14 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 pseudo_mask = torch.zeros_like(logit)
                 # pseudo_mask[:, 0] = -1e10
                 Pd = torch.softmax(logit, dim=1)
-                pseudo_soft_label = torch.zeros_like(logit) + 1e-10
+                pseudo_soft_label = torch.zeros_like(logit)
                 for j in range(batch['pseudo_targets'].size(1)):
                     pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
                     pseudo_mask[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = 1
 
                 Qd = (pseudo_soft_label) / torch.sum(pseudo_soft_label, dim=1, keepdim=True)
                 # kl_div = torch.sum(Pd * (Pd / Qd).log(), dim=1)
-                loss = -torch.mean(Qd * torch.log(Pd+1e-10))
+                loss = -torch.mean(Qd * torch.log(Pd + 1e-10))
                 # loss = nn.KLDivLoss(reduction='sum')(Qd.log(), Pd)
 
                 # loss = 0
