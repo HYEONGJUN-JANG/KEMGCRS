@@ -110,7 +110,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
                 Qd = (pseudo_soft_label) / torch.sum(pseudo_soft_label, dim=1, keepdim=True)
                 # kl_div = torch.sum(Pd * (Pd / Qd).log(), dim=1)
-                loss = -torch.mean(Qd * torch.log(Pd + 1e-10))
+                loss = -torch.sum(Qd * torch.log(Pd + 1e-10), dim=1)
+                loss = torch.mean(loss)
                 # loss = nn.KLDivLoss(reduction='sum')(Qd.log(), Pd)
 
                 # loss = 0
