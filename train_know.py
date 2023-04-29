@@ -74,15 +74,15 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
             target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
 
-            # if args.know_ablation == 'target':
-            logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
-            loss = torch.mean(criterion(logit, target_knowledge_idx))  # For MLP predict
+            if args.know_ablation == 'target':
+                logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
+                loss = torch.mean(criterion(logit, target_knowledge_idx))  # For MLP predict
 
             if args.know_ablation == 'pseudo':
                 # dialog_token = dialog_token.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
                 # dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
 
-                # logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
+                logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
 
                 # know_mask = (batch['pseudo_targets'] != 0)
                 # num_know = torch.sum(know_mask, dim=1)
