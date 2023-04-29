@@ -82,7 +82,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             # candidate_knowledge_mask = candidate_knowledge.attention_mask.to(args.device)  # [K, L]
             # re_rank_score = retriever.knowledge_retrieve(dialog_token[idx].unsqueeze(0), dialog_mask[idx].unsqueeze(0), candidate_knowledge_token.unsqueeze(0), candidate_knowledge_mask.unsqueeze(0)).squeeze(0)  # [K]
 
-            if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
+            if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':  # or goal == 'Chat about stars':
                 for k in [1, 5, 10, 20]:
                     top_candidate_k = torch.topk(dot_score, k=k).indices  # [B, K]
                     correct_k = target in top_candidate_k
@@ -111,13 +111,13 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     hit_movie_result = [np.average(hit1_goal["Movie recommendation"]), np.average(hit5_goal["Movie recommendation"]), np.average(hit10_goal["Movie recommendation"]), np.average(hit20_goal["Movie recommendation"])]
     hit_music_result = [np.average(hit1_goal["Music recommendation"]), np.average(hit5_goal["Music recommendation"]), np.average(hit10_goal["Music recommendation"]), np.average(hit20_goal["Music recommendation"])]
     hit_qa_result = [np.average(hit1_goal["Q&A"]), np.average(hit5_goal["Q&A"]), np.average(hit10_goal["Q&A"]), np.average(hit20_goal["Q&A"])]
-    hit_chat_result = [np.average(hit1_goal["Chat about stars"]), np.average(hit5_goal["Chat about stars"]), np.average(hit10_goal["Chat about stars"]), np.average(hit20_goal["Chat about stars"])]
+    # hit_chat_result = [np.average(hit1_goal["Chat about stars"]), np.average(hit5_goal["Chat about stars"]), np.average(hit10_goal["Chat about stars"]), np.average(hit20_goal["Chat about stars"])]
     hit_poi_result = [np.average(hit1_goal["POI recommendation"]), np.average(hit5_goal["POI recommendation"]), np.average(hit10_goal["POI recommendation"]), np.average(hit20_goal["POI recommendation"])]
 
     hit_movie_result = ["%.4f" % hit for hit in hit_movie_result]
     hit_music_result = ["%.4f" % hit for hit in hit_music_result]
     hit_qa_result = ["%.4f" % hit for hit in hit_qa_result]
-    hit_chat_result = ["%.4f" % hit for hit in hit_chat_result]
+    # hit_chat_result = ["%.4f" % hit for hit in hit_chat_result]
     hit_poi_result = ["%.4f" % hit for hit in hit_poi_result]
 
     if write:
@@ -133,7 +133,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         print("Movie recommendation\t" + "\t".join(hit_movie_result))
         print("Music recommendation\t" + "\t".join(hit_music_result))
         print("Q&A\t" + "\t".join(hit_qa_result))
-        print("Chat about stars\t" + "\t".join(hit_chat_result))
+        # print("Chat about stars\t" + "\t".join(hit_chat_result))
         print("POI recommendation\t" + "\t".join(hit_poi_result))
 
-    return [hit1, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_chat_result, hit_poi_result]
+    return [hit1, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result]

@@ -186,7 +186,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         knowledge_index = knowledge_index.to(args.device)
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
-        hit1, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_chat_result, hit_poi_result = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+        hit1, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
         with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
             f.write("EPOCH:\t%d\n" % epoch)
@@ -194,7 +194,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             f.write("Movie recommendation\t" + "\t".join(hit_movie_result) + "\n")
             f.write("Music recommendation\t" + "\t".join(hit_music_result) + "\n")
             f.write("Q&A\t" + "\t".join(hit_qa_result) + "\n")
-            f.write("Chat about stars\t" + "\t".join(hit_chat_result) + "\n")
+            # f.write("Chat about stars\t" + "\t".join(hit_chat_result) + "\n")
             f.write("POI recommendation\t" + "\t".join(hit_poi_result) + "\n\n")
 
         if hit1 > eval_metric[0]:
@@ -207,7 +207,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             best_hit_poi = hit_poi_result
             best_hit_music = hit_music_result
             best_hit_qa = hit_qa_result
-            best_hit_chat = hit_chat_result
+            # best_hit_chat = hit_chat_result
 
     print(f'BEST RESULT')
     print(f"BEST Test Hit@1: {best_hit[0]}")
@@ -222,5 +222,5 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         f.write("Movie recommendation\t" + "\t".join(best_hit_movie) + "\n")
         f.write("Music recommendation\t" + "\t".join(best_hit_music) + "\n")
         f.write("QA\t" + "\t".join(best_hit_qa) + "\n")
-        f.write("Chat about stars\t" + "\t".join(best_hit_chat) + "\n")
+        # f.write("Chat about stars\t" + "\t".join(best_hit_chat) + "\n")
         f.write("POI recommendation\t" + "\t".join(best_hit_poi) + "\n")
