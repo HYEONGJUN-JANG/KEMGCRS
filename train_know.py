@@ -111,7 +111,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 Qd = torch.softmax(pseudo_soft_label / args.tau, dim=1)
                 # kl_div = torch.sum(Pd * (Pd / Qd).log(), dim=1)
 
-                loss = args.lamb * loss + (1-args.lamb) * torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
+                loss = torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
                 # loss = nn.KLDivLoss(reduction='sum')(Qd.log(), Pd)
 
                 # loss = 0
