@@ -74,15 +74,15 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
             target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
 
-            if args.know_ablation == 'target':
-                logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
-                loss = torch.mean(criterion(logit, target_knowledge_idx))  # For MLP predict
+            # if args.know_ablation == 'target':
+            logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
+            loss = torch.mean(criterion(logit, target_knowledge_idx))  # For MLP predict
 
-            elif args.know_ablation == 'pseudo':
+            if args.know_ablation == 'pseudo':
                 # dialog_token = dialog_token.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
                 # dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
 
-                logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
+                # logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
 
                 # know_mask = (batch['pseudo_targets'] != 0)
                 # num_know = torch.sum(know_mask, dim=1)
@@ -102,7 +102,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 ## ListNet
                 pseudo_mask = torch.zeros_like(logit)
                 pseudo_mask[:, 0] = -1e10
-                Pd = torch.softmax(logit+pseudo_mask, dim=1)
+                Pd = torch.softmax(logit + pseudo_mask, dim=1)
                 pseudo_soft_label = torch.zeros_like(logit) - 1e10
                 for j in range(batch['pseudo_targets'].size(1)):
                     pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
@@ -110,8 +110,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
                 Qd = torch.softmax(pseudo_soft_label / args.tau, dim=1)
                 # kl_div = torch.sum(Pd * (Pd / Qd).log(), dim=1)
-                loss = -torch.sum(Qd * torch.log(Pd + 1e-10), dim=1)
-                loss = torch.mean(loss)
+
+                loss = 0.5 * loss + 0.5 * torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
                 # loss = nn.KLDivLoss(reduction='sum')(Qd.log(), Pd)
 
                 # loss = 0
