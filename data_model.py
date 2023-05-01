@@ -168,9 +168,13 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # random_idx = random.randrange(min(self.args.pseudo_pos_num, len(candidate_knowledges)))
 
         # Positive sampling
-        random_idx = random.randrange(self.args.pseudo_pos_num)
-        candidate_knowledges = [candidate_knowledges[random_idx]]
-        candidate_confidences = [candidate_confidences[random_idx]]
+        # random_idx = random.randrange(self.args.pseudo_pos_num)
+        # candidate_knowledges = [candidate_knowledges[random_idx]]
+        # candidate_confidences = [candidate_confidences[random_idx]]
+
+        # Only Top-K
+        candidate_knowledges = [candidate_knowledges[self.args.pseudo_pos_num]]
+        candidate_confidences = [candidate_confidences[self.args.pseudo_pos_num]]
 
         candidate_knowledges = candidate_knowledges + [0] * (self.args.pseudo_pos_num - len(candidate_knowledges))
         candidate_confidences = candidate_confidences + [0] * (self.args.pseudo_pos_num - len(candidate_confidences))
