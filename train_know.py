@@ -84,35 +84,33 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
                 logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
 
-                # know_mask = (batch['pseudo_targets'] != 0)
-                # num_know = torch.sum(know_mask, dim=1)
-                # g_logit = torch.gather(logit, 1, batch['pseudo_targets']) * know_mask
-                # g_logit = torch.sum(g_logit, dim=1) / (num_know+1e-10)
-                # # g_logit = torch.mean(torch.gather(logit, 1, batch['pseudo_targets']), dim=1)
-                # pseudo_mask = torch.zeros_like(logit)
-                # pseudo_mask[:, 0] = -1e10
-                # for i in range(batch['pseudo_targets'].size(1)):
-                #     pseudo_target = batch['pseudo_targets'][:, i]  # [B]
-                #     pseudo_mask[torch.arange(logit.size(0)), pseudo_target] = -1e10
-                # pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
-                # logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
-                # # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
-                # loss = (-torch.log_softmax(logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
-
-                ## ListNet
+                know_mask = (batch['pseudo_targets'] != 0)
+                num_know = torch.sum(know_mask, dim=1)
+                g_logit = torch.gather(logit, 1, batch['pseudo_targets']) * know_mask
+                g_logit = torch.sum(g_logit, dim=1) / (num_know+1e-10)
+                # g_logit = torch.mean(torch.gather(logit, 1, batch['pseudo_targets']), dim=1)
                 pseudo_mask = torch.zeros_like(logit)
                 pseudo_mask[:, 0] = -1e10
-                Pd = torch.softmax(logit + pseudo_mask, dim=1)
-                pseudo_soft_label = torch.zeros_like(logit) - 1e10
-                for j in range(batch['pseudo_targets'].size(1)):
-                    pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
-                    pseudo_mask[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = 1
+                for i in range(batch['pseudo_targets'].size(1)):
+                    pseudo_target = batch['pseudo_targets'][:, i]  # [B]
+                    pseudo_mask[torch.arange(logit.size(0)), pseudo_target] = -1e10
+                pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
+                logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
+                # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
+                loss = (-torch.log_softmax(logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
-                Qd = torch.softmax(pseudo_soft_label / args.tau, dim=1)
-                # kl_div = torch.sum(Pd * (Pd / Qd).log(), dim=1)
-
-                loss = torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
-                # loss = nn.KLDivLoss(reduction='sum')(Qd.log(), Pd)
+                # ## ListNet
+                # pseudo_mask = torch.zeros_like(logit)
+                # pseudo_mask[:, 0] = -1e10
+                # Pd = torch.softmax(logit + pseudo_mask, dim=1)
+                # pseudo_soft_label = torch.zeros_like(logit) - 1e10
+                # for j in range(batch['pseudo_targets'].size(1)):
+                #     pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
+                #     pseudo_mask[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = 1
+                # Qd = torch.softmax(pseudo_soft_label / args.tau, dim=1)
+                # # kl_div = torch.sum(Pd * (Pd / Qd).log(), dim=1)
+                # loss = torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
+                # # loss = nn.KLDivLoss(reduction='sum')(Qd.log(), Pd)
 
                 # loss = 0
                 # for i in range(batch['pseudo_targets'].size(1)):
