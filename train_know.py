@@ -119,7 +119,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 pseudo_logit = torch.gather(logit_exp, 1, batch['pseudo_targets'])  # [B, K]
                 all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
                 cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
-                denominator = all_sum - (cumsum_logit - pseudo_logit)
+                denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
                 loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
 
                 # loss2 = 0
