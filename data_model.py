@@ -162,8 +162,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
         # Positive grouping
-        # candidate_knowledges = candidate_knowledges[:self.args.pseudo_pos_num]
-        # candidate_confidences = candidate_confidences[:self.args.pseudo_pos_num]
+        candidate_knowledges = candidate_knowledges[:self.args.pseudo_pos_num]
+        candidate_confidences = candidate_confidences[:self.args.pseudo_pos_num]
 
         # random_idx = random.randrange(min(self.args.pseudo_pos_num, len(candidate_knowledges)))
 
@@ -172,13 +172,14 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # candidate_knowledges = [candidate_knowledges[random_idx]]
         # candidate_confidences = [candidate_confidences[random_idx]]
 
-        # Only Top-K
-        candidate_knowledges = [candidate_knowledges[self.args.pseudo_pos_num]]
-        candidate_confidences = [candidate_confidences[self.args.pseudo_pos_num]]
+        # # Only Top-K
+        # candidate_knowledges = [candidate_knowledges[self.args.pseudo_pos_num]]
+        # candidate_confidences = [candidate_confidences[self.args.pseudo_pos_num]]
 
-        candidate_knowledges = candidate_knowledges + [0] * (self.args.pseudo_pos_num - len(candidate_knowledges))
-        candidate_confidences = candidate_confidences + [0] * (self.args.pseudo_pos_num - len(candidate_confidences))
+        # candidate_knowledges = candidate_knowledges + [0] * (self.args.pseudo_pos_num - len(candidate_knowledges))
+        # candidate_confidences = candidate_confidences + [0] * (self.args.pseudo_pos_num - len(candidate_confidences))
 
+        # Grouping
         # group_num = min(1, len(candidate_knowledges))
         # random_idx = random.sample(list(range(min(1, self.args.pseudo_pos_num, len(candidate_knowledges)))), k=group_num)
         # candidate_knowledges = [candidate_knowledges[0]]+[candidate_knowledges[idx] for idx in random_idx]
