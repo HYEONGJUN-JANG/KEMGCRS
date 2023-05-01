@@ -122,7 +122,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
                 # loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
 
-                loss2 = 0
+                loss = 0
                 # loss_list = []
                 for i in range(batch['pseudo_targets'].size(1)):
                     pseudo_mask = torch.zeros_like(logit)
