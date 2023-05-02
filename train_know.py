@@ -101,35 +101,35 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # loss = (-torch.log_softmax(logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
                 ### ListNet
-                # pseudo_mask = torch.zeros_like(logit)
-                # pseudo_mask[:, 0] = -1e10
-                # Pd = torch.softmax(logit + pseudo_mask, dim=1)
-                # pseudo_soft_label = torch.zeros_like(logit) - 1e10
-                # for j in range(batch['pseudo_targets'].size(1)):
-                #     pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
-                #     pseudo_mask[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = 1
-                # Qd = torch.softmax(pseudo_soft_label / args.tau, dim=1)
-                # loss = torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
-
-                ### ListMLE
-                pseudo_soft_label = torch.zeros_like(logit)
-                for j in range(batch['pseudo_targets'].size(1)):
-                    pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
-
-                pseudo_soft_label = pseudo_soft_label / 0.1
-                v_min, v_max = pseudo_soft_label.min(dim=1).values, pseudo_soft_label.max(dim=1).values
-                pseudo_confidence = (pseudo_soft_label - v_min.unsqueeze(-1)) / (v_max-v_min + 1e-10).unsqueeze(-1)
-                # pseudo_confidence = torch.softmax(pseudo_soft_label / args.tau, dim=1)
-                pseudo_confidence = torch.gather(pseudo_confidence, 1, batch['pseudo_targets'])  # [B, K]
                 pseudo_mask = torch.zeros_like(logit)
                 pseudo_mask[:, 0] = -1e10
-                logit = logit + pseudo_mask
-                logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, N]
-                pseudo_logit = torch.gather(logit_exp, 1, batch['pseudo_targets'])  # [B, K]
-                all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
-                cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
-                denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
-                loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator) * pseudo_confidence, dim=1))
+                Pd = torch.softmax(logit + pseudo_mask, dim=1)
+                pseudo_soft_label = torch.zeros_like(logit) - 1e10
+                for j in range(batch['pseudo_targets'].size(1)):
+                    pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
+                    pseudo_mask[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = 1
+                Qd = torch.softmax(pseudo_soft_label / args.tau, dim=1)
+                loss = torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
+
+                # ### ListMLE
+                # pseudo_soft_label = torch.zeros_like(logit)
+                # for j in range(batch['pseudo_targets'].size(1)):
+                #     pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
+                #
+                # pseudo_soft_label = pseudo_soft_label / 0.1
+                # v_min, v_max = pseudo_soft_label.min(dim=1).values, pseudo_soft_label.max(dim=1).values
+                # pseudo_confidence = (pseudo_soft_label - v_min.unsqueeze(-1)) / (v_max-v_min + 1e-10).unsqueeze(-1)
+                # # pseudo_confidence = torch.softmax(pseudo_soft_label / args.tau, dim=1)
+                # pseudo_confidence = torch.gather(pseudo_confidence, 1, batch['pseudo_targets'])  # [B, K]
+                # pseudo_mask = torch.zeros_like(logit)
+                # pseudo_mask[:, 0] = -1e10
+                # logit = logit + pseudo_mask
+                # logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, N]
+                # pseudo_logit = torch.gather(logit_exp, 1, batch['pseudo_targets'])  # [B, K]
+                # all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
+                # cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
+                # denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
+                # loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator) * pseudo_confidence, dim=1))
 
                 # loss = 0
                 # # loss_list = []
