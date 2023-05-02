@@ -139,11 +139,12 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
             prefix = '<topic>' + topic + self.tokenizer.sep_token
         elif self.args.input_prompt == 'dialog_goal_topic':
             prefix = '<type>' + type + '<topic>' + topic + self.tokenizer.sep_token
+        elif self.args.input_prompt == 'dialog_topic_profile':
+            prefix = '<profile>' + profile + '<topic>' + topic + self.tokenizer.sep_token
         else:
             assert Exception
 
-        if 'profile' in self.args.input_prompt:
-            prefix = user_profile + self.tokenizer.sep_token + prefix
+
 
         prefix_encoding = self.tokenizer.encode(prefix)[1:-1][:30]
         input_sentence = self.tokenizer('<dialog>' + dialog, add_special_tokens=False).input_ids
