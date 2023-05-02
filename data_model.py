@@ -145,7 +145,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
             assert Exception
 
         prefix_encoding = self.tokenizer.encode(prefix)[1:-1][:30]
-        input_sentence = self.tokenizer('<dialog>' + response, add_special_tokens=False).input_ids
+        input_sentence = self.tokenizer('<dialog>' + dialog, add_special_tokens=False).input_ids
 
         input_sentence = [self.tokenizer.cls_token_id] + prefix_encoding + input_sentence[-(self.args.max_length - len(prefix_encoding) - 1):]
         input_sentence = input_sentence + [pad_token_id] * (self.args.max_length - len(input_sentence))
@@ -209,7 +209,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['pseudo_targets'] = candidate_knowledges  # [candidate_knowledges[0]]
         context_batch['pseudo_confidences'] = candidate_confidences
 
-        context_batch['target_knowledge'] = target_knowledge_idx
+        context_batch['target_knowledge'] = candidate_knowledges[0]  # target_knowledge_idx
 
         for k, v in context_batch.items():
             if not isinstance(v, torch.Tensor):
