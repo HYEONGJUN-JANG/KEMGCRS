@@ -124,11 +124,16 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
                 loss = 0
                 # loss_list = []
+                pseudo_soft_label = torch.zeros_like(logit) - 1e10
+                for j in range(batch['pseudo_targets'].size(1)):
+                    pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
+                pseudo_confidence = torch.softmax(pseudo_soft_label / args.tau, dim=1)
+                pseudo_confidence = torch.gather(pseudo_confidence, 1, batch['pseudo_targets'])  # [B, K]
                 for i in range(batch['pseudo_targets'].size(1)):
                     pseudo_mask = torch.zeros_like(logit)
                     pseudo_mask[:, 0] = -1e10
                     pseudo_target = batch['pseudo_targets'][:, i]  # [B]
-                    pseudo_confidence = batch['pseudo_confidences'][:, i]
+                    # pseudo_confidence = batch['pseudo_confidences'][:, i]
                     for j in range(batch['pseudo_targets'].size(1)):
                         if j < i:
                             exclude = batch['pseudo_targets'][:, j]
@@ -137,7 +142,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                         #     exclude = batch['pseudo_targets'][:, j]
                         #     pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
                     # loss_list.append(torch.mean(criterion(logit + pseudo_mask, pseudo_target)))
-                    loss += (0.5 ** i) * torch.mean(criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
+                    loss += (1 ** i) * torch.mean(pseudo_confidence[:, i] * criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
 
                 # loss = torch.mean(criterion(logit + pseudo_mask, target_knowledge_idx))
                 # loss = torch.mean(loss_list)
