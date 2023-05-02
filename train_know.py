@@ -118,7 +118,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
                 pseudo_soft_label = pseudo_soft_label / 0.1
                 v_min, v_max = pseudo_soft_label.min(dim=1).values, pseudo_soft_label.max(dim=1).values
-                pseudo_confidence = (pseudo_soft_label - v_min.unsqueeze(-1)) / (v_max-v_min).unsqueeze(-1)
+                pseudo_confidence = (pseudo_soft_label - v_min.unsqueeze(-1)) / (v_max-v_min + 1e-10).unsqueeze(-1)
                 # pseudo_confidence = torch.softmax(pseudo_soft_label / args.tau, dim=1)
                 pseudo_confidence = torch.gather(pseudo_confidence, 1, batch['pseudo_targets'])  # [B, K]
                 pseudo_mask = torch.zeros_like(logit)
