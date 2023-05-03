@@ -103,12 +103,12 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 ### ListNet
                 pseudo_mask = torch.zeros_like(logit)
                 pseudo_mask[:, 0] = -1e10
-                Pd = torch.softmax(logit + pseudo_mask, dim=1)
+                Pd = torch.softmax(logit + pseudo_mask, dim=1) / args.tau
                 pseudo_soft_label = torch.zeros_like(logit) - 1e10
                 for j in range(batch['pseudo_targets'].size(1)):
                     pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
                     pseudo_mask[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = 1
-                Qd = torch.softmax(pseudo_soft_label / args.tau, dim=1)
+                Qd = torch.softmax(pseudo_soft_label , dim=1)
                 loss = torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
 
                 ### ListMLE
