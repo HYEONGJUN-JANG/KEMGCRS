@@ -48,6 +48,8 @@ class Retriever(nn.Module):
             type_emb = self.goal_embedding(type_idx)  # [B, d]
             dot_score = torch.matmul(dialog_emb + type_emb, knowledge_index.transpose(1, 0))  # [B, N]
         else:
+            dialog_emb = dialog_emb / (torch.norm(dialog_emb, dim=1, keepdim=True)+1e-10)
+            knowledge_index = knowledge_index / (torch.norm(knowledge_index, dim=1, keepdim=True)+1e-10)
             dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
         return dot_score
 
