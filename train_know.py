@@ -101,7 +101,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
                     logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
                     # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
-                    loss = (-torch.log_softmax(logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
+                    loss += (-torch.log_softmax(logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
                 ### ListNet
                 # pseudo_mask = torch.zeros_like(logit)
