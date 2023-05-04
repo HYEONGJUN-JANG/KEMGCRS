@@ -127,7 +127,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 ### ListNet2.0
                 candidate_logit = torch.gather(logit, 1, batch['candidate_indice'])
                 Pd = torch.softmax(candidate_logit, dim=1)
-                pseudo_soft_label = torch.zeros_like(logit) - 1e10
+                pseudo_soft_label = torch.zeros_like(candidate_logit) - 1e10
                 for j in range(batch['pseudo_targets'].size(1)):
                     pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
                     # pseudo_mask[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = 1
