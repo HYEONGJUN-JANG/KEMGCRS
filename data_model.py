@@ -164,8 +164,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
         # Positive grouping
-        # candidate_knowledges = candidate_knowledges[:self.args.pseudo_pos_num]
-        # candidate_confidences = candidate_confidences[:self.args.pseudo_pos_num]
+        candidate_knowledges = candidate_knowledges[:self.args.pseudo_pos_num]
+        candidate_confidences = candidate_confidences[:self.args.pseudo_pos_num]
 
         # random_idx = random.randrange(min(self.args.pseudo_pos_num, len(candidate_knowledges)))
 
@@ -177,14 +177,14 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # candidate_confidences = [candidate_confidences[random_idx]]
 
         ### Positive sampling (pseudo)
-        pseudo_candidate_knowledges = [know for know, conf in zip(candidate_knowledges, candidate_confidences) if conf > 0.1]
-        if len(pseudo_candidate_knowledges) == 0:
-            candidate_knowledges = [candidate_knowledges[0]]
-            candidate_confidences = [candidate_confidences[0]]
-        else:
-            random_idx = random.randrange(len(pseudo_candidate_knowledges))
-            candidate_knowledges = [pseudo_candidate_knowledges[random_idx]]
-            candidate_confidences = [pseudo_candidate_knowledges[random_idx]]
+        # pseudo_candidate_knowledges = [know for know, conf in zip(candidate_knowledges, candidate_confidences) if conf > 0.1]
+        # if len(pseudo_candidate_knowledges) == 0:
+        #     candidate_knowledges = [candidate_knowledges[0]]
+        #     candidate_confidences = [candidate_confidences[0]]
+        # else:
+        #     random_idx = random.randrange(len(pseudo_candidate_knowledges))
+        #     candidate_knowledges = [pseudo_candidate_knowledges[random_idx]]
+        #     candidate_confidences = [pseudo_candidate_knowledges[random_idx]]
 
         # # Only Top-K
         # candidate_knowledges = [candidate_knowledges[self.args.pseudo_pos_num]]
