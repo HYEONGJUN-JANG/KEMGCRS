@@ -83,7 +83,6 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
 
                 logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
-                criterion(logit , pseudo_target)
 
                 ### Positive sampling
                 for i in range(batch['pseudo_targets'].size(1)):
