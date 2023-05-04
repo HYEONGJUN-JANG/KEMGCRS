@@ -97,6 +97,7 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
             if role == 'System' and len(augmented_dialog) > 0 and len(conversation['pseudo_knowledge_seq'][i]) != 0:
                 prob = conversation['pseudo_confidence_seq'][i] + [-1e10] * (len(knowledgeDB) - len(conversation['pseudo_knowledge_seq'][i]))
                 prob = softmax(prob)
+                prob = prob[:len(conversation['pseudo_knowledge_seq'][i])]
 
                 for pseudo_idx, pseudo_label in enumerate(conversation['pseudo_knowledge_seq'][i]):
                     if pseudo_idx == 0 or prob[pseudo_idx] > 0.1:
@@ -110,7 +111,8 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
                                              'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i]),
                                              'pseudo_target': knowledgeDB.index(pseudo_label),
                                              'candidate_knowledges': [knowledgeDB.index(cand) for cand in conversation['pseudo_knowledge_seq'][i]],
-                                             'candidate_confidences': conversation['pseudo_confidence_seq'][i]})
+                                             'candidate_confidences': prob  # conversation['pseudo_confidence_seq'][i]
+                                             })
             augmented_dialog.append(utterance)
     return train_sample
 
