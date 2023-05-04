@@ -83,6 +83,18 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
 
                 logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
+                criterion(logit , pseudo_target)
+
+                ### Positive sampling
+                for i in range(batch['pseudo_targets'].size(1)):
+                    pseudo_mask = torch.zeros_like(logit)
+                    pseudo_mask[:, 0] = -1e10
+                    pseudo_target = batch['pseudo_targets'][:, i]  # [B]
+                    for j in range(batch['pseudo_targets'].size(1)):
+                        if j != i:
+                            exclude = batch['pseudo_targets'][:, j]
+                            pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
+                    loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
 
                 ### Group-wise
                 # loss = 0
@@ -104,15 +116,15 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 #     loss += (-torch.log_softmax(logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
                 ### ListNet
-                pseudo_mask = torch.zeros_like(logit)
-                pseudo_mask[:, 0] = -1e10
-                Pd = torch.softmax(logit + pseudo_mask, dim=1)
-                pseudo_soft_label = torch.zeros_like(logit) - 1e10
-                for j in range(batch['pseudo_targets'].size(1)):
-                    pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
-                    pseudo_mask[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = 1
-                Qd = torch.softmax(pseudo_soft_label / args.tau, dim=1)
-                loss = torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
+                # pseudo_mask = torch.zeros_like(logit)
+                # pseudo_mask[:, 0] = -1e10
+                # Pd = torch.softmax(logit + pseudo_mask, dim=1)
+                # pseudo_soft_label = torch.zeros_like(logit) - 1e10
+                # for j in range(batch['pseudo_targets'].size(1)):
+                #     pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
+                #     pseudo_mask[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = 1
+                # Qd = torch.softmax(pseudo_soft_label / args.tau, dim=1)
+                # loss = torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
 
                 ### ListMLE
                 # pseudo_soft_label = torch.zeros_like(logit)
@@ -134,6 +146,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
                 # loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
 
+                ### ListMLE2
                 # loss = 0
                 # # loss_list = []
                 # pseudo_soft_label = torch.zeros_like(logit) - 1e10
