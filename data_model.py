@@ -126,8 +126,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
     def __getitem__(self, idx):  # TODO 구현 전
         data = self.augmented_raw_sample[idx]
-        cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge', 'pseudo_target', 'candidate_knowledges', 'candidate_confidences']
-        dialog, user_profile, response, type, topic, situation, target_knowledge_idx, pseudo_target_idx, candidate_knowledges, candidate_confidences = [data[i] for i in cbdicKeys]
+        cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge', 'candidate_knowledges', 'candidate_confidences']
+        dialog, user_profile, response, type, topic, situation, target_knowledge_idx, candidate_knowledges, candidate_confidences = [data[i] for i in cbdicKeys]
         pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
 
         context_batch = defaultdict()

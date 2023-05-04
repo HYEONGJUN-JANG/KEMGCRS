@@ -99,20 +99,19 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
                 # prob = softmax(prob)
                 # prob = prob[:len(conversation['pseudo_knowledge_seq'][i])]
 
-                for pseudo_idx, pseudo_label in enumerate(conversation['pseudo_knowledge_seq'][i]):
+                # for pseudo_idx, pseudo_label in enumerate(conversation['pseudo_knowledge_seq'][i]):
                     # if pseudo_idx < 5:
-                    flatten_dialog = ''.join(augmented_dialog)
-                    train_sample.append({'dialog': flatten_dialog,
-                                         'user_profile': conversation['user_profile'],
-                                         'response': utterance,
-                                         'type': conversation['type'][i],
-                                         'topic': conversation['topic'][i],
-                                         'situation': conversation['situation'],
-                                         'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i]),
-                                         'pseudo_target': knowledgeDB.index(pseudo_label),
-                                         'candidate_knowledges': [knowledgeDB.index(cand) for cand in conversation['pseudo_knowledge_seq'][i]],
-                                         'candidate_confidences': conversation['pseudo_confidence_seq'][i]  # prob
-                                         })
+                flatten_dialog = ''.join(augmented_dialog)
+                train_sample.append({'dialog': flatten_dialog,
+                                     'user_profile': conversation['user_profile'],
+                                     'response': utterance,
+                                     'type': conversation['type'][i],
+                                     'topic': conversation['topic'][i],
+                                     'situation': conversation['situation'],
+                                     'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i]),
+                                     'candidate_knowledges': [knowledgeDB.index(cand) for cand in conversation['pseudo_knowledge_seq'][i]],
+                                     'candidate_confidences': conversation['pseudo_confidence_seq'][i]  # prob
+                                     })
             augmented_dialog.append(utterance)
     return train_sample
 
