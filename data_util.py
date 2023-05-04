@@ -7,7 +7,7 @@ import random
 
 from torch.nn.utils.rnn import pad_sequence
 from tqdm import tqdm
-
+import numpy as np
 
 def readDic(filename, out=None):
     output_idx_str = dict()
@@ -75,6 +75,12 @@ def user_profile_setting(ufDic: dict) -> str:
     return uf
 
 
+def softmax(x):
+    """Compute softmax values for each sets of scores in x."""
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum(axis=0)  # only difference
+
+
 def process_augment_sample(raw_data, tokenizer, knowledgeDB):
     train_sample = []
     if tokenizer.eos_token is not None:
@@ -89,16 +95,22 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
             utterance = conversation['dialog'][i] + eos_token
 
             if role == 'System' and len(augmented_dialog) > 0 and len(conversation['pseudo_knowledge_seq'][i]) != 0:
-                flatten_dialog = ''.join(augmented_dialog)
-                train_sample.append({'dialog': flatten_dialog,
-                                     'user_profile': conversation['user_profile'],
-                                     'response': utterance,
-                                     'type': conversation['type'][i],
-                                     'topic': conversation['topic'][i],
-                                     'situation': conversation['situation'],
-                                     'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i]),
-                                     'candidate_knowledges': [knowledgeDB.index(cand) for cand in conversation['pseudo_knowledge_seq'][i]],
-                                     'candidate_confidences': conversation['pseudo_confidence_seq'][i]})
+                prob = conversation['pseudo_confidence_seq'][i] + [-1e10] * (len(knowledgeDB) - len(conversation['pseudo_knowledge_seq'][i]))
+                prob = softmax(prob)
+
+                for pseudo_idx, pseudo_label in enumerate(conversation['pseudo_knowledge_seq'][i]):
+                    if pseudo_idx == 0 or prob[pseudo_idx] > 0.1:
+                        flatten_dialog = ''.join(augmented_dialog)
+                        train_sample.append({'dialog': flatten_dialog,
+                                             'user_profile': conversation['user_profile'],
+                                             'response': utterance,
+                                             'type': conversation['type'][i],
+                                             'topic': conversation['topic'][i],
+                                             'situation': conversation['situation'],
+                                             'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i]),
+                                             'pseudo_target': knowledgeDB.index(pseudo_label),
+                                             'candidate_knowledges': [knowledgeDB.index(cand) for cand in conversation['pseudo_knowledge_seq'][i]],
+                                             'candidate_confidences': conversation['pseudo_confidence_seq'][i]})
             augmented_dialog.append(utterance)
     return train_sample
 
