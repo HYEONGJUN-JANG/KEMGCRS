@@ -120,7 +120,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         negative_indice = []
         while len(negative_indice) < self.args.negative_num:
             negative_idx = random.randint(0, total_knowledge_num - 1)
-            if (negative_idx not in negative_indice) and (negative_idx != target_knowledge):
+            if (negative_idx not in negative_indice) and (negative_idx not in target_knowledge):
                 negative_indice.append(negative_idx)
         return negative_indice
 
@@ -163,7 +163,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
-        # Positive grouping
+        # List-wise
         candidate_knowledges = candidate_knowledges[:self.args.pseudo_pos_num]
         candidate_confidences = candidate_confidences[:self.args.pseudo_pos_num]
 
@@ -194,10 +194,10 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # candidate_confidences = candidate_confidences + [0] * (self.args.pseudo_pos_num - len(candidate_confidences))
 
         ### Grouping
-        group_num = min(self.args.pseudo_pos_rank, len(candidate_knowledges))
-        random_idx = random.sample(list(range(len(candidate_knowledges))), k=group_num)
-        candidate_knowledges = [candidate_knowledges[0]]+[candidate_knowledges[idx] for idx in random_idx]
-        candidate_confidences = [candidate_confidences[0]] + [candidate_confidences[idx] for idx in random_idx]
+        # group_num = min(self.args.pseudo_pos_rank, len(candidate_knowledges))
+        # random_idx = random.sample(list(range(len(candidate_knowledges))), k=group_num)
+        # candidate_knowledges = [candidate_knowledges[0]]+[candidate_knowledges[idx] for idx in random_idx]
+        # candidate_confidences = [candidate_confidences[0]] + [candidate_confidences[idx] for idx in random_idx]
 
         # sampled_pair = sorted(random.sample(list(range(len(candidate_positives_idx))), k=2))
         # pseudo_positive = candidate_positives_idx[sampled_pair[0]]
