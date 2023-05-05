@@ -126,16 +126,16 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
                 ### ListNet2.0
                 # candidate_logit = torch.gather(logit, 1, batch['candidate_indice'])
-                logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
-                Pd = torch.softmax(logit, dim=1)
-                # pseudo_mask = torch.zeros_like(logit) - 1e10
-                # for j in range(batch['candidate_indice'].size(1)):
-                #     pseudo_mask[torch.arange(logit.size(0)), batch['candidate_indice'][:, j]] = 0
-                # pseudo_soft_label = torch.zeros_like(logit)
-                # for j in range(batch['pseudo_targets'].size(1)):
-                #     pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
-                Qd = torch.softmax(batch['pseudo_confidences'] / args.tau, dim=1)
-                loss = torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
+                # logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
+                # Pd = torch.softmax(logit, dim=1)
+                # # pseudo_mask = torch.zeros_like(logit) - 1e10
+                # # for j in range(batch['candidate_indice'].size(1)):
+                # #     pseudo_mask[torch.arange(logit.size(0)), batch['candidate_indice'][:, j]] = 0
+                # # pseudo_soft_label = torch.zeros_like(logit)
+                # # for j in range(batch['pseudo_targets'].size(1)):
+                # #     pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
+                # Qd = torch.softmax(batch['pseudo_confidences'] / args.tau, dim=1)
+                # loss = torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
 
                 ### ListMLE
                 # pseudo_soft_label = torch.zeros_like(logit)
@@ -151,7 +151,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # pseudo_mask[:, 0] = -1e10
                 # logit = logit + pseudo_mask
                 logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
-                logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, N]
+                logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
                 # pseudo_logit = torch.gather(logit_exp, 1, batch['pseudo_targets'])  # [B, K]
                 all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
                 cumsum_logit = torch.cumsum(logit_exp, dim=1)  # [B, K]
