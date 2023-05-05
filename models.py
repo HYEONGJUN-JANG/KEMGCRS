@@ -53,6 +53,18 @@ class Retriever(nn.Module):
             dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
         return dot_score
 
+    def compute_know_score_candidate(self, token_seq, mask, knowledge_index):
+        """
+        eval_know.computing_score에서
+        모든 key vector에서 올라온 벡터를 통해 계산처리
+        """
+        dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state  # [B, L, d]
+        # dialog_emb = torch.sum(dialog_emb * mask.unsqueeze(-1), dim=1) / (torch.sum(mask, dim=1, keepdim=True) + 1e-20)  # [B, d]
+
+        dot_score = torch.sum(knowledge_index * dialog_emb.unsqueeze(1), dim=-1)  # [B, K, d] x [B, 1, d]
+        return dot_score
+
     def knowledge_retrieve(self, token_seq, mask, candidate_knowledge_token, candidate_knowledge_mask, ablation=None, labels=None):
         """
         Args: 뽑아준 negative에 대해서만 dot-product

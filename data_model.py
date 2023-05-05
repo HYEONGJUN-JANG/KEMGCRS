@@ -219,7 +219,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['candidate_knowledge_mask'] = candidate_knowledge_mask
 
         context_batch['pseudo_targets'] = candidate_knowledges  # [candidate_knowledges[0]]
-        context_batch['pseudo_confidences'] = candidate_confidences
+        context_batch['pseudo_confidences'] = candidate_confidences + [-1e10] * (len(candidate_indice)-len(candidate_confidences))
 
         context_batch['target_knowledge'] = target_knowledge_idx  # target_knowledge_idx  # candidate_knowledges[0]
 
