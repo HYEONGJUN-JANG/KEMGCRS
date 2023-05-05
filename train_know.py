@@ -150,12 +150,13 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # pseudo_mask = torch.zeros_like(logit)
                 # pseudo_mask[:, 0] = -1e10
                 # logit = logit + pseudo_mask
-                # logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, N]
+                logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
+                logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, N]
                 # pseudo_logit = torch.gather(logit_exp, 1, batch['pseudo_targets'])  # [B, K]
-                # all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
-                # cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
-                # denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
-                # loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
+                all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
+                cumsum_logit = torch.cumsum(logit_exp, dim=1)  # [B, K]
+                denominator = all_sum - (cumsum_logit - logit_exp) + 1e-10
+                loss = torch.mean(torch.sum(-torch.log(logit_exp / denominator), dim=1))
 
                 ### ListMLE2
                 # loss = 0
