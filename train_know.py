@@ -29,7 +29,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     knowledge_index = knowledge_index.to(args.device)
-    eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
     best_hit = [[], [], [], []]
     best_hit_movie = [[], [], [], []]
@@ -144,7 +144,9 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # pseudo_mask[:, 0] = -1e10
                 # logit = logit + pseudo_mask
 
-                logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
+                # logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
+                logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, batch['candidate_knowledge_token'], batch['candidate_knowledge_mask'])
+
                 logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
                 pseudo_logit = logit_exp[:, :args.pseudo_pos_rank] #  torch.gather(logit_exp, 1, batch['pseudo_targets'])  # [B, K]
                 all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
