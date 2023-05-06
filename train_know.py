@@ -82,19 +82,19 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # dialog_token = dialog_token.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
                 # dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
 
-                logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
-
-                ### Positive sampling
-                loss = 0
-                for i in range(batch['pseudo_targets'].size(1)):
-                    pseudo_mask = torch.zeros_like(logit)
-                    pseudo_mask[:, 0] = -1e10
-                    pseudo_target = batch['pseudo_targets'][:, i]  # [B]
-                    for j in range(batch['pseudo_targets'].size(1)):
-                        if j != i:
-                            exclude = batch['pseudo_targets'][:, j]
-                            pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
-                    loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
+                # logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
+                #
+                # ### Positive sampling
+                # loss = 0
+                # for i in range(batch['pseudo_targets'].size(1)):
+                #     pseudo_mask = torch.zeros_like(logit)
+                #     pseudo_mask[:, 0] = -1e10
+                #     pseudo_target = batch['pseudo_targets'][:, i]  # [B]
+                #     for j in range(batch['pseudo_targets'].size(1)):
+                #         if j != i:
+                #             exclude = batch['pseudo_targets'][:, j]
+                #             pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
+                #     loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
 
                 ### Group-wise
                 # loss = 0
@@ -145,13 +145,13 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # logit = logit + pseudo_mask
 
                 ### ListMLE for reranking
-                # logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
-                # logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
-                # pseudo_logit = logit_exp[:, :args.pseudo_pos_rank] #  torch.gather(logit_exp, 1, batch['pseudo_targets'])  # [B, K]
-                # all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
-                # cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
-                # denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
-                # loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
+                logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
+                logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
+                pseudo_logit = logit_exp[:, :args.pseudo_pos_rank] #  torch.gather(logit_exp, 1, batch['pseudo_targets'])  # [B, K]
+                all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
+                cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
+                denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
+                loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
 
                 ### ListMLE2
                 # loss = 0
@@ -232,7 +232,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         knowledge_index = knowledge_index.to(args.device)
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
-        hit1, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+        hit1, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index, stage='rerank')  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
         with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
             f.write("EPOCH:\t%d\n" % epoch)

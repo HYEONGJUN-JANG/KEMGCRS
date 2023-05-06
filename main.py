@@ -204,7 +204,7 @@ def main():
 
         train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
         torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_retriever.pt"))  # TIME_MODELNAME 형식
-        eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+        # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
 if __name__ == "__main__":
