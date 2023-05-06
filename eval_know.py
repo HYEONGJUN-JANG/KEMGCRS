@@ -86,9 +86,12 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
             if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':  # or goal == 'Chat about stars':
                 for k in [1, 5, 10]:
-                    top_candidate_k_idx = torch.topk(score, k=k).indices # [B, K]
+                    top_candidate = torch.topk(score, k=k).indices
+
+                    # top_candidate_k_idx = torch.topk(score, k=k).indices # [B, K]
                     # top_candidate_k = batch['candidate_indice'][idx][top_candidate_k_idx]
-                    top_candidate = torch.gather(batch['candidate_indice'][idx], 0, top_candidate_k_idx)
+                    # top_candidate = torch.gather(batch['candidate_indice'][idx], 0, top_candidate_k_idx)
+
                     correct_k = target in top_candidate
                     if k == 1:
                         hit1.append(correct_k)
