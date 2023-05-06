@@ -7,6 +7,7 @@ from torch import nn
 class Retriever(nn.Module):
     def __init__(self, args, query_bert=None, gpt_model=None):
         super(Retriever, self).__init__()
+        self.rerank_bert = None
         self.args = args
         self.query_bert = query_bert  # Knowledge text 처리를 위한 BERT
         # if args.know_ablation == 'negative_sampling':
@@ -14,7 +15,6 @@ class Retriever(nn.Module):
         # else:
         #     self.key_bert = copy.deepcopy(self.query_bert)
         #     self.key_bert.requires_grad = False
-        self.rerank_bert = copy.deepcopy(self.query_bert)
 
         self.gpt_model = gpt_model
         self.hidden_size = args.hidden_size
@@ -23,6 +23,9 @@ class Retriever(nn.Module):
         self.know_proj = nn.Linear(self.hidden_size, self.args.knowledge_num)
         self.goal_embedding = nn.Embedding(self.args.goal_num, self.args.hidden_size)
         nn.init.normal_(self.goal_embedding.weight, 0, self.args.hidden_size ** -0.5)
+
+    def init_reranker(self):
+        self.rerank_bert = copy.deepcopy(self.query_bert)
 
     def forward(self, token_seq, mask):
         dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]

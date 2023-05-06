@@ -202,6 +202,10 @@ def main():
         valid_dataloader = DataLoader(test_datamodel_know, batch_size=args.batch_size, shuffle=False)
         test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
 
+        # print('rerank mode')
+        # retriever.init_reranker()
+        # train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
+
         if args.saved_model_path != '':
             print('retrieval load:\t%s' % args.saved_model_path)
             retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
@@ -213,7 +217,9 @@ def main():
 
         if args.stage == 'rerank':
             print('rerank mode')
+            retriever.init_reranker()
             train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
+
         # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
