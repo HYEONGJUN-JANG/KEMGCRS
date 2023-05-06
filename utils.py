@@ -40,6 +40,7 @@ def parseargs():
     parser.add_argument("--pseudo_confidence", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument('--tau', type=float, default=1.0, help='Learning rate')
     parser.add_argument('--bin', type=int, default=0, help='bin')
+    parser.add_argument('--negative_num', default=0, type=int, help="negative_num")
 
     parser.add_argument('--update_freq', default=-1, type=int, help="update_freq")
 
@@ -66,7 +67,6 @@ def parseargs():
     parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate')
     parser.add_argument('--loss_bpr', type=float, default=0.0, help='Learning rate')
 
-    parser.add_argument('--negative_num', default=4, type=int, help="negative_num")
 
     parser.add_argument('--hidden_size', default=768, type=int, help="hidden size")
     parser.add_argument('--num_epochs', default=10, type=int, help="Number of epoch")
