@@ -29,7 +29,7 @@ def knowledge_reindexing(args, knowledge_data, retriever):
     return knowledge_index
 
 
-def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index=None, write=None, stage=None):
+def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index=None, write=None):
     # Read knowledge DB
     # knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     # knowledge_index = knowledge_index.to(args.device)
@@ -60,9 +60,9 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
         target_knowledge_idx = batch['target_knowledge']
 
-        if stage is None:
+        if args.stage == 'retrieve':
             dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, batch['type'])
-        else:
+        elif args.stage == 'rerank':
             dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
 
         if write:
@@ -87,9 +87,9 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
             if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':  # or goal == 'Chat about stars':
                 for k in [1, 5, 10]:
-                    if stage is None:
+                    if args.stage == 'retrieve':
                         top_candidate = torch.topk(score, k=k).indices
-                    else:
+                    elif args.stage == 'rerank':
                         top_candidate_k_idx = torch.topk(score, k=k).indices # [B, K]
                         top_candidate = torch.gather(batch['candidate_indice'][idx], 0, top_candidate_k_idx)
 
