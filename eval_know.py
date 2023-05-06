@@ -29,7 +29,7 @@ def knowledge_reindexing(args, knowledge_data, retriever):
     return knowledge_index
 
 
-def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index=None, write=None):
+def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index=None, write=None, stage=None):
     # Read knowledge DB
     # knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     # knowledge_index = knowledge_index.to(args.device)
@@ -60,9 +60,10 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
         target_knowledge_idx = batch['target_knowledge']
 
-        dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, batch['type'])
-        # dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
-        # dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, batch['candidate_knowledge_token'], batch['candidate_knowledge_mask'])
+        if stage is None:
+            dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, batch['type'])
+        else:
+            dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
 
         if write:
             top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
@@ -86,11 +87,11 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
             if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':  # or goal == 'Chat about stars':
                 for k in [1, 5, 10]:
-                    top_candidate = torch.topk(score, k=k).indices
-
-                    # top_candidate_k_idx = torch.topk(score, k=k).indices # [B, K]
-                    # top_candidate_k = batch['candidate_indice'][idx][top_candidate_k_idx]
-                    # top_candidate = torch.gather(batch['candidate_indice'][idx], 0, top_candidate_k_idx)
+                    if stage is None:
+                        top_candidate = torch.topk(score, k=k).indices
+                    else:
+                        top_candidate_k_idx = torch.topk(score, k=k).indices # [B, K]
+                        top_candidate = torch.gather(batch['candidate_indice'][idx], 0, top_candidate_k_idx)
 
                     correct_k = target in top_candidate
                     if k == 1:
