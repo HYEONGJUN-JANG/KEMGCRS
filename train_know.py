@@ -85,16 +85,16 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
 
                 ### Positive sampling
-                # loss = 0
-                # for i in range(batch['pseudo_targets'].size(1)):
-                #     pseudo_mask = torch.zeros_like(logit)
-                #     pseudo_mask[:, 0] = -1e10
-                #     pseudo_target = batch['pseudo_targets'][:, i]  # [B]
-                #     for j in range(batch['pseudo_targets'].size(1)):
-                #         if j != i:
-                #             exclude = batch['pseudo_targets'][:, j]
-                #             pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
-                #     loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
+                loss = 0
+                for i in range(batch['pseudo_targets'].size(1)):
+                    pseudo_mask = torch.zeros_like(logit)
+                    pseudo_mask[:, 0] = -1e10
+                    pseudo_target = batch['pseudo_targets'][:, i]  # [B]
+                    for j in range(batch['pseudo_targets'].size(1)):
+                        if j != i:
+                            exclude = batch['pseudo_targets'][:, j]
+                            pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
+                    loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
 
                 ### Group-wise
                 # loss = 0
@@ -144,9 +144,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # pseudo_mask[:, 0] = -1e10
                 # logit = logit + pseudo_mask
 
+                ### ListMLE for reranking
                 logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
-                # logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, batch['candidate_knowledge_token'], batch['candidate_knowledge_mask'])
-
                 logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
                 pseudo_logit = logit_exp[:, :args.pseudo_pos_rank] #  torch.gather(logit_exp, 1, batch['pseudo_targets'])  # [B, K]
                 all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
