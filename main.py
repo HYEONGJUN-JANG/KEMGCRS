@@ -216,6 +216,7 @@ def main():
             torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_retriever_{args.stage}.pt"))  # TIME_MODELNAME 형식
 
         print('rerank mode')
+        args.stage = 'rerank'
         retriever.init_reranker()
         train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
 
