@@ -58,7 +58,7 @@ class Retriever(nn.Module):
         eval_know.computing_score에서
         모든 key vector에서 올라온 벡터를 통해 계산처리
         """
-        dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        dialog_emb = self.rerank_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state  # [B, L, d]
         # dialog_emb = torch.sum(dialog_emb * mask.unsqueeze(-1), dim=1) / (torch.sum(mask, dim=1, keepdim=True) + 1e-20)  # [B, d]
 
