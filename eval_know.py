@@ -60,8 +60,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
         target_knowledge_idx = batch['target_knowledge']
 
-        dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, batch['type'])
-        # dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
+        # dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, batch['type'])
+        dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
 
         if write:
             top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
@@ -85,7 +85,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
             if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':  # or goal == 'Chat about stars':
                 for k in [1, 5, 10, 20]:
-                    top_candidate_k = torch.topk(score, k=k).indices  # [B, K]
+                    top_candidate_k =  torch.topk(score, k=k).indices # [B, K]
+                    # top_candidate_k = batch['candidate_indice'][idx][torch.topk(score, k=k).indices]
                     correct_k = target in top_candidate_k
                     if k == 1:
                         hit1.append(correct_k)
