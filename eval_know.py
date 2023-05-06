@@ -20,7 +20,10 @@ def knowledge_reindexing(args, knowledge_data, retriever):
     for batch in tqdm(knowledgeDataLoader):
         input_ids = batch[0].to(args.device)
         attention_mask = batch[1].to(args.device)
-        knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
+        if args.stage == 'retrieve':
+            knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
+        elif args.stage == 'rerank':
+            knowledge_emb = retriever.rerank_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
         # knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state  # [B, d]
         # knowledge_emb = torch.sum(knowledge_emb * attention_mask.unsqueeze(-1), dim=1) / (torch.sum(attention_mask, dim=1, keepdim=True) + 1e-20)  # [B, d]
 
@@ -60,10 +63,12 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
         target_knowledge_idx = batch['target_knowledge']
 
-        if args.stage == 'retrieve':
-            dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, batch['type'])
-        elif args.stage == 'rerank':
-            dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
+        dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, batch['type'])
+
+
+        if args.stage == 'rerank':
+            candidate_indice = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
+            dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[candidate_indice])
 
         if write:
             top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
