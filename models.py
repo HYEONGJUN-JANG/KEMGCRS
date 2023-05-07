@@ -7,9 +7,10 @@ from torch import nn
 class Retriever(nn.Module):
     def __init__(self, args, query_bert=None, gpt_model=None):
         super(Retriever, self).__init__()
-        self.rerank_bert = None
         self.args = args
         self.query_bert = query_bert  # Knowledge text 처리를 위한 BERT
+        self.rerank_bert = copy.deepcopy(self.query_bert)
+
         # if args.know_ablation == 'negative_sampling':
         #     self.key_bert = query_bert
         # else:
