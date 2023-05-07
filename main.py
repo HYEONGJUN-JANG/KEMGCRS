@@ -217,7 +217,7 @@ def main():
 
         print('rerank mode')
         args.stage = 'rerank'
-        # retriever.init_reranker()
+        retriever.init_reranker()
         train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
 
         # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
