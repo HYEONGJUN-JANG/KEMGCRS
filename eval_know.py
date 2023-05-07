@@ -7,7 +7,7 @@ from utils import write_pkl, save_json
 import numpy as np
 
 
-def knowledge_reindexing(args, knowledge_data, retriever, stage='retrieve'):
+def knowledge_reindexing(args, knowledge_data, retriever, stage):
     # 모든 know_index를 버트에 태움
     print('...knowledge indexing...(%s)' % stage)
     retriever.eval()
