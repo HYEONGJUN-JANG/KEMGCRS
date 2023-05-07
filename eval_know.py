@@ -95,7 +95,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
                         top_candidate = torch.topk(score, k=k).indices
                     elif args.stage == 'rerank':
                         top_candidate_k_idx = torch.topk(score, k=k).indices  # [B, K]
-                        top_candidate = torch.gather(candidate_indice, 0, top_candidate_k_idx)
+                        top_candidate = torch.gather(candidate_indice[idx], 0, top_candidate_k_idx)
 
                     correct_k = target in top_candidate
                     if k == 1:
