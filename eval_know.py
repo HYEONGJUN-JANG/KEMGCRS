@@ -7,7 +7,7 @@ from utils import write_pkl, save_json
 import numpy as np
 
 
-def knowledge_reindexing(args, knowledge_data, retriever):
+def knowledge_reindexing(args, knowledge_data, retriever, stage='retrieve'):
     # 모든 know_index를 버트에 태움
     print('...knowledge indexing...')
     retriever.eval()
@@ -20,12 +20,12 @@ def knowledge_reindexing(args, knowledge_data, retriever):
     for batch in tqdm(knowledgeDataLoader):
         input_ids = batch[0].to(args.device)
         attention_mask = batch[1].to(args.device)
-        knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
+        # knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
 
-        # if args.stage == 'retrieve':
-        #     knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
-        # elif args.stage == 'rerank':
-        #     knowledge_emb = retriever.rerank_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
+        if stage == 'retrieve':
+            knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
+        elif stage == 'rerank':
+            knowledge_emb = retriever.rerank_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
 
         # knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state  # [B, d]
         # knowledge_emb = torch.sum(knowledge_emb * attention_mask.unsqueeze(-1), dim=1) / (torch.sum(attention_mask, dim=1, keepdim=True) + 1e-20)  # [B, d]
@@ -45,6 +45,9 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     if knowledge_index is None:
         knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
     knowledge_index = knowledge_index.to(args.device)
+
+    knowledge_index_rerank = knowledge_reindexing(args, knowledge_data, retriever, stage='rerank')
+    knowledge_index_rerank = knowledge_index_rerank.to(args.device)
 
     goal_list = ['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A', 'Chat about stars']
     hit1_goal, hit5_goal, hit10_goal, hit20_goal = defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
@@ -70,7 +73,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
         if args.stage == 'rerank':
             candidate_indice = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
-            dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[candidate_indice])
+            dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index_rerank[candidate_indice])
 
         if write:
             top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
