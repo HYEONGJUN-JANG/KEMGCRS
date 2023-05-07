@@ -72,7 +72,10 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, batch['type'])
 
         if args.stage == 'rerank':
-            candidate_indice = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
+            if args.stage2_test:
+                candidate_indice = batch['candidate_indice']
+            else:
+                candidate_indice = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
             dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index_rerank[candidate_indice])
 
         if write:

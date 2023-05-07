@@ -42,6 +42,7 @@ def parseargs():
     parser.add_argument('--bin', type=int, default=0, help='bin')
     parser.add_argument('--negative_num', default=0, type=int, help="negative_num")
     parser.add_argument('--stage', default='retrieve', type=str, choices=['retrieve', 'rerank'])
+    parser.add_argument("--stage2_test", action='store_true', help="Whether to Fine-tune on type.")
 
     parser.add_argument('--update_freq', default=-1, type=int, help="update_freq")
 
