@@ -127,10 +127,11 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # loss = torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
 
                 ### ListNet2.0
-                # logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
-                # Pd = torch.softmax(logit, dim=1)
-                # Qd = torch.softmax(batch['pseudo_confidences'] / args.tau, dim=1)
-                # loss = torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
+                if args.stage == 'rerank':
+                    logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
+                    Pd = torch.softmax(logit, dim=1)
+                    Qd = torch.softmax(batch['pseudo_confidences'] / args.tau, dim=1)
+                    loss = torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
 
                 ### ListMLE
                 # pseudo_soft_label = torch.zeros_like(logit)
@@ -147,14 +148,14 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # logit = logit + pseudo_mask
 
                 ### ListMLE for reranking
-                if args.stage == 'rerank':
-                    logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
-                    logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
-                    pseudo_logit = logit_exp[:, :args.pseudo_pos_rank]  # torch.gather(logit_exp, 1, batch['pseudo_targets'])  # [B, K]
-                    all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
-                    cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
-                    denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
-                    loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
+                # if args.stage == 'rerank':
+                #     logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
+                #     logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
+                #     pseudo_logit = logit_exp[:, :args.pseudo_pos_rank]  # torch.gather(logit_exp, 1, batch['pseudo_targets'])  # [B, K]
+                #     all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
+                #     cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
+                #     denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
+                #     loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
 
                 ### ListMLE2
                 # loss = 0
