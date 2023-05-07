@@ -9,7 +9,7 @@ import numpy as np
 
 def knowledge_reindexing(args, knowledge_data, retriever, stage='retrieve'):
     # 모든 know_index를 버트에 태움
-    print('...knowledge indexing...')
+    print('...knowledge indexing...(%s)' % stage)
     retriever.eval()
     knowledgeDataLoader = DataLoader(
         knowledge_data,
