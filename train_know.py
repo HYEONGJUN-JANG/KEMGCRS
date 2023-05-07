@@ -27,9 +27,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     criterion = nn.CrossEntropyLoss(reduction='none', ignore_index=0)
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
 
-    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, args.stage)
-    knowledge_index = knowledge_index.to(args.device)
-    eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
     best_hit = [[], [], [], []]
     best_hit_movie = [[], [], [], []]
@@ -50,6 +48,9 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         #     result_f.write(f'{i}:{v} || ')
         result_f.write('\n')
         result_f.write('[EPOCH]\tHit@1\tHit@5\tHit@10\tHit@20\n')
+
+    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, args.stage)
+    knowledge_index = knowledge_index.to(args.device)
 
     for epoch in range(args.num_epochs):
         if args.update_freq == -1:
