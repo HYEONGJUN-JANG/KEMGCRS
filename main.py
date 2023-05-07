@@ -206,14 +206,14 @@ def main():
         # retriever.init_reranker()
         # train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
 
-        # if args.saved_model_path != '':
-        #     print('retrieval load:\t%s' % args.saved_model_path)
-        #     retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
-        # else:
-        #     args.stage = 'retrieve'
-        #     print('retrieve mode')
-        #     train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
-        #     torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_retriever_{args.stage}.pt"))  # TIME_MODELNAME 형식
+        if args.saved_model_path != '':
+            print('retrieval load:\t%s' % args.saved_model_path)
+            retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
+        else:
+            args.stage = 'retrieve'
+            print('retrieve mode')
+            train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
+            torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_retriever_{args.stage}.pt"))  # TIME_MODELNAME 형식
 
         print('rerank mode')
         args.stage = 'rerank'
