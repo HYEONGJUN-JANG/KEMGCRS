@@ -27,7 +27,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     criterion = nn.CrossEntropyLoss(reduction='none', ignore_index=0)
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
 
-    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, args.stage)
     knowledge_index = knowledge_index.to(args.device)
     eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
