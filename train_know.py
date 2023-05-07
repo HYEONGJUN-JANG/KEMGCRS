@@ -27,7 +27,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     criterion = nn.CrossEntropyLoss(reduction='none', ignore_index=0)
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
 
-    eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
     best_hit = [[], [], [], []]
     best_hit_movie = [[], [], [], []]
