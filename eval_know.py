@@ -42,8 +42,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     # knowledge_index = knowledge_index.to(args.device)
     jsonlineSave = []
     # bert_model = bert_model.to(args.device)
-    if knowledge_index is None:
-        knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+
+    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, stage='retrieve')
     knowledge_index = knowledge_index.to(args.device)
 
     if args.stage == 'rerank':

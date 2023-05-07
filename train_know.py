@@ -231,11 +231,11 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             #     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
             #     knowledge_index = knowledge_index.to(args.device)
 
-        knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, args.stage)
-        knowledge_index = knowledge_index.to(args.device)
+        # knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, args.stage)
+        # knowledge_index = knowledge_index.to(args.device)
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
-        hit1, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, knowledge_index)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+        hit1, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result = eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
         with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
             f.write("EPOCH:\t%d\n" % epoch)
