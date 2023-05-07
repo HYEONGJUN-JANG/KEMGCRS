@@ -84,7 +84,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
                 if args.stage == 'retrieve':
                     logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
-                    loss = criterion(logit, batch['pseudo_targets'][:, 0])
+                    loss = torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
                     # ### Positive sampling
                     # loss = 0
                     # for i in range(batch['pseudo_targets'].size(1)):
