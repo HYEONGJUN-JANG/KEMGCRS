@@ -165,7 +165,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         # List-wise
         candidate_knowledges = candidate_knowledges[:self.args.pseudo_pos_num]
-        candidate_confidences = candidate_confidences[:self.args.pseudo_pos_num]
+        # candidate_confidences = candidate_confidences[:self.args.pseudo_pos_num]
+        candidate_confidences = candidate_confidences[:self.args.pseudo_pos_rank]
 
         # random_idx = random.randrange(min(self.args.pseudo_pos_num, len(candidate_knowledges)))
 
