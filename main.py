@@ -199,21 +199,21 @@ def main():
         test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know')
 
         train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
-        valid_dataloader = DataLoader(test_datamodel_know, batch_size=args.batch_size, shuffle=False)
+        valid_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
         test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
 
         # print('rerank mode')
         # retriever.init_reranker()
         # train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
 
-        if args.saved_model_path != '':
-            print('retrieval load:\t%s' % args.saved_model_path)
-            retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
-        else:
-            args.stage = 'retrieve'
-            print('retrieve mode')
-            train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
-            torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_retriever_{args.stage}.pt"))  # TIME_MODELNAME 형식
+        # if args.saved_model_path != '':
+        #     print('retrieval load:\t%s' % args.saved_model_path)
+        #     retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
+        # else:
+        #     args.stage = 'retrieve'
+        #     print('retrieve mode')
+        #     train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
+        #     torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_retriever_{args.stage}.pt"))  # TIME_MODELNAME 형식
 
         if args.stage == 'rerank':
             print('rerank mode')

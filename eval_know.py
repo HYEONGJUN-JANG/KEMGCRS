@@ -26,6 +26,7 @@ def knowledge_reindexing(args, knowledge_data, retriever, stage):
             knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
         elif stage == 'rerank':
             knowledge_emb = retriever.rerank_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
+           # logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
 
         # knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state  # [B, d]
         # knowledge_emb = torch.sum(knowledge_emb * attention_mask.unsqueeze(-1), dim=1) / (torch.sum(attention_mask, dim=1, keepdim=True) + 1e-20)  # [B, d]
@@ -46,9 +47,9 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, stage='retrieve')
     knowledge_index = knowledge_index.to(args.device)
 
-    if args.stage == 'rerank':
-        knowledge_index_rerank = knowledge_reindexing(args, knowledge_data, retriever, stage='rerank')
-        knowledge_index_rerank = knowledge_index_rerank.to(args.device)
+    # if args.stage == 'rerank':
+    #     knowledge_index_rerank = knowledge_reindexing(args, knowledge_data, retriever, stage='rerank')
+    #     knowledge_index_rerank = knowledge_index_rerank.to(args.device)
 
     goal_list = ['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A', 'Chat about stars']
     hit1_goal, hit5_goal, hit10_goal, hit20_goal = defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
@@ -73,11 +74,16 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, batch['type'])
 
         if args.stage == 'rerank':
-            if args.stage2_test:
-                candidate_indice = batch['candidate_indice']
-            else:
-                candidate_indice = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
-            dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index_rerank[candidate_indice])
+
+            candidate_indice = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
+            # dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index_rerank[candidate_indice])
+            candidate_knowledge_text = [args.knowledgeDB[idx] for idx in candidate_indice[0]]
+            candidate_knowledge = tokenizer(candidate_knowledge_text, truncation=True, padding='max_length', max_length=args.max_length)
+            candidate_knowledge_token = candidate_knowledge.input_ids
+            candidate_knowledge_mask = candidate_knowledge.attention_mask
+            candidate_knowledge_token = torch.LongTensor(candidate_knowledge_token).to(args.device).unsqueeze(0)
+            candidate_knowledge_mask = torch.LongTensor(candidate_knowledge_mask).to(args.device).unsqueeze(0)
+            dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
 
         if write:
             top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
