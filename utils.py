@@ -3,6 +3,7 @@ import pickle
 import os
 from datetime import datetime
 from pytz import timezone
+import numpy as np
 
 
 def get_time_kst(): return datetime.now(timezone('Asia/Seoul')).strftime('%Y-%m-%d_%H%M%S')
@@ -69,7 +70,6 @@ def parseargs():
     parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate')
     parser.add_argument('--loss_bpr', type=float, default=0.0, help='Learning rate')
 
-
     parser.add_argument('--hidden_size', default=768, type=int, help="hidden size")
     parser.add_argument('--num_epochs', default=10, type=int, help="Number of epoch")
     parser.add_argument("--output_dir", default='output', type=str, help="The output directory where the model predictions and checkpoints will be written.")
@@ -135,13 +135,21 @@ def save_json(args, filename, saved_jsonlines):
         saved_jsonlines: Key-value dictionary ( goal_type(str), topic(str), tf(str), dialog(str), target(str), response(str) predict5(list)
     Returns: None
     '''
+    correct_ranking = [0] * args.know_topk
+    cnt = [0]
 
     def json2txt(saved_jsonlines: list) -> list:
         txtlines = []
         for js in saved_jsonlines:  # TODO: Movie recommendation, Food recommendation, POI recommendation, Music recommendation, Q&A, Chat about stars
             goal, topic, tf, dialog, targetkg, resp, pred5, score5 = js['goal_type'], js['topic'], js['tf'], js['dialog'], js['target'], js['response'], js["predict5"], js['score5']
-            if goal == 'Movie recommendation' or goal=='POI recommendation' or goal=='Music recommendation' or goal=='Q&A' or goal=='Chat about stars':
-                pred_text = ["%s(%.4f)" % (p, s)for p, s in zip(pred5, list(score5))]
+            if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
+                bm_ranking = np.argsort(score5)[::-1]
+                for idx in range(len(bm_ranking)):
+                    if idx == bm_ranking[idx]:
+                        correct_ranking[idx] += 1
+                cnt[0] += 1
+
+                pred_text = ["%s(%.4f)" % (p, s) for p, s in zip(pred5, list(score5))]
                 pred_txt = "\n".join(pred_text)
                 txt = f"\n---------------------------\n[Goal]: {goal}\t[Topic]: {topic}\t[TF]: {tf}\n[Target Know_text]: {targetkg}\n[PRED_KnowText]\n{pred_txt}\n[Dialog]\n"
                 for i in dialog.replace("user :", '|user :').replace("system :", "|system : ").split('|'):
@@ -157,13 +165,16 @@ def save_json(args, filename, saved_jsonlines):
     with open(file, 'w', encoding='utf-8') as f:
         for i in range(len(txts)):
             f.write(txts[i])
+    print(1.0 * correct_ranking / cnt)
 
 
 def checkGPU(args, logger=None):
     import torch.cuda
     logger.info('Memory Usage on {}'.format(torch.cuda.get_device_name(device=args.device)))
-    logger.info('Allocated: {} GB'.format(round(torch.cuda.memory_allocated(device=args.device)/1024**3,1)))
-    logger.info('Cached:   {} GB'.format(round(torch.cuda.memory_cached(device=args.device)/1024**3,1)))
+    logger.info('Allocated: {} GB'.format(round(torch.cuda.memory_allocated(device=args.device) / 1024 ** 3, 1)))
+    logger.info('Cached:   {} GB'.format(round(torch.cuda.memory_cached(device=args.device) / 1024 ** 3, 1)))
     return False
+
+
 if __name__ == "__main__":
     parseargs()
