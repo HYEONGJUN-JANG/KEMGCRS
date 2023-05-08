@@ -99,6 +99,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             bm_scores = args.bm25.get_scores(bm_tokenizer(query, tokenizer))
             retrieved_knowledge_score = bm_scores[top_candidate[0].cpu().numpy()]
             jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': target_knowledge_text, 'response': response, "predict5": retrieved_knowledge_text, "score5": retrieved_knowledge_score})
+            save_json(args, f"{args.time}_{args.model_name}_inout", jsonlineSave)
 
         for idx, (score, target, goal) in enumerate(zip(dot_score, target_knowledge_idx, type_idx)):
             # goal = args.goalDic['int'][int(goal_idx)]

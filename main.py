@@ -18,7 +18,7 @@ from eval_know import eval_know, knowledge_reindexing
 from train_know import train_know
 from utils import *
 from models import *
-from data_util import readDic, dataset_reader, process_augment_sample
+from data_util import readDic, dataset_reader, process_augment_sample, bm_tokenizer
 from train_goal_topic import topic_eval
 from rank_bm25 import BM25Okapi
 
@@ -85,6 +85,11 @@ def main():
     args.topic_num = len(topicDic['int'])
     args.goal_num = len(goalDic['int'])
 
+    bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
+    tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
+    tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
+    bert_model.resize_token_embeddings(len(tokenizer))
+    args.hidden_size = bert_model.config.hidden_size  # BERT large 쓸 때 대비
     # Read knowledge DB
     # train_knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'train_knowledge_DB.pickle'))  # TODO: verbalize (TH)
 
@@ -97,8 +102,12 @@ def main():
     knowledgeDB.update(valid_knowledge_base)
     knowledgeDB.update(test_knowledge_base)
     knowledgeDB = list(knowledgeDB)
-    args.bm25 = BM25Okapi(knowledgeDB)
-
+    filtered_corpus = []
+    for sentence in knowledgeDB:
+        tokenized_sentence = bm_tokenizer(sentence, tokenizer)
+        # tokenized_sentence = [word for word in tokenized_sentence if word not in stop_words]
+        filtered_corpus.append(tokenized_sentence)
+    args.bm25 = BM25Okapi(filtered_corpus)
     # knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'knowledgeDB.txt'))  # TODO: verbalize (TH)
     # knowledgeDB.insert(0, "")
     args.knowledge_num = len(knowledgeDB)
@@ -182,12 +191,6 @@ def main():
 
     if 'know' in args.task:
         # KNOWLEDGE TASk
-        bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
-        tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
-        tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
-        bert_model.resize_token_embeddings(len(tokenizer))
-        args.hidden_size = bert_model.config.hidden_size  # BERT large 쓸 때 대비
-
         retriever = Retriever(args, bert_model)
         retriever = retriever.to(args.device)
 
@@ -213,6 +216,7 @@ def main():
         # print('rerank mode')
         # retriever.init_reranker()
         # train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
+        eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
         if args.saved_model_path != '':
             print('retrieval load:\t%s' % args.saved_model_path)
