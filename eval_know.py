@@ -111,7 +111,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             # re_rank_score = retriever.knowledge_retrieve(dialog_token[idx].unsqueeze(0), dialog_mask[idx].unsqueeze(0), candidate_knowledge_token.unsqueeze(0), candidate_knowledge_mask.unsqueeze(0)).squeeze(0)  # [K]
 
             if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':  # or goal == 'Chat about stars':
-                for k in [1, 5, 10]:
+                for k in [1, 5, 10, 20]:
                     if args.stage == 'retrieve':
                         top_candidate = torch.topk(score, k=k).indices
                     elif args.stage == 'rerank':
