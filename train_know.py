@@ -161,7 +161,10 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
                 pseudo_logit = torch.gather(logit_exp, 1, batch['pseudo_targets'][:, :args.pseudo_pos_rank])
                 cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
-                denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
+                if args.train_ablation == 'learning2rank':
+                    denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
+                elif args.train_ablation == 'sampling':
+                    denominator = all_sum + 1e-10
                 loss = torch.mean(torch.sum(pseudo_mask * (-torch.log(pseudo_logit / denominator)), dim=1))
 
                 ### ListMLE2
