@@ -157,15 +157,16 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 pseudo_confidences = torch.softmax(batch['pseudo_confidences'], dim=1)[:, :args.pseudo_pos_rank]
                 pseudo_mask = pseudo_confidences > 0.1
                 pseudo_mask[:, 0] = True
+                total_num = torch.sum(pseudo_mask, dim=1)
                 logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
                 all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
                 pseudo_logit = torch.gather(logit_exp, 1, batch['pseudo_targets'][:, :args.pseudo_pos_rank])
-                cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
                 if args.train_ablation == 'learning2rank':
+                    cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
                     denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
                 elif args.train_ablation == 'sampling':
                     denominator = all_sum + 1e-10
-                loss = torch.mean(torch.sum(pseudo_mask * (-torch.log(pseudo_logit / denominator)), dim=1))
+                loss = torch.mean(torch.sum(pseudo_mask * (-torch.log(pseudo_logit / denominator)) / total_num, dim=1))
 
                 ### ListMLE2
                 # loss = 0
