@@ -99,22 +99,24 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 #                 pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
                 #         loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
 
-                ### Group-wise
-                # loss = 0
-                # know_mask = (batch['pseudo_targets'] != 0)
-                # num_know = torch.sum(know_mask, dim=1)
-                # g_logit = torch.gather(logit, 1, batch['pseudo_targets']) * know_mask
-                # g_logit = torch.sum(g_logit, dim=1) / (num_know+1e-10)
-                # # g_logit = torch.mean(torch.gather(logit, 1, batch['pseudo_targets']), dim=1)
-                # pseudo_mask = torch.zeros_like(logit)
-                # pseudo_mask[:, 0] = -1e10
-                # for j in range(batch['pseudo_targets'].size(1)):
-                #     pseudo_target = batch['pseudo_targets'][:, j]  # [B]
-                #     pseudo_mask[torch.arange(logit.size(0)), pseudo_target] = -1e10
-                # pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
-                # logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
-                # # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
-                # loss += (-torch.log_softmax(logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
+                ### Group-wise + Seq
+                loss = 0
+                for idx in range(batch['pseudo_targets'].size(1)):
+                    pseudo_targets = batch['pseudo_targets'][:, :idx + 1]
+                    know_mask = (pseudo_targets != 0)
+                    num_know = torch.sum(know_mask, dim=1)
+                    g_logit = torch.gather(logit, 1, pseudo_targets) * know_mask
+                    g_logit = torch.sum(g_logit, dim=1) / (num_know + 1e-10)
+                    # g_logit = torch.mean(torch.gather(logit, 1, batch['pseudo_targets']), dim=1)
+                    pseudo_mask = torch.zeros_like(logit)
+                    pseudo_mask[:, 0] = -1e10
+                    for j in range(pseudo_targets.size(1)):
+                        pseudo_target = pseudo_targets[:, j]  # [B]
+                        pseudo_mask[torch.arange(logit.size(0)), pseudo_target] = -1e10
+                    pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
+                    g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
+                    # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
+                    loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
                 ### ListNet
                 # pseudo_mask = torch.zeros_like(logit)
@@ -150,14 +152,14 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # logit = logit + pseudo_mask
 
                 ### ListMLE
-                loss = 0
-                for idx in range(batch['pseudo_targets'].size(1)):
-                    logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
-                    pseudo_logit = torch.gather(logit_exp, 1, batch['pseudo_targets'][:, :idx + 1])
-                    all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
-                    cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
-                    denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
-                    loss += torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
+                # loss = 0
+                # for idx in range(batch['pseudo_targets'].size(1)):
+                logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
+                pseudo_logit = torch.gather(logit_exp, 1, batch['pseudo_targets'])
+                all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
+                cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
+                denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
+                loss += torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
 
                 ### ListMLE2
                 # loss = 0
