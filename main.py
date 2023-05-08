@@ -211,7 +211,7 @@ def main():
 
         train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
         valid_dataloader = DataLoader(test_datamodel_know, batch_size=args.batch_size, shuffle=False)
-        test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
+        test_dataloader = DataLoader(train_datamodel_know, batch_size=1, shuffle=False)
 
         # print('rerank mode')
         # retriever.init_reranker()
