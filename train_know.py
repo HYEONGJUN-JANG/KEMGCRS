@@ -166,7 +166,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
                 elif args.train_ablation == 'sampling':
                     denominator = all_sum + 1e-10
-                loss = torch.mean(torch.sum(pseudo_mask * (-torch.log(pseudo_logit / denominator)), dim=1) / total_num)
+                loss = torch.mean(torch.sum(pseudo_mask * (-torch.log(pseudo_logit / denominator)), dim=1) * pseudo_confidences)
 
                 ### ListMLE2
                 # loss = 0
