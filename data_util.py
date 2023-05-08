@@ -155,7 +155,7 @@ def dataset_reader(args, data_name='train'):
             pseudo_confidence_seq = []
             for idx, know_conf_list in enumerate(know_candidates):
                 positive_candidates = [know[0] for know in know_conf_list]
-                positive_candidates = [' '.join(candidate) for candidate in positive_candidates]
+                positive_candidates = [convert_know(candidate) for candidate in positive_candidates]
                 conf_list = [know[1] for know in know_conf_list]
                 pseudo_knowledge_seq.append(positive_candidates)
                 pseudo_confidence_seq.append(conf_list)
