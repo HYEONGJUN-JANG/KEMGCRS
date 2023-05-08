@@ -165,7 +165,7 @@ def save_json(args, filename, saved_jsonlines):
     with open(file, 'w', encoding='utf-8') as f:
         for i in range(len(txts)):
             f.write(txts[i])
-    print(correct_ranking / cnt)
+    print(correct_ranking / cnt[0])
 
 
 def checkGPU(args, logger=None):
