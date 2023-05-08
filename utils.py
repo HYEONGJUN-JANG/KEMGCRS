@@ -135,7 +135,7 @@ def save_json(args, filename, saved_jsonlines):
         saved_jsonlines: Key-value dictionary ( goal_type(str), topic(str), tf(str), dialog(str), target(str), response(str) predict5(list)
     Returns: None
     '''
-    correct_ranking = np.arrany([0.0] * args.know_topk)
+    correct_ranking = np.array([0.0] * args.know_topk)
     cnt = [0.0]
 
     def json2txt(saved_jsonlines: list) -> list:
