@@ -4,10 +4,12 @@ import os
 import torch
 from collections import defaultdict
 import random
+from datetime import datetime
 
 from torch.nn.utils.rnn import pad_sequence
 from tqdm import tqdm
 import numpy as np
+
 
 def readDic(filename, out=None):
     output_idx_str = dict()
@@ -81,6 +83,24 @@ def softmax(x):
     return e_x / e_x.sum(axis=0)  # only difference
 
 
+def convert_know(know):
+    if len(know) == 0:
+        return ''
+    if know[1] == 'Sings':
+        know = ' '.join([know[0], 'singer', know[2]])
+    elif know[1] == 'Stars':
+        know = ' '.join([know[0], 'star', know[2]])
+    elif know[1] == 'Intro':
+        know = ' '.join([know[0], 'is', know[2]])
+    elif know[1] == 'Comments':
+        know = ' '.join([know[0], 'is known', know[2]])
+    elif know[1] == 'Birthday':
+        know = ' '.join([know[0], know[1], datetime.strptime(know[2].replace(' ', ''), '%Y-%m-%d').strftime('%Y %B %dth')])
+    else:
+        know = ' '.join(know)
+    return know
+
+
 def process_augment_sample(raw_data, tokenizer, knowledgeDB):
     train_sample = []
     if tokenizer.eos_token is not None:
@@ -100,7 +120,7 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
                 # prob = prob[:len(conversation['pseudo_knowledge_seq'][i])]
 
                 # for pseudo_idx, pseudo_label in enumerate(conversation['pseudo_knowledge_seq'][i]):
-                    # if pseudo_idx < 5:
+                # if pseudo_idx < 5:
                 flatten_dialog = ''.join(augmented_dialog)
                 train_sample.append({'dialog': flatten_dialog,
                                      'user_profile': conversation['user_profile'],
@@ -117,6 +137,7 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
 
 
 def dataset_reader(args, data_name='train'):
+    all_knowledge = set()
     conversation_sample = []
     data_path = os.path.join(args.data_dir, f"en_{data_name}_know_cand_score.txt")
     with open(data_path, 'r', encoding='UTF-8') as f:
@@ -142,7 +163,8 @@ def dataset_reader(args, data_name='train'):
                 #     positive_candidates_list[idx] = [' '.join(candidate) for candidate in positive_candidates]
                 #     # positive_candidates_list[idx] = [args.knowledgeDB.index(candidate) for candidate in positive_candidates]
 
-            knowledge_seq = [' '.join(know) for know in knowledge_seq]
+            knowledge_seq = [convert_know(know) for know in knowledge_seq]
+            all_knowledge.update(knowledge_seq)
             # pseudo_knowledge_seq = [' '.join(know) for know in pseudo_knowledge_seq]
 
             user_profile = user_profile_setting(dialog['user_profile'])
@@ -163,4 +185,4 @@ def dataset_reader(args, data_name='train'):
                 'pseudo_confidence_seq': pseudo_confidence_seq
             })
 
-    return conversation_sample
+    return conversation_sample, list(all_knowledge)

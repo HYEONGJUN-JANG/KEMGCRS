@@ -86,17 +86,22 @@ def main():
 
     # Read knowledge DB
     # train_knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'train_knowledge_DB.pickle'))  # TODO: verbalize (TH)
-    knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'knowledgeDB.txt'))  # TODO: verbalize (TH)
-    knowledgeDB.insert(0, "")
+
+    train_dataset_raw, train_knowledge_base = dataset_reader(args, 'train')
+    test_dataset_raw, valid_knowledge_base = dataset_reader(args, 'test')
+    valid_dataset_raw, test_knowledge_base = dataset_reader(args, 'dev')
+
+    knowledgeDB = set()
+    knowledgeDB.update(train_knowledge_base)
+    knowledgeDB.update(valid_knowledge_base)
+    knowledgeDB.update(test_knowledge_base)
+    knowledgeDB = list(knowledgeDB)
+    # knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'knowledgeDB.txt'))  # TODO: verbalize (TH)
+    # knowledgeDB.insert(0, "")
     args.knowledge_num = len(knowledgeDB)
     args.knowledgeDB = knowledgeDB
 
-    train_dataset_raw = dataset_reader(args, 'train')
-    test_dataset_raw = dataset_reader(args, 'test')
-    valid_dataset_raw = dataset_reader(args, 'dev')
-
     if 'resp' in args.task:
-
         # config = GPT2Config.from_pretrained(args.bert_name, max_length=args.max_gen_length+args.max_length)
         gpt_model = GPT2LMHeadModel.from_pretrained(args.gpt_name, cache_dir=os.path.join("cache", args.gpt_name))
         tokenizer = AutoTokenizer.from_pretrained(args.gpt_name)
@@ -212,7 +217,7 @@ def main():
         else:
             args.stage = 'retrieve'
             print('retrieve mode')
-            train_know(args, train_dataloader, train_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
+            train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
             torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_retriever_{args.stage}.pt"))  # TIME_MODELNAME 형식
 
         if args.stage == 'rerank':
