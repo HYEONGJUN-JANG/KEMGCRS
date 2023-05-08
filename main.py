@@ -224,6 +224,9 @@ def main():
         else:
             args.stage = 'retrieve'
             print('retrieve mode')
+            args.pseudo_pos_num = 1
+            train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
+            args.pseudo_pos_num = 2
             train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
             torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_retriever_{args.stage}.pt"))  # TIME_MODELNAME 형식
 
