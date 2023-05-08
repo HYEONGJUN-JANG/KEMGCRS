@@ -9,6 +9,9 @@ from datetime import datetime
 from torch.nn.utils.rnn import pad_sequence
 from tqdm import tqdm
 import numpy as np
+from nltk.corpus import stopwords
+
+stop_words = set(stopwords.words('english'))
 
 
 def readDic(filename, out=None):
@@ -99,6 +102,23 @@ def convert_know(know):
     else:
         know = ' '.join(know)
     return know
+
+
+def bm_tokenizer(text, tokenizer):
+    # # 특정 구문을 임시 토큰으로 대체
+    # for phrase in phrase_list:
+    #     text = text.replace(phrase, phrase.replace(' ', '_'))
+    #
+    # # 기본 NLTK tokenizer를 사용하여 텍스트를 토큰화
+    # tokens = nltk.word_tokenize(text)
+    #
+    # # 임시 토큰을 원래 구문으로 되돌리기
+    # for i, token in enumerate(tokens):
+    #     tokens[i] = token.replace('_', ' ')
+    text = " ".join([word for word in text.split() if word not in stop_words])
+    tokens = tokenizer.encode(text)[1:-1]
+
+    return tokens
 
 
 def process_augment_sample(raw_data, tokenizer, knowledgeDB):

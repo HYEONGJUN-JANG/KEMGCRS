@@ -20,6 +20,7 @@ from utils import *
 from models import *
 from data_util import readDic, dataset_reader, process_augment_sample
 from train_goal_topic import topic_eval
+from rank_bm25 import BM25Okapi
 
 
 # def train_knowledge_indexing(args, knowledge_data, retriever, optimizer):
@@ -53,7 +54,7 @@ def split_validation(train_dataset_raw, idx=0):
     sidx = np.arange(len(train_dataset_raw))
     # np.random.shuffle(sidx)
     bin = int(np.round(len(train_dataset_raw) * 0.2))
-    valid_dataset = train_dataset_raw[bin * idx : bin * (idx + 1)]
+    valid_dataset = train_dataset_raw[bin * idx: bin * (idx + 1)]
     # valid_dataset = train_dataset_raw[n_train:]
     train_dataset = train_dataset_raw[:bin * idx] + train_dataset_raw[bin * (idx + 1):]
     return train_dataset, valid_dataset
@@ -96,6 +97,8 @@ def main():
     knowledgeDB.update(valid_knowledge_base)
     knowledgeDB.update(test_knowledge_base)
     knowledgeDB = list(knowledgeDB)
+    args.bm25 = BM25Okapi(knowledgeDB)
+
     # knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'knowledgeDB.txt'))  # TODO: verbalize (TH)
     # knowledgeDB.insert(0, "")
     args.knowledge_num = len(knowledgeDB)
@@ -225,8 +228,7 @@ def main():
             args.stage = 'rerank'
             # retriever.init_reranker()
             train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
-
-        # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+        eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
 if __name__ == "__main__":

@@ -41,7 +41,7 @@ def parseargs():
     parser.add_argument('--tau', type=float, default=1.0, help='Learning rate')
     parser.add_argument('--bin', type=int, default=0, help='bin')
     parser.add_argument('--negative_num', default=0, type=int, help="negative_num")
-    parser.add_argument('--stage', default='rerank', type=str, choices=['retrieve', 'rerank'])
+    parser.add_argument('--stage', default='retrieve', type=str, choices=['retrieve', 'rerank'])
     parser.add_argument("--stage2_test", action='store_true', help="Whether to Fine-tune on type.")
 
     parser.add_argument('--update_freq', default=-1, type=int, help="update_freq")
@@ -139,9 +139,10 @@ def save_json(args, filename, saved_jsonlines):
     def json2txt(saved_jsonlines: list) -> list:
         txtlines = []
         for js in saved_jsonlines:  # TODO: Movie recommendation, Food recommendation, POI recommendation, Music recommendation, Q&A, Chat about stars
-            goal, topic, tf, dialog, targetkg, resp, pred5 = js['goal_type'], js['topic'], js['tf'], js['dialog'], js['target'], js['response'], js["predict5"]
+            goal, topic, tf, dialog, targetkg, resp, pred5, score5 = js['goal_type'], js['topic'], js['tf'], js['dialog'], js['target'], js['response'], js["predict5"], js['score5']
             if goal == 'Movie recommendation' or goal=='POI recommendation' or goal=='Music recommendation' or goal=='Q&A' or goal=='Chat about stars':
-                pred_txt = "\n".join(pred5)
+                pred_text = ["%s(%.4f)" % (p, s)for p, s in zip(pred5, list(score5))]
+                pred_txt = "\n".join(pred_text)
                 txt = f"\n---------------------------\n[Goal]: {goal}\t[Topic]: {topic}\t[TF]: {tf}\n[Target Know_text]: {targetkg}\n[PRED_KnowText]\n{pred_txt}\n[Dialog]\n"
                 for i in dialog.replace("user :", '|user :').replace("system :", "|system : ").split('|'):
                     txt += f"{i}\n"
@@ -154,7 +155,7 @@ def save_json(args, filename, saved_jsonlines):
     file = f'{path}/{filename}.txt'
     txts = json2txt(saved_jsonlines)
     with open(file, 'w', encoding='utf-8') as f:
-        for i in range(len(txts)): # TODO: 왜 5000개? (TJ)
+        for i in range(len(txts)):
             f.write(txts[i])
 
 

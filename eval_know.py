@@ -3,6 +3,8 @@ from collections import defaultdict
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+
+from data_util import bm_tokenizer
 from utils import write_pkl, save_json
 import numpy as np
 
@@ -93,8 +95,10 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             correct = target_knowledge_idx in top_candidate
 
             response = '||'.join(tokenizer.batch_decode(response, skip_special_tokens=True))
-
-            jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': target_knowledge_text, 'response': response, "predict5": retrieved_knowledge_text})
+            query = topic_idx[0] + "|" + response
+            bm_scores = args.bm25.get_scores(bm_tokenizer(query, tokenizer))
+            retrieved_knowledge_score = bm_scores[top_candidate[0].cpu().numpy()]
+            jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': target_knowledge_text, 'response': response, "predict5": retrieved_knowledge_text, "score5": retrieved_knowledge_score})
 
         for idx, (score, target, goal) in enumerate(zip(dot_score, target_knowledge_idx, type_idx)):
             # goal = args.goalDic['int'][int(goal_idx)]
