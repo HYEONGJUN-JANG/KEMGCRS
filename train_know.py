@@ -154,12 +154,13 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 ### ListMLE
                 # loss = 0
                 # for idx in range(batch['pseudo_targets'].size(1)):
-                logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
-                pseudo_logit = torch.gather(logit_exp, 1, batch['pseudo_targets'])
-                all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
-                cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
-                denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
-                loss += torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
+
+                # logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
+                # pseudo_logit = torch.gather(logit_exp, 1, batch['pseudo_targets'])
+                # all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
+                # cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
+                # denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
+                # loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
 
                 ### ListMLE2
                 # loss = 0
