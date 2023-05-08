@@ -135,8 +135,8 @@ def save_json(args, filename, saved_jsonlines):
         saved_jsonlines: Key-value dictionary ( goal_type(str), topic(str), tf(str), dialog(str), target(str), response(str) predict5(list)
     Returns: None
     '''
-    correct_ranking = [0] * args.know_topk
-    cnt = [0]
+    correct_ranking = [0.0] * args.know_topk
+    cnt = [0.0]
 
     def json2txt(saved_jsonlines: list) -> list:
         txtlines = []
@@ -165,7 +165,7 @@ def save_json(args, filename, saved_jsonlines):
     with open(file, 'w', encoding='utf-8') as f:
         for i in range(len(txts)):
             f.write(txts[i])
-    print(1.0 * correct_ranking / cnt)
+    print(correct_ranking / cnt)
 
 
 def checkGPU(args, logger=None):
