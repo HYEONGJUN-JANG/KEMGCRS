@@ -76,7 +76,7 @@ def main():
     logging.basicConfig(level=logging.DEBUG, filename=os.path.join(args.log_dir, f'{args.time}_{args.log_name + "_"}log.txt'), filemode='a', format='%(asctime)s: %(levelname)s: %(message)s', datefmt='%Y/%m/%d_%p_%I:%M:%S ')
     logging.info('Commend: {}'.format(', '.join(map(str, sys.argv))))
     # Model cached load
-    checkPath(os.path.join("cache", args.bert_name))
+    # checkPath(os.path.join("cache", args.bert_name))
 
     topicDic = readDic(os.path.join(args.data_dir, "topic2id.txt"))
     goalDic = readDic(os.path.join(args.data_dir, "goal2id.txt"))
@@ -84,13 +84,6 @@ def main():
     args.goalDic = goalDic
     args.topic_num = len(topicDic['int'])
     args.goal_num = len(goalDic['int'])
-
-    bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
-    bert_config = AutoConfig.from_pretrained(args.bert_name)
-    tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
-    tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
-    bert_model.resize_token_embeddings(len(tokenizer))
-    args.hidden_size = bert_model.config.hidden_size  # BERT large 쓸 때 대비
 
     # modules = [bert_model.encoder.layer[:bert_config.num_hidden_layers - 2], bert_model.embeddings]
     # for module in modules:
@@ -108,12 +101,14 @@ def main():
     knowledgeDB.update(valid_knowledge_base)
     knowledgeDB.update(test_knowledge_base)
     knowledgeDB = list(knowledgeDB)
-    filtered_corpus = []
-    for sentence in knowledgeDB:
-        tokenized_sentence = bm_tokenizer(sentence, tokenizer)
-        # tokenized_sentence = [word for word in tokenized_sentence if word not in stop_words]
-        filtered_corpus.append(tokenized_sentence)
-    args.bm25 = BM25Okapi(filtered_corpus)
+
+    # filtered_corpus = []
+    # for sentence in knowledgeDB:
+    #     tokenized_sentence = bm_tokenizer(sentence, tokenizer)
+    #     # tokenized_sentence = [word for word in tokenized_sentence if word not in stop_words]
+    #     filtered_corpus.append(tokenized_sentence)
+    # args.bm25 = BM25Okapi(filtered_corpus)
+
     # knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'knowledgeDB.txt'))  # TODO: verbalize (TH)
     # knowledgeDB.insert(0, "")
     args.knowledge_num = len(knowledgeDB)
@@ -196,6 +191,14 @@ def main():
             generator.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
 
     if 'know' in args.task:
+        # bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
+        bert_model = AutoModel.from_pretrained(args.bert_name)
+
+        bert_config = AutoConfig.from_pretrained(args.bert_name)
+        tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
+        tokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
+        bert_model.resize_token_embeddings(len(tokenizer))
+        args.hidden_size = bert_model.config.hidden_size  # BERT large 쓸 때 대비
         # KNOWLEDGE TASk
         retriever = Retriever(args, bert_model)
         retriever = retriever.to(args.device)
