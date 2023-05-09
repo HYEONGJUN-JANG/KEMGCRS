@@ -28,6 +28,9 @@ class Retriever(nn.Module):
     def init_reranker(self):
         self.rerank_bert = copy.deepcopy(self.query_bert)
 
+    def init_know_proj(self, weights):
+        self.know_proj.weight = nn.Parameter(weights, requires_grad=True)
+
     def forward(self, token_seq, mask):
         dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         return dialog_emb
@@ -48,13 +51,15 @@ class Retriever(nn.Module):
         # dialog_emb = torch.sum(dialog_emb * mask.unsqueeze(-1), dim=1) / (torch.sum(mask, dim=1, keepdim=True) + 1e-20)  # [B, d]
 
         # dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
-        if self.args.type_aware:
-            type_emb = self.goal_embedding(type_idx)  # [B, d]
-            dot_score = torch.matmul(dialog_emb + type_emb, knowledge_index.transpose(1, 0))  # [B, N]
-        else:
-            # dialog_emb = dialog_emb / (torch.norm(dialog_emb, dim=1, keepdim=True)+1e-10)
-            # knowledge_index = knowledge_index / (torch.norm(knowledge_index, dim=1, keepdim=True)+1e-10)
-            dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
+        # if self.args.type_aware:
+        #     type_emb = self.goal_embedding(type_idx)  # [B, d]
+        #     dot_score = torch.matmul(dialog_emb + type_emb, knowledge_index.transpose(1, 0))  # [B, N]
+        # else:
+        #     # dialog_emb = dialog_emb / (torch.norm(dialog_emb, dim=1, keepdim=True)+1e-10)
+        #     # knowledge_index = knowledge_index / (torch.norm(knowledge_index, dim=1, keepdim=True)+1e-10)
+        #     dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
+
+        dot_score = self.know_proj(dialog_emb)
         return dot_score
 
     def compute_know_score_candidate(self, token_seq, mask, knowledge_index):

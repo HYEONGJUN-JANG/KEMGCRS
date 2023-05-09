@@ -92,10 +92,10 @@ def main():
     bert_model.resize_token_embeddings(len(tokenizer))
     args.hidden_size = bert_model.config.hidden_size  # BERT large 쓸 때 대비
 
-    modules = [bert_model.encoder.layer[:bert_config.num_hidden_layers - 2], bert_model.embeddings]
-    for module in modules:
-        for param in module.parameters():
-            param.requires_grad = False
+    # modules = [bert_model.encoder.layer[:bert_config.num_hidden_layers - 2], bert_model.embeddings]
+    # for module in modules:
+    #     for param in module.parameters():
+    #         param.requires_grad = False
     # Read knowledge DB
     # train_knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'train_knowledge_DB.pickle'))  # TODO: verbalize (TH)
 
