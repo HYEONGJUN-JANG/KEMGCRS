@@ -29,7 +29,7 @@ class Retriever(nn.Module):
         self.rerank_bert = copy.deepcopy(self.query_bert)
 
     def init_know_proj(self, weights):
-        self.know_proj.weight = nn.Parameter(weights, requires_grad=True)
+        self.know_proj.weight = nn.Parameter(weights, requires_grad=False)
 
     def forward(self, token_seq, mask):
         dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]

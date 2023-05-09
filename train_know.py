@@ -246,6 +246,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
         knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, args.stage)
         knowledge_index = knowledge_index.to(args.device)
+        retriever.init_know_proj(knowledge_index)
 
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
