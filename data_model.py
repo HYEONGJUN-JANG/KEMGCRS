@@ -195,7 +195,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # candidate_confidences = candidate_confidences + [0] * (self.args.pseudo_pos_num - len(candidate_confidences))
 
         ### Grouping
-        group_num = min(self.args.pseudo_pos_rank, len(candidate_knowledges))
+        group_num = min(self.args.pseudo_pos_rank, len(candidate_knowledges))-1
         random_idx = sorted(random.sample(list(range(1, len(candidate_knowledges))), k=group_num))
         candidate_knowledges = [candidate_knowledges[0]]+[candidate_knowledges[idx] for idx in random_idx]
         candidate_confidences = [candidate_confidences[0]] + [candidate_confidences[idx] for idx in random_idx]

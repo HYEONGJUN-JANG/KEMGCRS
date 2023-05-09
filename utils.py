@@ -38,7 +38,7 @@ def parseargs():
     parser.add_argument("--train_ablation", default='learning2rank', type=str, help="train ablation", choices=['learning2rank', 'sampling'])
 
     parser.add_argument("--pseudo", action='store_true', help="Whether to Fine-tune on type.")
-    parser.add_argument('--pseudo_pos_num', default=5, type=int, help="pseudo_pos_num")
+    parser.add_argument('--pseudo_pos_num', default=2, type=int, help="pseudo_pos_num")
     parser.add_argument('--pseudo_pos_rank', default=2, type=int, help="pseudo_pos_rank")
     parser.add_argument("--pseudo_confidence", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument('--tau', type=float, default=1.0, help='Learning rate')
