@@ -21,7 +21,7 @@ class Retriever(nn.Module):
         self.hidden_size = args.hidden_size
         self.topic_proj = nn.Linear(self.hidden_size, args.topic_num)
         self.linear_proj = nn.Linear(self.hidden_size, 1)
-        self.know_proj = nn.Linear(self.hidden_size, self.args.knowledge_num)
+        self.know_proj = nn.Linear(self.hidden_size, self.args.knowledge_num, bias=False)
         self.goal_embedding = nn.Embedding(self.args.goal_num, self.args.hidden_size)
         nn.init.normal_(self.goal_embedding.weight, 0, self.args.hidden_size ** -0.5)
 
