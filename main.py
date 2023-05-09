@@ -36,16 +36,26 @@ def main():
     # kbert: knowledge bert , qbert: query bert
     # Model cached load
     checkPath(args.bert_cache_name)
-    kencoder = AutoModel.from_pretrained(args.kencoder_name, cache_dir=args.bert_cache_name)
 
-    if args.usebart:
-        qencoder = BartForConditionalGeneration.from_pretrained(args.qencoder_name, cache_dir=args.bart_cache_name)
-        qtokenizer = AutoTokenizer.from_pretrained(args.qencoder_name)
-    else:
-        qencoder = AutoModel.from_pretrained(args.kencoder_name, cache_dir=args.bert_cache_name)
-        qtokenizer = AutoTokenizer.from_pretrained(args.kencoder_name)
+    # bert_model = AutoModel.from_pretrained(bert_direct_name)
+    # tokenizer = AutoTokenizer.from_pretrained(bert_direct_name)
+    # # TEMP
+    # if args.usebart:
+    #     qencoder = BartForConditionalGeneration.from_pretrained(args.qencoder_name, cache_dir=args.bart_cache_name)
+    #     qtokenizer = AutoTokenizer.from_pretrained(args.qencoder_name, cache_dir=args.bart_cache_name)
+    # else:
+    #     qencoder = AutoModel.from_pretrained(args.kencoder_name, cache_dir=args.bert_cache_name)
+    #     qtokenizer = AutoTokenizer.from_pretrained(args.kencoder_name, cache_dir=args.bert_cache_name)
+    # kencoder = AutoModel.from_pretrained(args.kencoder_name, cache_dir=args.bert_cache_name)
+    # ktokenizer = AutoTokenizer.from_pretrained(args.kencoder_name, cache_dir=args.bert_cache_name)
 
-    ktokenizer = AutoTokenizer.from_pretrained(args.kencoder_name)
+    bert_direct_name = os.path.join(args.home,'bert-base-uncased')
+    qencoder = AutoModel.from_pretrained(bert_direct_name)
+    kencoder = AutoModel.from_pretrained(bert_direct_name)
+    qtokenizer=AutoTokenizer.from_pretrained(bert_direct_name)
+    ktokenizer=AutoTokenizer.from_pretrained(bert_direct_name)
+
+
     qtokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
     ktokenizer.add_special_tokens(bert_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
 
@@ -111,8 +121,8 @@ def main():
             train_goal(args, train_type_DataLoader, test_type_DataLoader, retriever, qtokenizer)
 
         if args.ft_topic:
-            print(f"Fine-tune {args.task} Task")
             args.task = 'topic'
+            print(f"Fine-tune {args.task} Task")
             logging.info('Fine-tune: {} Task'.format(args.task))
             train_topic_DataModel = data_temp.DialogDataset_TEMP(args, conversation_train_sample, knowledgeDB, qtokenizer, task=args.task, mode='train')
             test_topic_DataModel = data_temp.DialogDataset_TEMP(args, conversation_test_sample, knowledgeDB, qtokenizer, task=args.task, mode='test')

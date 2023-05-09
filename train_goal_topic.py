@@ -28,6 +28,7 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
     early_stopping = EarlyStopping(args, patience=7, path=modelpath, verbose=True)
     logger.info("Train_Goal")
     gpucheck=True
+    cnt=0
     for epoch in range(args.num_epochs):
         train_epoch_loss = 0
         if args.num_epochs>1:
@@ -154,6 +155,7 @@ def train_topic(args, train_dataloader, test_dataloader, retriever, tokenizer):
     modelpath = os.path.join(args.model_dir, f"{args.task}_best_bart_model.pt") if args.usebart else os.path.join(args.model_dir, f"{args.task}_best_model.pt")
     early_stopping = EarlyStopping(args, patience=7, path=modelpath, verbose=True)
     gpucheck=True
+    cnt = 0
     for epoch in range(args.num_epochs):
         logger.info("train epoch: {}".format(epoch))
         torch.cuda.empty_cache()
