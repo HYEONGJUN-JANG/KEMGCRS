@@ -103,7 +103,7 @@ def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
     input_ids = input_ids + [0] * (max_length - len(input_ids))
     return input_ids
 
-def user_profile_setting(ufDic:dict)->str:
+def user_profile_setting(ufDic:dict) -> str:
     uf=''
     for i,key in enumerate(ufDic.keys()):
         one=ufDic[key]
