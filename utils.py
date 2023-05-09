@@ -39,11 +39,11 @@ def parseargs():
 
     parser.add_argument("--pseudo", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument('--pseudo_pos_num', default=5, type=int, help="pseudo_pos_num")
-    parser.add_argument('--pseudo_pos_rank', default=3, type=int, help="pseudo_pos_rank")
+    parser.add_argument('--pseudo_pos_rank', default=2, type=int, help="pseudo_pos_rank")
     parser.add_argument("--pseudo_confidence", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument('--tau', type=float, default=1.0, help='Learning rate')
     parser.add_argument('--bin', type=int, default=0, help='bin')
-    parser.add_argument('--negative_num', default=0, type=int, help="negative_num")
+    parser.add_argument('--negative_num', default=20, type=int, help="negative_num")
     parser.add_argument('--stage', default='retrieve', type=str, choices=['retrieve', 'rerank'])
     parser.add_argument("--stage2_test", action='store_true', help="Whether to Fine-tune on type.")
 
@@ -70,7 +70,7 @@ def parseargs():
     parser.add_argument('--max_length', default=40, type=int, help="dataset name")
     parser.add_argument('--batch_size', default=32, type=int, help="batch size")
     parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate')
-    parser.add_argument('--loss_bpr', type=float, default=0.0, help='Learning rate')
+    parser.add_argument('--loss_lamb', type=float, default=1.0, help='Learning rate')
 
     parser.add_argument('--hidden_size', default=768, type=int, help="hidden size")
     parser.add_argument('--num_epochs', default=10, type=int, help="Number of epoch")
