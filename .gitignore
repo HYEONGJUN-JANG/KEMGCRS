@@ -134,4 +134,5 @@ dmypy.json
 .idea/
 *.bin
 *.pt
-*.pkl
+*.pkl!/bert-base-uncased/
+bert-base-uncased/
