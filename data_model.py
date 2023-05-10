@@ -3,7 +3,7 @@ from collections import defaultdict
 
 import torch
 from torch.utils.data import Dataset
-
+import numpy as np
 
 def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
     truncate_size = max_length - len(prefix) - len(suffix)
@@ -164,13 +164,12 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
         # List-wise
-        if target_knowledge_idx in candidate_knowledges:
-            index = candidate_knowledges.index(target_knowledge_idx)
-            candidate_knowledges = candidate_knowledges[:index] + candidate_knowledges[index+1:]
-            candidate_confidences = candidate_confidences[:index] + candidate_confidences[index + 1:]
-
-        candidate_knowledges = [target_knowledge_idx] + candidate_knowledges
-        candidate_confidences = [100] + candidate_confidences
+        # if target_knowledge_idx in candidate_knowledges:
+        #     index = candidate_knowledges.index(target_knowledge_idx)
+        #     candidate_knowledges = candidate_knowledges[:index] + candidate_knowledges[index+1:]
+        #     candidate_confidences = candidate_confidences[:index] + candidate_confidences[index + 1:]
+        # candidate_knowledges = [target_knowledge_idx] + candidate_knowledges
+        # candidate_confidences = [100] + candidate_confidences
 
         candidate_knowledges = candidate_knowledges[:self.args.pseudo_pos_num]
         # candidate_confidences = candidate_confidences[:self.args.pseudo_pos_num]
@@ -208,7 +207,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         group_num = min(self.args.pseudo_pos_rank, len(candidate_knowledges))-1
         random_idx = sorted(random.sample(list(range(1, len(candidate_knowledges))), k=group_num))
         candidate_knowledges = [candidate_knowledges[0]]+[candidate_knowledges[idx] for idx in random_idx]
-        candidate_confidences = [candidate_confidences[0]] + [candidate_confidences[idx] for idx in random_idx]
+        # candidate_confidences = [candidate_confidences[0]] + [candidate_confidences[idx] for idx in random_idx]
+        candidate_confidences = list(np.cumprod([0.8] * len(candidate_knowledges)) / 0.8)
 
         # sampled_pair = sorted(random.sample(list(range(len(candidate_positives_idx))), k=2))
         # pseudo_positive = candidate_positives_idx[sampled_pair[0]]
