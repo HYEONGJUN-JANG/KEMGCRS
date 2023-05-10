@@ -60,12 +60,12 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         else:
             update_freq = min(len(train_dataloader), args.update_freq)
 
-        if epoch < 4:
-            args.pseudo_pos_num = 1
-            args.pseudo_pos_rank = 1
-        else:
-            args.pseudo_pos_num = 2
-            args.pseudo_pos_rank = 2
+        # if epoch < 4:
+        #     args.pseudo_pos_num = 1
+        #     args.pseudo_pos_rank = 1
+        # else:
+        #     args.pseudo_pos_num = 2
+        #     args.pseudo_pos_rank = 2
         train_epoch_loss = 0
         num_update = 0
         for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
@@ -160,24 +160,24 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # logit = logit + pseudo_mask
 
                 ### ListMLE (final)
-                logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
-                all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
-                pseudo_logit = torch.gather(logit_exp, 1, batch['pseudo_targets'])
-                if args.train_ablation == 'learning2rank':
-                    cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
-                    denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
-                elif args.train_ablation == 'sampling':
-                    denominator = all_sum + 1e-10
-                loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
-
-                ### ListMLE (sampling)
-                # logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
                 # logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
                 # all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
-                # pseudo_logit = logit_exp[:, :args.pseudo_pos_rank]
-                # cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
-                # denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
+                # pseudo_logit = torch.gather(logit_exp, 1, batch['pseudo_targets'])
+                # if args.train_ablation == 'learning2rank':
+                #     cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
+                #     denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
+                # elif args.train_ablation == 'sampling':
+                #     denominator = all_sum + 1e-10
                 # loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
+
+                ### ListMLE (sampling)
+                logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
+                logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
+                all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
+                pseudo_logit = logit_exp[:, :args.pseudo_pos_rank]
+                cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
+                denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
+                loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
 
                 ### ListMLE2
                 # loss_list = []
