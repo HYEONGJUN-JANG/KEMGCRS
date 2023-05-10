@@ -168,7 +168,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
                 elif args.train_ablation == 'sampling':
                     denominator = all_sum + 1e-10
-                loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
+                pseudo_confidences = batch['pseudo_confidences'][:, :args.pseudo_pos_rank]
+                loss = torch.mean(torch.sum(-pseudo_confidences * torch.log(pseudo_logit / denominator), dim=1))
 
                 ### ListMLE (sampling)
                 # logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
