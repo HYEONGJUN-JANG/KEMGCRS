@@ -194,6 +194,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # candidate_knowledges = candidate_knowledges + [0] * (self.args.pseudo_pos_num - len(candidate_knowledges))
         # candidate_confidences = candidate_confidences + [0] * (self.args.pseudo_pos_num - len(candidate_confidences))
 
+        pseudo_negative = self.negative_sampler(candidate_knowledges)
+
         ### Grouping
         group_num = min(self.args.pseudo_pos_rank, len(candidate_knowledges))-1
         random_idx = sorted(random.sample(list(range(1, len(candidate_knowledges))), k=group_num))
@@ -206,7 +208,6 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         # pseudo_positive = random.choice(candidate_positives_idx)
         # pseudo_positive = candidate_positives_idx[self.args.pseudo_pos_rank - 1]
-        pseudo_negative = self.negative_sampler(candidate_knowledges)
 
         candidate_indice = candidate_knowledges + pseudo_negative  # [candidate_positives_idx[self.args.pseudo_pos_rank]]
 
