@@ -83,9 +83,9 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
             target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
 
-            if args.know_ablation == 'target':
-                logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
-                loss = torch.mean(criterion(logit, target_knowledge_idx))  # For MLP predict
+            # if args.know_ablation == 'target':
+            logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
+            loss = torch.mean(criterion(logit, target_knowledge_idx))  # For MLP predict
 
             if args.know_ablation == 'pseudo':
                 # dialog_token = dialog_token.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
@@ -135,7 +135,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
                     pseudo_mask[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = 1
                 Qd = torch.softmax(pseudo_soft_label / args.tau, dim=1)
-                loss = torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
+                loss += torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
 
                 ### ListNet2.0
                 # if args.stage == 'rerank':
