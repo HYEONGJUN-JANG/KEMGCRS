@@ -165,12 +165,12 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
         # List-wise
-        if target_knowledge_idx in candidate_knowledges:
-            index = candidate_knowledges.index(target_knowledge_idx)
-            candidate_knowledges = candidate_knowledges[:index] + candidate_knowledges[index+1:]
-            candidate_confidences = candidate_confidences[:index] + candidate_confidences[index + 1:]
-        candidate_knowledges = [target_knowledge_idx] + candidate_knowledges
-        candidate_confidences = [100] + candidate_confidences
+        # if target_knowledge_idx in candidate_knowledges:
+        #     index = candidate_knowledges.index(target_knowledge_idx)
+        #     candidate_knowledges = candidate_knowledges[:index] + candidate_knowledges[index+1:]
+        #     candidate_confidences = candidate_confidences[:index] + candidate_confidences[index + 1:]
+        # candidate_knowledges = [target_knowledge_idx] + candidate_knowledges
+        # candidate_confidences = [100] + candidate_confidences
 
         candidate_knowledges = candidate_knowledges[:self.args.pseudo_pos_num]
         # candidate_confidences = candidate_confidences[:self.args.pseudo_pos_num]

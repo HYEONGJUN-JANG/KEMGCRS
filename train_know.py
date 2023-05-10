@@ -109,22 +109,24 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 #         loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
 
                 ### Group-wise + Seq
-                # loss = 0
-                # pseudo_targets = batch['pseudo_targets']
-                # know_mask = (pseudo_targets != 0)
-                # num_know = torch.sum(know_mask, dim=1)
-                # g_logit = torch.gather(logit, 1, pseudo_targets) * know_mask
-                # g_logit = torch.sum(g_logit, dim=1) / (num_know + 1e-10)
-                # # g_logit = torch.mean(torch.gather(logit, 1, batch['pseudo_targets']), dim=1)
-                # pseudo_mask = torch.zeros_like(logit)
-                # pseudo_mask[:, 0] = -1e10
-                # for j in range(pseudo_targets.size(1)):
-                #     pseudo_target = pseudo_targets[:, j]  # [B]
-                #     pseudo_mask[torch.arange(logit.size(0)), pseudo_target] = -1e10
-                # pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
-                # g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
-                # # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
-                # loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
+                loss = 0
+                loss += torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
+
+                pseudo_targets = batch['pseudo_targets'][:, 1:]
+                know_mask = (pseudo_targets != 0)
+                num_know = torch.sum(know_mask, dim=1)
+                g_logit = torch.gather(logit, 1, pseudo_targets) * know_mask
+                g_logit = torch.sum(g_logit, dim=1) / (num_know + 1e-10)
+                # g_logit = torch.mean(torch.gather(logit, 1, batch['pseudo_targets']), dim=1)
+                pseudo_mask = torch.zeros_like(logit)
+                pseudo_mask[:, 0] = -1e10
+                for j in range(pseudo_targets.size(1)):
+                    pseudo_target = pseudo_targets[:, j]  # [B]
+                    pseudo_mask[torch.arange(logit.size(0)), pseudo_target] = -1e10
+                pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
+                g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
+                # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
+                loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
                 ### ListNet (final)
                 # pseudo_mask = torch.zeros_like(logit)
@@ -160,16 +162,16 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # logit = logit + pseudo_mask
 
                 ### ListMLE (final)
-                logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
-                all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
-                pseudo_logit = torch.gather(logit_exp, 1, batch['pseudo_targets'])
-                if args.train_ablation == 'learning2rank':
-                    cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
-                    denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
-                elif args.train_ablation == 'sampling':
-                    denominator = all_sum + 1e-10
-                pseudo_confidences = batch['pseudo_confidences'][:, :args.pseudo_pos_rank]
-                loss = torch.mean(torch.sum(-pseudo_confidences * torch.log(pseudo_logit / denominator), dim=1))
+                # logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
+                # all_sum = torch.sum(logit_exp, dim=1, keepdim=True)  # [B, 1]
+                # pseudo_logit = torch.gather(logit_exp, 1, batch['pseudo_targets'])
+                # if args.train_ablation == 'learning2rank':
+                #     cumsum_logit = torch.cumsum(pseudo_logit, dim=1)  # [B, K]
+                #     denominator = all_sum - (cumsum_logit - pseudo_logit) + 1e-10
+                # elif args.train_ablation == 'sampling':
+                #     denominator = all_sum + 1e-10
+                # pseudo_confidences = batch['pseudo_confidences'][:, :args.pseudo_pos_rank]
+                # loss = torch.mean(torch.sum(-pseudo_confidences * torch.log(pseudo_logit / denominator), dim=1))
 
                 ### ListMLE (sampling)
                 # logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
