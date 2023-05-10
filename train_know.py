@@ -114,11 +114,11 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
                 for idx in range(batch['pseudo_targets'].size(1)):
                     pseudo_targets = batch['pseudo_targets'][:, :idx+1]
-                    know_mask = (pseudo_targets != 0)
-                    num_know = torch.sum(know_mask, dim=1)
-                    g_logit = torch.gather(logit, 1, pseudo_targets) * know_mask
-                    g_logit = torch.sum(g_logit, dim=1) / (num_know + 1e-10)
-                    # g_logit = torch.mean(torch.gather(logit, 1, batch['pseudo_targets']), dim=1)
+                    # know_mask = (pseudo_targets != 0)
+                    # num_know = torch.sum(know_mask, dim=1)
+                    # g_logit = torch.gather(logit, 1, pseudo_targets)
+                    # g_logit = torch.sum(g_logit, dim=1) / (num_know + 1e-10)
+                    g_logit = torch.mean(torch.gather(logit, 1, pseudo_targets), dim=1)
                     pseudo_mask = torch.zeros_like(logit)
                     pseudo_mask[:, 0] = -1e10
                     for j in range(pseudo_targets.size(1)):
