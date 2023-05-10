@@ -210,7 +210,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         candidate_knowledges = [candidate_knowledges[0]] + [candidate_knowledges[idx] for idx in random_idx]
         # candidate_confidences = [candidate_confidences[0]] + [candidate_confidences[idx] for idx in random_idx]
         # candidate_confidences = (np.array(candidate_confidences) - min(candidate_confidences)) / (max(candidate_confidences) - min(candidate_confidences) + 1e-10)
-        candidate_confidences = list(np.cumprod([0.9] * len(candidate_knowledges)) / 0.9)
+        candidate_confidences = list(np.cumprod([0.8] * len(candidate_knowledges)) / 0.8)
 
         # sampled_pair = sorted(random.sample(list(range(len(candidate_positives_idx))), k=2))
         # pseudo_positive = candidate_positives_idx[sampled_pair[0]]
