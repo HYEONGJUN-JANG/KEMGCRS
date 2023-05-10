@@ -5,6 +5,7 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 
+
 def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
     truncate_size = max_length - len(prefix) - len(suffix)
     # input_ids = prefix + input_ids[-truncate_size:] + suffix
@@ -204,11 +205,12 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         pseudo_negative = self.negative_sampler(candidate_knowledges)
 
         ### Grouping
-        group_num = min(self.args.pseudo_pos_rank, len(candidate_knowledges))-1
+        group_num = min(self.args.pseudo_pos_rank, len(candidate_knowledges)) - 1
         random_idx = sorted(random.sample(list(range(1, len(candidate_knowledges))), k=group_num))
-        candidate_knowledges = [candidate_knowledges[0]]+[candidate_knowledges[idx] for idx in random_idx]
+        candidate_knowledges = [candidate_knowledges[0]] + [candidate_knowledges[idx] for idx in random_idx]
         # candidate_confidences = [candidate_confidences[0]] + [candidate_confidences[idx] for idx in random_idx]
-        candidate_confidences = list(np.cumprod([0.5] * len(candidate_knowledges)) / 0.5)
+        # candidate_confidences = (np.array(candidate_confidences) - min(candidate_confidences)) / (max(candidate_confidences) - min(candidate_confidences) + 1e-10)
+        candidate_confidences = list(np.cumprod([0.9] * len(candidate_knowledges)) / 0.9)
 
         # sampled_pair = sorted(random.sample(list(range(len(candidate_positives_idx))), k=2))
         # pseudo_positive = candidate_positives_idx[sampled_pair[0]]
@@ -229,7 +231,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['candidate_knowledge_mask'] = candidate_knowledge_mask
 
         context_batch['pseudo_targets'] = candidate_knowledges  # [candidate_knowledges[0]]
-        context_batch['pseudo_confidences'] = candidate_confidences + [-1e10] * (self.args.knowledge_num-len(candidate_confidences))
+        context_batch['pseudo_confidences'] = candidate_confidences + [-1e10] * (self.args.knowledge_num - len(candidate_confidences))
 
         context_batch['target_knowledge'] = target_knowledge_idx  # target_knowledge_idx  # candidate_knowledges[0]
 
