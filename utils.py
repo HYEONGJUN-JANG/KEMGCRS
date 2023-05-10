@@ -71,6 +71,8 @@ def parseargs():
     parser.add_argument('--batch_size', default=32, type=int, help="batch size")
     parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate')
     parser.add_argument('--loss_lamb', type=float, default=1.0, help='Learning rate')
+    parser.add_argument('--lr_dc_step', type=int, default=4, help='warmup_step')
+    parser.add_argument('--lr_dc', type=float, default=0.1, help='warmup_gamma')
 
     parser.add_argument('--hidden_size', default=768, type=int, help="hidden size")
     parser.add_argument('--num_epochs', default=10, type=int, help="Number of epoch")

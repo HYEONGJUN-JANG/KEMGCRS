@@ -26,6 +26,7 @@ def update_key_bert(key_bert, query_bert):
 def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer):
     criterion = nn.CrossEntropyLoss(reduction='none', ignore_index=0)
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_dc_step, gamma=args.lr_dc)
 
     # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
@@ -244,6 +245,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             optimizer.step()
             num_update += 1
 
+        scheduler.step()
             # if num_update > update_freq:
             #     update_key_bert(retriever.key_bert, retriever.query_bert)
             #     num_update = 0
