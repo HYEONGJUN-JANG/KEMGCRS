@@ -135,7 +135,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     pseudo_soft_label[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = batch['pseudo_confidences'][:, j]
                     pseudo_mask[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = 1
                 Qd = torch.softmax(pseudo_soft_label / args.tau, dim=1)
-                loss += torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
+                loss = torch.mean(-torch.sum(Qd * torch.log(Pd + 1e-10), dim=1))
 
                 ### ListNet2.0
                 # if args.stage == 'rerank':
