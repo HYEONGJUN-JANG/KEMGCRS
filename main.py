@@ -231,7 +231,6 @@ def main():
             print('retrieval load:\t%s' % args.saved_model_path)
             retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
         else:
-            args.stage = 'retrieve'
             print('retrieve mode')
 
             train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
