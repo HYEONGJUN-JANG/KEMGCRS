@@ -109,11 +109,13 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 #         loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
 
                 ### Group-wise + Seq
-                loss = 0
-                # loss += torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
+                # loss = 0
+                loss = torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
 
-                for idx in range(batch['pseudo_targets'].size(1)):
-                    pseudo_targets = batch['pseudo_targets'][:, :idx+1]
+                for idx in range(1, batch['pseudo_targets'].size(1)):
+                    pseudo_targets = batch['pseudo_targets'][:, idx-1:idx+1]
+                    # pseudo_targets = batch['pseudo_targets'][:, :idx+1]
+
                     # know_mask = (pseudo_targets != 0)
                     # num_know = torch.sum(know_mask, dim=1)
                     # g_logit = torch.gather(logit, 1, pseudo_targets)
