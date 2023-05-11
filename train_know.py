@@ -109,7 +109,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 #         loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
 
                 ## Group-wise + list-wise (sampling)
-                logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
+                # logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
+                logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
                 logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
                 cumsum_logit = torch.cumsum(logit_exp, dim=1)  # [B, K]
                 loss = 0
