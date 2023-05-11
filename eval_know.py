@@ -19,7 +19,7 @@ def knowledge_reindexing(args, knowledge_data, retriever, stage):
     )
     knowledge_index = []
 
-    for batch in tqdm(knowledgeDataLoader):
+    for batch in tqdm(knowledgeDataLoader, bar_format=' {l_bar} | {bar:23} {r_bar}'):
         input_ids = batch[0].to(args.device)
         attention_mask = batch[1].to(args.device)
         # knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]

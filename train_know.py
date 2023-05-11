@@ -113,7 +113,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 loss = torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
 
                 for idx in range(1, batch['pseudo_targets'].size(1)):
-                    pseudo_targets = batch['pseudo_targets'][:, idx-1:idx+1]
+                    pseudo_targets = batch['pseudo_targets'][:, idx - 1:idx + 1]
+                    exclude = batch['pseudo_targets'][:, :idx + 1]
                     # pseudo_targets = batch['pseudo_targets'][:, :idx+1]
 
                     # know_mask = (pseudo_targets != 0)
@@ -123,8 +124,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     g_logit = torch.mean(torch.gather(logit, 1, pseudo_targets), dim=1)
                     pseudo_mask = torch.zeros_like(logit)
                     pseudo_mask[:, 0] = -1e10
-                    for j in range(pseudo_targets.size(1)):
-                        pseudo_target = pseudo_targets[:, j]  # [B]
+                    for j in range(exclude.size(1)):
+                        pseudo_target = exclude[:, j]  # [B]
                         pseudo_mask[torch.arange(logit.size(0)), pseudo_target] = -1e10
                     pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
                     g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
@@ -258,11 +259,11 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             num_update += 1
 
         scheduler.step()
-            # if num_update > update_freq:
-            #     update_key_bert(retriever.key_bert, retriever.query_bert)
-            #     num_update = 0
-            #     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
-            #     knowledge_index = knowledge_index.to(args.device)
+        # if num_update > update_freq:
+        #     update_key_bert(retriever.key_bert, retriever.query_bert)
+        #     num_update = 0
+        #     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
+        #     knowledge_index = knowledge_index.to(args.device)
 
         knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, args.stage)
         knowledge_index = knowledge_index.to(args.device)
