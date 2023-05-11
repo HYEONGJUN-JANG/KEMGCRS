@@ -82,8 +82,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             candidate_knowledge = tokenizer(candidate_knowledge_text, truncation=True, padding='max_length', max_length=args.max_length)
             candidate_knowledge_token = candidate_knowledge.input_ids
             candidate_knowledge_mask = candidate_knowledge.attention_mask
-            candidate_knowledge_token = torch.LongTensor(candidate_knowledge_token).to(args.device)
-            candidate_knowledge_mask = torch.LongTensor(candidate_knowledge_mask).to(args.device)
+            candidate_knowledge_token = torch.LongTensor(candidate_knowledge_token).to(args.device).view(-1, args.know_topk, args.max_length)
+            candidate_knowledge_mask = torch.LongTensor(candidate_knowledge_mask).to(args.device).view(-1, args.know_topk, args.max_length)
             dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
 
         if write:
