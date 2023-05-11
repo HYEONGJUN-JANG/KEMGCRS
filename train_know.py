@@ -113,7 +113,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 loss = torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
 
                 for idx in range(1, batch['pseudo_targets'].size(1)):
-                    pseudo_targets = batch['pseudo_targets'][:, idx - 1:idx + 1]
+                    pseudo_targets = batch['pseudo_targets'][:, :idx + 1]
                     exclude = batch['pseudo_targets'][:, :idx + 1]
                     # pseudo_targets = batch['pseudo_targets'][:, :idx+1]
 
