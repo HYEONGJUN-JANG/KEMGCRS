@@ -28,7 +28,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_dc_step, gamma=args.lr_dc)
 
-    # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
     best_hit = [[], [], [], []]
     best_hit_movie = [[], [], [], []]
@@ -92,7 +92,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
 
                 # if args.stage == 'retrieve':
-                logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
+                # logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
                 # loss = 0
                 # loss += torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
                 #
@@ -108,29 +108,43 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 #                 pseudo_mask[torch.arange(logit.size(0)), exclude] = -1e10
                 #         loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))  # For MLP predict
 
-                ### Group-wise + Seq
-                # loss = 0
-                loss = torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
+                ## Group-wise + list-wise (sampling)
+                logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
+                logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
+                cumsum_logit = torch.cumsum(logit_exp, dim=1)  # [B, K]
+                loss = 0
+                for idx in range(args.pseudo_pos_rank):
+                    g_logit = cumsum_logit[:, idx]
 
-                for idx in range(1, batch['pseudo_targets'].size(1)):
-                    pseudo_targets = batch['pseudo_targets'][:, :idx + 1]
-                    exclude = batch['pseudo_targets'][:, :idx + 1]
-                    # pseudo_targets = batch['pseudo_targets'][:, :idx+1]
-
-                    # know_mask = (pseudo_targets != 0)
-                    # num_know = torch.sum(know_mask, dim=1)
-                    # g_logit = torch.gather(logit, 1, pseudo_targets)
-                    # g_logit = torch.sum(g_logit, dim=1) / (num_know + 1e-10)
-                    g_logit = torch.mean(torch.gather(logit, 1, pseudo_targets), dim=1)
                     pseudo_mask = torch.zeros_like(logit)
-                    pseudo_mask[:, 0] = -1e10
-                    for j in range(exclude.size(1)):
-                        pseudo_target = exclude[:, j]  # [B]
-                        pseudo_mask[torch.arange(logit.size(0)), pseudo_target] = -1e10
+                    pseudo_mask[:, :idx + 1] = -1e10
                     pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
+
                     g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
-                    # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
                     loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
+
+
+                ### Group-wise + Seq (original)
+                # loss = torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
+                # for idx in range(1, batch['pseudo_targets'].size(1)):
+                #     pseudo_targets = batch['pseudo_targets'][:, :idx + 1]
+                #     exclude = batch['pseudo_targets'][:, :idx + 1]
+                #     # pseudo_targets = batch['pseudo_targets'][:, :idx+1]
+                #
+                #     # know_mask = (pseudo_targets != 0)
+                #     # num_know = torch.sum(know_mask, dim=1)
+                #     # g_logit = torch.gather(logit, 1, pseudo_targets)
+                #     # g_logit = torch.sum(g_logit, dim=1) / (num_know + 1e-10)
+                #     g_logit = torch.mean(torch.gather(logit, 1, pseudo_targets), dim=1)
+                #     pseudo_mask = torch.zeros_like(logit)
+                #     pseudo_mask[:, 0] = -1e10
+                #     for j in range(exclude.size(1)):
+                #         pseudo_target = exclude[:, j]  # [B]
+                #         pseudo_mask[torch.arange(logit.size(0)), pseudo_target] = -1e10
+                #     pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
+                #     g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
+                #     # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
+                #     loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
                 ### ListNet (final)
                 # pseudo_mask = torch.zeros_like(logit)

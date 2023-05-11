@@ -9,7 +9,7 @@ class Retriever(nn.Module):
         super(Retriever, self).__init__()
         self.args = args
         self.query_bert = query_bert  # Knowledge text 처리를 위한 BERT
-        # self.rerank_bert = copy.deepcopy(self.query_bert)
+        self.rerank_bert = copy.deepcopy(self.query_bert)
 
         # if args.know_ablation == 'negative_sampling':
         #     self.key_bert = query_bert
@@ -25,8 +25,8 @@ class Retriever(nn.Module):
         self.goal_embedding = nn.Embedding(self.args.goal_num, self.args.hidden_size)
         nn.init.normal_(self.goal_embedding.weight, 0, self.args.hidden_size ** -0.5)
 
-    def init_reranker(self):
-        self.rerank_bert = copy.deepcopy(self.query_bert)
+    # def init_reranker(self):
+    #     self.rerank_bert = copy.deepcopy(self.query_bert)
 
     def init_know_proj(self, weights):
         self.know_proj.weight = nn.Parameter(weights, requires_grad=False)
@@ -63,7 +63,7 @@ class Retriever(nn.Module):
         eval_know.computing_score에서
         모든 key vector에서 올라온 벡터를 통해 계산처리
         """
-        dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        dialog_emb = self.rerank_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state  # [B, L, d]
         # dialog_emb = torch.sum(dialog_emb * mask.unsqueeze(-1), dim=1) / (torch.sum(mask, dim=1, keepdim=True) + 1e-20)  # [B, d]
 
