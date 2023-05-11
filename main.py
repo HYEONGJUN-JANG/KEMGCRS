@@ -237,6 +237,8 @@ def main():
 
         if args.stage == 'rerank':
             print('rerank mode')
+            args.stage = 'retrieve'
+            eval_know(args, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
             args.stage = 'rerank'
             # retriever.init_reranker()
             args.num_epochs=10
