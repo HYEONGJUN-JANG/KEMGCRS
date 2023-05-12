@@ -56,6 +56,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         dialog_token = batch['input_ids']
         dialog_mask = batch['attention_mask']
         response = batch['response']
+        candidate_indice = batch['candidate_indice']
         candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
         candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
 
