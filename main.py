@@ -238,7 +238,7 @@ def main():
         if args.stage == 'rerank':
             print('rerank mode')
             # args.stage = 'retrieve'
-            eval_know(args, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+            eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
             args.stage = 'rerank'
             retriever.init_reranker()
             modules = [retriever.rerank_bert.encoder.layer[:bert_config.num_hidden_layers - 2], retriever.rerank_bert.embeddings]
