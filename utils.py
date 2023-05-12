@@ -67,8 +67,8 @@ def parseargs():
 
     parser.add_argument('--pretrained_model', default='bert_model.pt', type=str, help="Pre-trained Retriever BERT Model Name")
 
-    parser.add_argument('--max_length', default=40, type=int, help="dataset name")
-    parser.add_argument('--batch_size', default=32, type=int, help="batch size")
+    parser.add_argument('--max_length', default=15, type=int, help="dataset name")
+    parser.add_argument('--batch_size', default=2, type=int, help="batch size")
     parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate')
     parser.add_argument('--loss_lamb', type=float, default=1.0, help='Learning rate')
     parser.add_argument('--lr_dc_step', type=int, default=4, help='warmup_step')
@@ -84,7 +84,7 @@ def parseargs():
 
     parser.add_argument("--device", default='0', type=str, help="GPU Device")  # HJ : Log file middle Name
 
-    parser.add_argument('--know_topk', default=10, type=int, help="Number of retrieval know text")  # HJ: Know_text retrieve Top-k
+    parser.add_argument('--know_topk', default=20, type=int, help="Number of retrieval know text")  # HJ: Know_text retrieve Top-k
     parser.add_argument('--topic_topk', default=5, type=int, help="Number of Top-k Topics")  # HJ: Topic Top-k
     parser.add_argument('--home', default='', type=str, help="Project home directory")  # HJ: Project Home directory
     parser.add_argument('--log_dir', default='logs', type=str, help="logging file directory")  # HJ: log file directory

@@ -121,13 +121,13 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
                     if k == 1:
                         hit1.append(correct_k)
                         hit1_goal[goal].append(correct_k)
-                    if k == 5:
+                    elif k == 5:
                         hit5.append(correct_k)
                         hit5_goal[goal].append(correct_k)
-                    if k == 10:
+                    elif k == 10:
                         hit10.append(correct_k)
                         hit10_goal[goal].append(correct_k)
-                    if k == 20:
+                    elif k == 20:
                         hit20.append(correct_k)
                         hit20_goal[goal].append(correct_k)
 

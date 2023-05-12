@@ -25,8 +25,8 @@ class Retriever(nn.Module):
         self.goal_embedding = nn.Embedding(self.args.goal_num, self.args.hidden_size)
         nn.init.normal_(self.goal_embedding.weight, 0, self.args.hidden_size ** -0.5)
 
-    # def init_reranker(self):
-    #     self.rerank_bert = copy.deepcopy(self.query_bert)
+    def init_reranker(self):
+        self.rerank_bert = copy.deepcopy(self.query_bert)
 
     def init_know_proj(self, weights):
         self.know_proj.weight = nn.Parameter(weights, requires_grad=False)
