@@ -94,11 +94,10 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 if args.stage == 'retrieve':
                     logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
                     loss = torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
-                    for idx in range(1, batch['pseudo_targets'].size(1)):
+                    for idx in range(1, args.pseudo_pos_rank):
                         pseudo_targets = batch['pseudo_targets'][:, :idx + 1]
                         exclude = batch['pseudo_targets'][:, :idx + 1]
                         # pseudo_targets = batch['pseudo_targets'][:, :idx+1]
-
                         # know_mask = (pseudo_targets != 0)
                         # num_know = torch.sum(know_mask, dim=1)
                         # g_logit = torch.gather(logit, 1, pseudo_targets)
@@ -131,8 +130,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
                 if args.stage == 'rerank':
                     logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
-                    logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
-                    cumsum_logit = torch.cumsum(logit_exp, dim=1)  # [B, K]
+                    # logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
+                    cumsum_logit = torch.cumsum(logit, dim=1)  # [B, K]
                     loss = 0
                     for idx in range(args.pseudo_pos_rank):
                         g_logit = cumsum_logit[:, idx]

@@ -68,7 +68,7 @@ def parseargs():
     parser.add_argument('--pretrained_model', default='bert_model.pt', type=str, help="Pre-trained Retriever BERT Model Name")
 
     parser.add_argument('--max_length', default=15, type=int, help="dataset name")
-    parser.add_argument('--batch_size', default=2, type=int, help="batch size")
+    parser.add_argument('--batch_size', default=16, type=int, help="batch size")
     parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate')
     parser.add_argument('--loss_lamb', type=float, default=1.0, help='Learning rate')
     parser.add_argument('--lr_dc_step', type=int, default=4, help='warmup_step')
