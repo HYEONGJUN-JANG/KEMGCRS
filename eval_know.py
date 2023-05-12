@@ -64,7 +64,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         dialog_token = batch['input_ids']
         dialog_mask = batch['attention_mask']
         response = batch['response']
-        candidate_indice = batch['candidate_indice']
+        # candidate_indice = batch['candidate_indice']
         # candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
         # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
 
@@ -76,7 +76,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, batch['type'])
 
         if args.stage == 'rerank':
-            # candidate_indice = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
+            candidate_indice = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
 
             candidate_knowledge_text = [args.knowledgeDB[idx] for candidates in candidate_indice for idx in candidates]
             candidate_knowledge = tokenizer(candidate_knowledge_text, truncation=True, padding='max_length', max_length=args.max_length)
