@@ -23,12 +23,7 @@ def knowledge_reindexing(args, knowledge_data, retriever, stage):
         input_ids = batch[0].to(args.device)
         attention_mask = batch[1].to(args.device)
         # knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
-
-        if stage == 'retrieve':
-            knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
-        elif stage == 'rerank':
-            knowledge_emb = retriever.rerank_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
-           # logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
+        knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
 
         # knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state  # [B, d]
         # knowledge_emb = torch.sum(knowledge_emb * attention_mask.unsqueeze(-1), dim=1) / (torch.sum(attention_mask, dim=1, keepdim=True) + 1e-20)  # [B, d]
@@ -46,8 +41,9 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     jsonlineSave = []
     # bert_model = bert_model.to(args.device)
 
-    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, stage='retrieve')
-    knowledge_index = knowledge_index.to(args.device)
+    if args.stage != 'rerank':
+        knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, stage='retrieve')
+        knowledge_index = knowledge_index.to(args.device)
 
     # if args.stage == 'rerank':
     #     knowledge_index_rerank = knowledge_reindexing(args, knowledge_data, retriever, stage='rerank')
