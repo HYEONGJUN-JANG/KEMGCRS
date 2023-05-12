@@ -98,7 +98,7 @@ def parseargs():
     parser.add_argument('--input_prompt', default='dialog', type=str, help="input_prompt")
 
     args = parser.parse_args()
-    args.model_dir = os.path.join(args.model_dir, args.device)
+    # args.model_dir = os.path.join(args.model_dir, args.device)
     args.device = f'cuda:{args.device}' if args.device else "cpu"
     if args.time == '': args.time = get_time_kst()
     from platform import system as sysChecker
