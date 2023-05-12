@@ -41,8 +41,9 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     jsonlineSave = []
     # bert_model = bert_model.to(args.device)
 
-    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, stage='retrieve')
-    knowledge_index = knowledge_index.to(args.device)
+    if args.stage == 'retrieve':
+        knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, stage='retrieve')
+        knowledge_index = knowledge_index.to(args.device)
 
     goal_list = ['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A', 'Chat about stars']
     hit1_goal, hit5_goal, hit10_goal, hit20_goal = defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
