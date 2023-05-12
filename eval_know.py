@@ -56,8 +56,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         dialog_token = batch['input_ids']
         dialog_mask = batch['attention_mask']
         response = batch['response']
-        # candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
-        # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
+        candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
+        candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
 
         type_idx = [args.goalDic['int'][int(idx)] for idx in batch['type']]
         topic_idx = [args.topicDic['int'][int(idx)] for idx in batch['topic_idx']]
@@ -67,15 +67,15 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, batch['type'])
 
         if args.stage == 'rerank':
-            candidate_indice = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
-            # dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index_rerank[candidate_indice])
-            # candidate_knowledge_text = [args.knowledgeDB[idx] for idx in candidate_indice[0]]
-            candidate_knowledge_text = [args.knowledgeDB[idx] for candidates in candidate_indice for idx in candidates]
-            candidate_knowledge = tokenizer(candidate_knowledge_text, truncation=True, padding='max_length', max_length=args.max_length)
-            candidate_knowledge_token = candidate_knowledge.input_ids
-            candidate_knowledge_mask = candidate_knowledge.attention_mask
-            candidate_knowledge_token = torch.LongTensor(candidate_knowledge_token).to(args.device).view(-1, args.know_topk, args.max_length)
-            candidate_knowledge_mask = torch.LongTensor(candidate_knowledge_mask).to(args.device).view(-1, args.know_topk, args.max_length)
+            # candidate_indice = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
+            # # dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index_rerank[candidate_indice])
+            # # candidate_knowledge_text = [args.knowledgeDB[idx] for idx in candidate_indice[0]]
+            # candidate_knowledge_text = [args.knowledgeDB[idx] for candidates in candidate_indice for idx in candidates]
+            # candidate_knowledge = tokenizer(candidate_knowledge_text, truncation=True, padding='max_length', max_length=args.max_length)
+            # candidate_knowledge_token = candidate_knowledge.input_ids
+            # candidate_knowledge_mask = candidate_knowledge.attention_mask
+            # candidate_knowledge_token = torch.LongTensor(candidate_knowledge_token).to(args.device).view(-1, args.know_topk, args.max_length)
+            # candidate_knowledge_mask = torch.LongTensor(candidate_knowledge_mask).to(args.device).view(-1, args.know_topk, args.max_length)
             dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
 
         if write:
