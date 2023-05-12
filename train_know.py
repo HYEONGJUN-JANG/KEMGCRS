@@ -129,7 +129,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
 
                 if args.stage == 'rerank':
-                    logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
+                    # logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
+                    logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
                     # logit_exp = torch.exp(logit - torch.max(logit, dim=1, keepdim=True)[0])  # [B, K]
                     cumsum_logit = torch.cumsum(logit, dim=1)  # [B, K]
                     loss = 0
