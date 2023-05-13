@@ -119,8 +119,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         negative_indice = []
         while len(negative_indice) < self.args.negative_num:
-            # negative_idx = random.randint(0, total_knowledge_num - 1)
-            negative_idx = random.choice(candidate_knowledges)
+            negative_idx = random.randint(0, total_knowledge_num - 1)
+            # negative_idx = random.choice(candidate_knowledges)
             if (negative_idx not in negative_indice) and (negative_idx not in target_knowledge):
                 negative_indice.append(negative_idx)
         return negative_indice
@@ -201,8 +201,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # candidate_knowledges = candidate_knowledges + [0] * (self.args.pseudo_pos_num - len(candidate_knowledges))
         # candidate_confidences = candidate_confidences + [0] * (self.args.pseudo_pos_num - len(candidate_confidences))
 
-        # pseudo_negative = self.negative_sampler(candidate_knowledges, candidate_knowledges)
-        pseudo_negative = []
+        pseudo_negative = self.negative_sampler(candidate_knowledges, candidate_knowledges)
+        # pseudo_negative = []
 
         ### Grouping
         # group_num = min(self.args.pseudo_pos_rank, len(candidate_knowledges)) - 1
