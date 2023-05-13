@@ -92,7 +92,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # dialog_mask = dialog_mask.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
 
                 if args.stage == 'retrieve':
-                    logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
+                    # logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
+                    logit = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
                     cumsum_logit = torch.cumsum(logit, dim=1)  # [B, K]
                     loss = 0
                     for idx in range(args.pseudo_pos_rank):
