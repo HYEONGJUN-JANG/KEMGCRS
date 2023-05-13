@@ -219,7 +219,7 @@ def main():
         test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know')
 
         train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
-        valid_dataloader = DataLoader(test_datamodel_know, batch_size==args.batch_size, shuffle=False)
+        valid_dataloader = DataLoader(test_datamodel_know, batch_size=args.batch_size, shuffle=False)
         test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
 
         # print('rerank mode')
