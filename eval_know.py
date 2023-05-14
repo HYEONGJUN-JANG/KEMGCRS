@@ -55,6 +55,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     goal_list = ['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A', 'Chat about stars']
     hit1_goal, hit5_goal, hit10_goal, hit20_goal = defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
     hit1, hit5, hit10, hit20 = [], [], [], []
+    hit1_p1, hit5_p1, hit10_p1, hit20_p1 = [], [], [], []
+    hit1_p2, hit5_p2, hit10_p2, hit20_p2 = [], [], [], []
 
     cnt = 0
 
@@ -102,7 +104,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': target_knowledge_text, 'response': response, "predict5": retrieved_knowledge_text, "score5": retrieved_knowledge_score})
             # save_json(args, f"{args.time}_{args.model_name}_inout", jsonlineSave)
 
-        for idx, (score, target, goal) in enumerate(zip(dot_score, target_knowledge_idx, type_idx)):
+        for idx, (score, target, pseudo_targets, goal) in enumerate(zip(dot_score, target_knowledge_idx, batch['pseudo_targets'], type_idx)):
             # goal = args.goalDic['int'][int(goal_idx)]
             # top_candidate = torch.topk(score, k=args.know_topk, dim=0).indices  # [K]
             # candidate_knowledge_text = [args.knowledgeDB[int(idx)] for idx in top_candidate]  # [K, .]
@@ -110,6 +112,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             # candidate_knowledge_token = candidate_knowledge.input_ids.to(args.device)  # [K, L]
             # candidate_knowledge_mask = candidate_knowledge.attention_mask.to(args.device)  # [K, L]
             # re_rank_score = retriever.knowledge_retrieve(dialog_token[idx].unsqueeze(0), dialog_mask[idx].unsqueeze(0), candidate_knowledge_token.unsqueeze(0), candidate_knowledge_mask.unsqueeze(0)).squeeze(0)  # [K]
+            pseudo_targets1 = pseudo_targets[0]
+            pseudo_targets2 = pseudo_targets[1]
 
             if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':  # or goal == 'Chat about stars':
                 for k in [1, 5, 10, 20]:
@@ -133,6 +137,13 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
                         hit20.append(correct_k)
                         hit20_goal[goal].append(correct_k)
 
+                    correct_k = pseudo_targets1 in top_candidate
+                    if k == 20:
+                        hit20_p1.append(correct_k)
+
+                    correct_k = pseudo_targets2 in top_candidate
+                    if k == 20:
+                        hit20_p2.append(correct_k)
     # for i in range(10):
     #     print("T:%s\tP:%s" %(targets[i], pred[i]))
 
@@ -141,6 +152,9 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     hit5 = np.average(hit5)
     hit10 = np.average(hit10)
     hit20 = np.average(hit20)
+
+    hit20_p1 = np.average(hit20_p1)
+    hit20_p2 = np.average(hit20_p2)
 
     hit_movie_result = [np.average(hit1_goal["Movie recommendation"]), np.average(hit5_goal["Movie recommendation"]), np.average(hit10_goal["Movie recommendation"]), np.average(hit20_goal["Movie recommendation"])]
     hit_music_result = [np.average(hit1_goal["Music recommendation"]), np.average(hit5_goal["Music recommendation"]), np.average(hit10_goal["Music recommendation"]), np.average(hit20_goal["Music recommendation"])]
@@ -163,6 +177,10 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         print(f"Test Hit@5: %.4f" % np.average(hit5))
         print(f"Test Hit@10: %.4f" % np.average(hit10))
         print(f"Test Hit@20: %.4f" % np.average(hit20))
+
+
+        print(f"Test Hit@20_P1: %.4f" % np.average(hit20_p1))
+        print(f"Test Hit@20_P2: %.4f" % np.average(hit20_p2))
 
         print("Movie recommendation\t" + "\t".join(hit_movie_result))
         print("Music recommendation\t" + "\t".join(hit_music_result))
