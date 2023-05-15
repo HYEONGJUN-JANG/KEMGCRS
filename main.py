@@ -227,16 +227,16 @@ def main():
         # train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
         # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
-        if args.saved_model_path != '':
-            print('retriever load:\t%s' % args.saved_model_path)
-            retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path), map_location=args.device))
-        else:
+        if args.saved_model_path == '':
             print('retrieve mode')
             args.stage = 'retrieve'
             eval_know(args, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
             train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
             torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_retriever_{args.stage}.pt"))  # TIME_MODELNAME 형식
             args.stage = 'rerank'
+
+        print('retriever load:\t%s' % args.saved_model_path)
+        retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path), map_location=args.device))
 
         if args.stage == 'rerank':
             args.stage = 'retrieve'
