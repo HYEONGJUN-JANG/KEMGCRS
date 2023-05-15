@@ -219,7 +219,7 @@ def main():
         test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know')
 
         train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
-        valid_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=False)
+        valid_dataloader = DataLoader(test_datamodel_know, batch_size=args.batch_size, shuffle=False)
         test_dataloader = DataLoader(test_datamodel_know, batch_size=1, shuffle=False)
 
         # print('rerank mode')
@@ -239,7 +239,7 @@ def main():
 
         if args.stage == 'rerank':
             args.stage = 'retrieve'
-            eval_know(args, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+            eval_know(args, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, retrieve=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
             print('rerank mode')
             args.stage = 'rerank'
             retriever.init_reranker()
