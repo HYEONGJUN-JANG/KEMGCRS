@@ -108,7 +108,6 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
                     logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
                     loss = torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
-                    # gathered_logit = torch.gather(logit, 1, batch['pseudo_targets'])
                     # cumsum_logit = torch.cumsum(gathered_logit, dim=1)  # [B, K]
                     # for idx in range(args.pseudo_pos_rank):
                     #     g_logit = cumsum_logit[:, idx]
