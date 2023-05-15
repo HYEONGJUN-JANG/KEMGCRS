@@ -240,7 +240,7 @@ def main():
 
         if args.stage == 'rerank':
             args.stage = 'retrieve'
-            eval_know(args, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, retrieve=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+            eval_know(args, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
             print('rerank mode')
             args.stage = 'rerank'
             retriever.init_reranker()
