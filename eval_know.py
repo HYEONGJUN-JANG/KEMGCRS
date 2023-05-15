@@ -45,13 +45,12 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     jsonlineSave = []
     # bert_model = bert_model.to(args.device)
 
-    if args.stage == 'retrieve':
-        knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, stage='retrieve')
-        knowledge_index = knowledge_index.to(args.device)
+    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, stage='retrieve')
+    knowledge_index = knowledge_index.to(args.device)
 
-    # if args.stage == 'rerank':
-    #     knowledge_index_rerank = knowledge_reindexing(args, knowledge_data, retriever, stage='rerank')
-    #     knowledge_index_rerank = knowledge_index_rerank.to(args.device)
+    if args.stage == 'rerank':
+        knowledge_index_rerank = knowledge_reindexing(args, knowledge_data, retriever, stage='rerank')
+        knowledge_index_rerank = knowledge_index_rerank.to(args.device)
 
     goal_list = ['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A', 'Chat about stars']
     hit1_goal, hit5_goal, hit10_goal, hit20_goal = defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
@@ -77,20 +76,23 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
         # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
         target_knowledge_idx = batch['target_knowledge']
+
+        # if args.stage == 'retrieve':
         dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, batch['type'])
 
         if args.stage == 'rerank':
-            # candidate_indice = batch['candidate_indice']
-            # dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index_rerank[candidate_indice])
+            candidate_indice = torch.topk(dot_score, k=args.know_topk, dim=1).indices
+            dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index_rerank[candidate_indice])
+            # dot_score = torch.gather(dot_score, 1, candidate_indice)
 
-            candidate_indice = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
-            candidate_knowledge_text = [args.knowledgeDB[idx] for candidates in candidate_indice for idx in candidates]
-            candidate_knowledge = tokenizer(candidate_knowledge_text, truncation=True, padding='max_length', max_length=args.max_length)
-            candidate_knowledge_token = candidate_knowledge.input_ids
-            candidate_knowledge_mask = candidate_knowledge.attention_mask
-            candidate_knowledge_token = torch.LongTensor(candidate_knowledge_token).to(args.device).view(-1, args.know_topk, args.max_length)
-            candidate_knowledge_mask = torch.LongTensor(candidate_knowledge_mask).to(args.device).view(-1, args.know_topk, args.max_length)
-            dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
+            # candidate_indice = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
+            # candidate_knowledge_text = [args.knowledgeDB[idx] for candidates in candidate_indice for idx in candidates]
+            # candidate_knowledge = tokenizer(candidate_knowledge_text, truncation=True, padding='max_length', max_length=args.max_length)
+            # candidate_knowledge_token = candidate_knowledge.input_ids
+            # candidate_knowledge_mask = candidate_knowledge.attention_mask
+            # candidate_knowledge_token = torch.LongTensor(candidate_knowledge_token).to(args.device).view(-1, args.know_topk, args.max_length)
+            # candidate_knowledge_mask = torch.LongTensor(candidate_knowledge_mask).to(args.device).view(-1, args.know_topk, args.max_length)
+            # dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
 
         if retrieve:
             top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
