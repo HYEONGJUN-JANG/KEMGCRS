@@ -49,9 +49,9 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, stage='retrieve')
         knowledge_index = knowledge_index.to(args.device)
 
-    # if args.stage == 'rerank':
-    #     knowledge_index_rerank = knowledge_reindexing(args, knowledge_data, retriever, stage='rerank')
-    #     knowledge_index_rerank = knowledge_index_rerank.to(args.device)
+    if args.stage == 'rerank':
+        knowledge_index_rerank = knowledge_reindexing(args, knowledge_data, retriever, stage='rerank')
+        knowledge_index_rerank = knowledge_index_rerank.to(args.device)
 
     goal_list = ['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A', 'Chat about stars']
     hit1_goal, hit5_goal, hit10_goal, hit20_goal = defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
@@ -79,10 +79,12 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         target_knowledge_idx = batch['target_knowledge']
 
         if args.stage == 'rerank':
-            candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,2,256]
-            candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,2,256]
+            # candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,2,256]
+            # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,2,256]
             candidate_indice = batch['candidate_indice']
-            dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
+            # dot_score = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
+            dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index_rerank[candidate_indice])
+
         else:
             dot_score = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, batch['type'])
 

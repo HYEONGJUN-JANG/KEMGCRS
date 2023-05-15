@@ -50,9 +50,10 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         result_f.write('\n')
         result_f.write('[EPOCH]\tHit@1\tHit@5\tHit@10\tHit@20\n')
 
-    knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, args.stage)
-    knowledge_index = knowledge_index.to(args.device)
-    retriever.init_know_proj(knowledge_index)
+    if args.stage == 'retrieve':
+        knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, args.stage)
+        knowledge_index = knowledge_index.to(args.device)
+        retriever.init_know_proj(knowledge_index)
 
     for epoch in range(args.num_epochs):
         if args.update_freq == -1:
