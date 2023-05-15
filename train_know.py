@@ -108,7 +108,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
                     logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
                     loss = torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
-                    # cumsum_logit = torch.cumsum(logit, dim=1)  # [B, K]
+                    # gathered_logit = torch.gather(logit, 1, batch['pseudo_targets'])
+                    # cumsum_logit = torch.cumsum(gathered_logit, dim=1)  # [B, K]
                     # for idx in range(args.pseudo_pos_rank):
                     #     g_logit = cumsum_logit[:, idx]
                     #     pseudo_mask = torch.zeros_like(logit)
@@ -117,24 +118,24 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     #     g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
                     #     loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
-                    # for idx in range(1, args.pseudo_pos_rank):
-                    #     pseudo_targets = batch['pseudo_targets'][:, :idx + 1]
-                    #     exclude = batch['pseudo_targets'][:, :idx + 1]
-                    #     # pseudo_targets = batch['pseudo_targets'][:, :idx+1]
-                    #     # know_mask = (pseudo_targets != 0)
-                    #     # num_know = torch.sum(know_mask, dim=1)
-                    #     # g_logit = torch.gather(logit, 1, pseudo_targets)
-                    #     # g_logit = torch.sum(g_logit, dim=1) / (num_know + 1e-10)
-                    #     g_logit = torch.mean(torch.gather(logit, 1, pseudo_targets), dim=1)
-                    #     pseudo_mask = torch.zeros_like(logit)
-                    #     pseudo_mask[:, 0] = -1e10
-                    #     for j in range(exclude.size(1)):
-                    #         pseudo_target = exclude[:, j]  # [B]
-                    #         pseudo_mask[torch.arange(logit.size(0)), pseudo_target] = -1e10
-                    #     pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
-                    #     g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
-                    #     # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
-                    #     loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
+                    for idx in range(1, args.pseudo_pos_rank):
+                        pseudo_targets = batch['pseudo_targets'][:, :idx + 1]
+                        exclude = batch['pseudo_targets'][:, :idx + 1]
+                        # pseudo_targets = batch['pseudo_targets'][:, :idx+1]
+                        # know_mask = (pseudo_targets != 0)
+                        # num_know = torch.sum(know_mask, dim=1)
+                        # g_logit = torch.gather(logit, 1, pseudo_targets)
+                        # g_logit = torch.sum(g_logit, dim=1) / (num_know + 1e-10)
+                        g_logit = torch.mean(torch.gather(logit, 1, pseudo_targets), dim=1)
+                        pseudo_mask = torch.zeros_like(logit)
+                        pseudo_mask[:, 0] = -1e10
+                        for j in range(exclude.size(1)):
+                            pseudo_target = exclude[:, j]  # [B]
+                            pseudo_mask[torch.arange(logit.size(0)), pseudo_target] = -1e10
+                        pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
+                        g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
+                        # loss += torch.mean(criterion(logit + pseudo_mask, pseudo_target))
+                        loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
                 #
                 #     ### Positive sampling
                 #     loss = 0
