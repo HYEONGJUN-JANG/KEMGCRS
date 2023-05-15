@@ -158,7 +158,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     cumsum_logit = torch.cumsum(logit, dim=1)  # [B, K]
                     loss = 0
                     for idx in range(args.pseudo_pos_rank):
-                        g_logit = cumsum_logit[:, idx]
+                        g_logit = cumsum_logit[:, idx] / (idx + 1)
 
                         pseudo_mask = torch.zeros_like(logit)
                         pseudo_mask[:, :idx + 1] = -1e10
