@@ -50,12 +50,12 @@ class Retriever(nn.Module):
         # dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state  # [B, L, d]
         # dialog_emb = torch.sum(dialog_emb * mask.unsqueeze(-1), dim=1) / (torch.sum(mask, dim=1, keepdim=True) + 1e-20)  # [B, d]
 
-        # dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
-        if self.args.type_aware:
-            type_emb = self.goal_embedding(type_idx)  # [B, d]
-            dot_score = self.know_proj(dialog_emb+type_emb)
-        else:
-            dot_score = self.know_proj(dialog_emb)
+        dot_score = torch.matmul(dialog_emb, knowledge_index.transpose(1, 0))  # [B, N]
+        # if self.args.type_aware:
+        #     type_emb = self.goal_embedding(type_idx)  # [B, d]
+        #     dot_score = self.know_proj(dialog_emb+type_emb)
+        # else:
+        #     dot_score = self.know_proj(dialog_emb)
         return dot_score
 
     def compute_know_score_candidate(self, token_seq, mask, knowledge_index):
