@@ -350,6 +350,10 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             best_hit_poi = hit_poi_result
             best_hit_music = hit_music_result
             best_hit_qa = hit_qa_result
+
+            if args.stage == 'retrieve':
+                torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_retriever.pt"))  # TIME_MODELNAME 형식
+
             # best_hit_chat = hit_chat_result
 
     print(f'BEST RESULT')

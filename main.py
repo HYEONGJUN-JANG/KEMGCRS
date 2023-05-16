@@ -232,7 +232,6 @@ def main():
             args.stage = 'retrieve'
             eval_know(args, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
             train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
-            torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_retriever.pt"))  # TIME_MODELNAME 형식
             args.stage = 'rerank'
         else:
             print('############################retriever load:\t%s#################################' % args.saved_model_path)
