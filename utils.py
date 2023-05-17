@@ -70,6 +70,8 @@ def parseargs():
     parser.add_argument('--max_length', default=15, type=int, help="dataset name")
     parser.add_argument('--batch_size', default=16, type=int, help="batch size")
     parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate')
+    parser.add_argument('--lr_rerank', type=float, default=1e-6, help='Learning rate')
+
     parser.add_argument('--loss_lamb', type=float, default=1.0, help='Learning rate')
     parser.add_argument('--lr_dc_step', type=int, default=10, help='warmup_step')
     parser.add_argument('--lr_dc', type=float, default=0.1, help='warmup_gamma')
