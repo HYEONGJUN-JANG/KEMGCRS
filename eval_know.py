@@ -97,8 +97,15 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         if retrieve:
             top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
             for idx in range(batch_size):
-                test_dataloader.dataset.augmented_raw_sample[current + idx]['candidate_knowledges'] = top_candidate.cpu().numpy().tolist()[idx]
+                query_token = tokenizer.encode(tokenizer.decode(response[idx], skip_special_tokens=True) + "|" + topic_idx[idx])[1:-1]
+                bm_scores = args.bm25.get_scores(query_token)
+                candidate_list = top_candidate.cpu().numpy().tolist()[idx]
+                candidate_list_score = [bm_scores[candi] for candi in candidate_list]
+                sorted_list_idx = np.argsort(candidate_list_score)[::-1]
+                sorted_candidates = [candidate_list[idx] for idx in sorted_list_idx]
+                test_dataloader.dataset.augmented_raw_sample[current + idx]['candidate_knowledges'] = sorted_candidates
             current += batch_size
+
         if write:
             top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
             input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
