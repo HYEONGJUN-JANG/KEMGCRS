@@ -21,7 +21,8 @@ from models import *
 from data_util import readDic, dataset_reader, process_augment_sample, bm_tokenizer
 from train_goal_topic import topic_eval
 from rank_bm25 import BM25Okapi
-
+import nltk
+nltk.download('stopwords')
 
 # def train_knowledge_indexing(args, knowledge_data, retriever, optimizer):
 #     # 모든 know_index를 버트에 태움
