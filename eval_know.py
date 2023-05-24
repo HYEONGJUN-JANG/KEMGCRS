@@ -176,8 +176,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
     # topic_eval(targets, pred)
     hit1 = np.average(hit1)
+    hit3 = np.average(hit3)
     hit5 = np.average(hit5)
-    hit3 = np.average(hit5)
     hit10 = np.average(hit10)
     hit20 = np.average(hit20)
 
