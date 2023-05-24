@@ -53,8 +53,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         knowledge_index_rerank = knowledge_index_rerank.to(args.device)
 
     goal_list = ['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A', 'Chat about stars']
-    hit1_goal, hit5_goal, hit10_goal, hit20_goal = defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
-    hit1, hit5, hit10, hit20 = [], [], [], []
+    hit1_goal, hit3_goal, hit5_goal, hit10_goal, hit20_goal = defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
+    hit1, hit5, hit3, hit10, hit20 = [], [], [], [], []
     hit20_p1, hit20_p2, hit20_p3, hit20_p23 = [], [], [], []
 
     cnt = 0
@@ -133,7 +133,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             # pseudo_targets3 = pseudo_targets[2]
 
             if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':  # or goal == 'Chat about stars':
-                for k in [1, 5, 10, 20]:
+                for k in [1, 3, 5, 10, 20]:
 
                     top_candidate = torch.topk(score, k=k).indices
                     if args.stage == 'rerank':
@@ -143,6 +143,9 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
                     if k == 1:
                         hit1.append(correct_k)
                         hit1_goal[goal].append(correct_k)
+                    elif k == 3:
+                        hit3.append(correct_k)
+                        hit3_goal[goal].append(correct_k)
                     elif k == 5:
                         hit5.append(correct_k)
                         hit5_goal[goal].append(correct_k)
@@ -174,17 +177,18 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     # topic_eval(targets, pred)
     hit1 = np.average(hit1)
     hit5 = np.average(hit5)
+    hit3 = np.average(hit5)
     hit10 = np.average(hit10)
     hit20 = np.average(hit20)
 
     # hit20_p1 = np.average(hit20_p1)
     # hit20_p2 = np.average(hit20_p2)
 
-    hit_movie_result = [np.average(hit1_goal["Movie recommendation"]), np.average(hit5_goal["Movie recommendation"]), np.average(hit10_goal["Movie recommendation"]), np.average(hit20_goal["Movie recommendation"])]
-    hit_music_result = [np.average(hit1_goal["Music recommendation"]), np.average(hit5_goal["Music recommendation"]), np.average(hit10_goal["Music recommendation"]), np.average(hit20_goal["Music recommendation"])]
-    hit_qa_result = [np.average(hit1_goal["Q&A"]), np.average(hit5_goal["Q&A"]), np.average(hit10_goal["Q&A"]), np.average(hit20_goal["Q&A"])]
+    hit_movie_result = [np.average(hit1_goal["Movie recommendation"]), np.average(hit3_goal["Movie recommendation"]), np.average(hit5_goal["Movie recommendation"]), np.average(hit10_goal["Movie recommendation"]), np.average(hit20_goal["Movie recommendation"])]
+    hit_music_result = [np.average(hit1_goal["Music recommendation"]), np.average(hit3_goal["Music recommendation"]), np.average(hit5_goal["Music recommendation"]), np.average(hit10_goal["Music recommendation"]), np.average(hit20_goal["Music recommendation"])]
+    hit_qa_result = [np.average(hit1_goal["Q&A"]), np.average(hit3_goal["Q&A"]), np.average(hit5_goal["Q&A"]), np.average(hit10_goal["Q&A"]), np.average(hit20_goal["Q&A"])]
     # hit_chat_result = [np.average(hit1_goal["Chat about stars"]), np.average(hit5_goal["Chat about stars"]), np.average(hit10_goal["Chat about stars"]), np.average(hit20_goal["Chat about stars"])]
-    hit_poi_result = [np.average(hit1_goal["POI recommendation"]), np.average(hit5_goal["POI recommendation"]), np.average(hit10_goal["POI recommendation"]), np.average(hit20_goal["POI recommendation"])]
+    hit_poi_result = [np.average(hit1_goal["POI recommendation"]), np.average(hit3_goal["POI recommendation"]), np.average(hit5_goal["POI recommendation"]), np.average(hit10_goal["POI recommendation"]), np.average(hit20_goal["POI recommendation"])]
 
     hit_movie_result = ["%.4f" % hit for hit in hit_movie_result]
     hit_music_result = ["%.4f" % hit for hit in hit_music_result]
@@ -198,6 +202,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         save_json(args, f"{args.time}_{args.model_name}_inout", jsonlineSave)
     else:
         print(f"Test Hit@1: %.4f" % np.average(hit1))
+        print(f"Test Hit@3: %.4f" % np.average(hit3))
         print(f"Test Hit@5: %.4f" % np.average(hit5))
         print(f"Test Hit@10: %.4f" % np.average(hit10))
         print(f"Test Hit@20: %.4f" % np.average(hit20))
@@ -211,4 +216,4 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         # print("Chat about stars\t" + "\t".join(hit_chat_result))
         print("POI recommendation\t" + "\t".join(hit_poi_result))
 
-    return [hit1, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result]
+    return [hit1, hit3, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result]
