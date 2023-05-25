@@ -84,9 +84,9 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             target_knowledge_idx = batch['target_knowledge']  # [B,5,256]
 
             # # for every update
-            # if args.stage == 'retrieve':
-            #     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, args.stage)
-            #     knowledge_index = knowledge_index.to(args.device)
+            if args.stage == 'retrieve':
+                knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, args.stage)
+                knowledge_index = knowledge_index.to(args.device)
 
             if args.know_ablation == 'target':
                 logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
