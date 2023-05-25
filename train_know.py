@@ -148,7 +148,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                         cumsum_logit = torch.cumsum(logit_pseudo, dim=1)
                         loss = 0
                         exclude = torch.zeros_like(logit)
-
+                        exclude[:, 0] = -1e10
                         for idx in range(args.pseudo_pos_rank):
                             g_logit = cumsum_logit[:, idx] / (idx + 1)
                             exclude[torch.arange(logit.size(0)), batch['pseudo_targets'][:, idx]] = -1e10
