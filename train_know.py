@@ -158,6 +158,26 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                             g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
                             loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
+                    # if args.train_ablation == 'LG':
+                    #     logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
+                    #     logit_pseudo = torch.gather(logit, 1, batch['pseudo_targets'])  # [B, K]
+                    #     cumsum_logit = torch.cumsum(logit_pseudo, dim=1)
+                    #     even_idx = torch.arange(1, batch['pseudo_targets'].size(1), step=2, device=args.device)
+                    #     cumsum_logit = cumsum_logit[torch.arange(logit.size(0)).to(args.device), even_idx]
+                    #     cumsum_logit2 = torch.cat([torch.zeros(cumsum_logit.size(0)).unsqueeze(1).to(args.device), cumsum_logit[:,:-1]])
+                    #
+                    #     loss = 0
+                    #     exclude = torch.zeros_like(logit)
+                    #     exclude[:, 0] = -1e10
+                    #     for idx in range(cumsum_logit.size(1)):
+                    #         g_logit = cumsum_logit[:, idx] / (2 * idx + 2)
+                    #         exclude[torch.arange(logit.size(0)), batch['pseudo_targets'][:, :2 * idx + 2]] = -1e10
+                    #
+                    #         pseudo_mask = torch.cat([torch.zeros(exclude.size(0)).unsqueeze(1).to(args.device), exclude], dim=1)
+                    #
+                    #         g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
+                    #         loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
+
                         # loss = torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
                         # for idx in range(1, args.pseudo_pos_rank):
                         #     pseudo_targets = batch['pseudo_targets'][:, :idx + 1]
