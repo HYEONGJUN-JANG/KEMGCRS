@@ -118,6 +118,10 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # total_knowledge_num = self.args.knowledge_num
 
         negative_indice = []
+        if len(candidate_knowledges) < self.args.negative_num:
+            for idx in range(self.args.negative_num-len(candidate_knowledges)):
+                negative_indice.append(0)
+
         while len(negative_indice) < self.args.negative_num:
             # negative_idx = random.randint(0, total_knowledge_num - 1)
             negative_idx = random.choice(candidate_knowledges)
