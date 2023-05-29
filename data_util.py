@@ -141,14 +141,14 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
 
                 # for pseudo_idx, pseudo_label in enumerate(conversation['pseudo_knowledge_seq'][i]):
                 # if pseudo_idx < 5:
-                candidate_knowledges = []
-                for cand in conversation['pseudo_knowledge_seq'][i]:
-                    if cand in knowledgeDB:
-                        candidate_knowledges.append(knowledgeDB.index(cand))
-                    else:
-                        continue
-                if len(candidate_knowledges) < 3:
-                    print("less than 3")
+                # candidate_knowledges = []
+                # for cand in conversation['pseudo_knowledge_seq'][i]:
+                #     if cand in knowledgeDB:
+                #         candidate_knowledges.append(knowledgeDB.index(cand))
+                #     else:
+                #         continue
+                # if len(candidate_knowledges) < 3:
+                #     print("less than 3")
 
                 flatten_dialog = ''.join(augmented_dialog)
                 train_sample.append({'dialog': flatten_dialog,
@@ -158,7 +158,7 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
                                      'topic': conversation['topic'][i],
                                      'situation': conversation['situation'],
                                      'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i]),
-                                     'candidate_knowledges': candidate_knowledges,
+                                     'candidate_knowledges': [knowledgeDB.index(cand) for cand in conversation['pseudo_knowledge_seq'][i]],
                                      'candidate_confidences': conversation['pseudo_confidence_seq'][i]  # prob
                                      })
             augmented_dialog.append(utterance)
