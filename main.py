@@ -238,7 +238,7 @@ def main():
             print('retrieve mode')
             args.stage = 'retrieve'
             eval_know(args, valid_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
-            train_know(args, train_dataloader, valid_dataloader, retriever, train_knowledge_data, train_knowledgeDB, tokenizer)
+            train_know(args, train_dataloader, valid_dataloader, retriever, train_knowledge_data, train_knowledgeDB, all_knowledge_data, all_knowledgeDB, tokenizer)
             args.stage = 'rerank'
         else:
             print('############################retriever load:\t%s#################################' % args.saved_model_path)

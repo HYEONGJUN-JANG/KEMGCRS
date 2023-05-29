@@ -45,6 +45,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     jsonlineSave = []
     # bert_model = bert_model.to(args.device)
 
+    print('Knowledge indexing for test')
     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, stage='retrieve')
     knowledge_index = knowledge_index.to(args.device)
 
