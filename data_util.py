@@ -158,7 +158,7 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
                                      'topic': conversation['topic'][i],
                                      'situation': conversation['situation'],
                                      'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i]),
-                                     'candidate_knowledges': [knowledgeDB.index(cand) for cand in conversation['pseudo_knowledge_seq'][i]],
+                                     'candidate_knowledges': candidate_knowledges,
                                      'candidate_confidences': conversation['pseudo_confidence_seq'][i]  # prob
                                      })
             augmented_dialog.append(utterance)
