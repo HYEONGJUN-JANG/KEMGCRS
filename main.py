@@ -239,7 +239,7 @@ def main():
             args.stage = 'retrieve'
             eval_know(args, valid_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
             train_know(args, train_dataloader, valid_dataloader, retriever, train_knowledge_data, train_knowledgeDB, tokenizer)
-            args.stage = 'retrieve'
+            args.stage = 'rerank'
         else:
             print('############################retriever load:\t%s#################################' % args.saved_model_path)
             retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path), map_location=args.device))
