@@ -115,7 +115,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # candidate_entity = self.knowledgeDB[target_knowledge][0]
         # candiate_all_list = self.knowledgeDB_entity_values[candidate_entity]
         # negative_indice = random.choices(candiate_all_list, k=self.args.negative_num if len(candiate_all_list) > self.args.negative_num else len(candiate_all_list))
-        total_knowledge_num = self.args.knowledge_num
+        # total_knowledge_num = self.args.knowledge_num
 
         negative_indice = []
         while len(negative_indice) < self.args.negative_num:

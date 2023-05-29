@@ -103,14 +103,18 @@ def main():
     test_dataset_raw, valid_knowledge_base = dataset_reader(args, 'test')
     valid_dataset_raw, test_knowledge_base = dataset_reader(args, 'dev')
 
-    knowledgeDB = set()
-    knowledgeDB.update(train_knowledge_base)
-    knowledgeDB.update(valid_knowledge_base)
-    knowledgeDB.update(test_knowledge_base)
-    knowledgeDB = list(knowledgeDB)
+    train_knowledgeDB, all_knowledgeDB = set(), set()
+    train_knowledgeDB.update(train_knowledge_base)
+
+    all_knowledgeDB.update(train_knowledge_base)
+    all_knowledgeDB.update(valid_knowledge_base)
+    all_knowledgeDB.update(test_knowledge_base)
+
+    train_knowledgeDB = list(train_knowledgeDB)
+    all_knowledgeDB = list(all_knowledgeDB)
 
     filtered_corpus = []
-    for sentence in knowledgeDB:
+    for sentence in all_knowledgeDB:
         tokenized_sentence = bm_tokenizer(sentence, tokenizer)
         # tokenized_sentence = [word for word in tokenized_sentence if word not in stop_words]
         filtered_corpus.append(tokenized_sentence)
@@ -118,8 +122,11 @@ def main():
 
     # knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'knowledgeDB.txt'))  # TODO: verbalize (TH)
     # knowledgeDB.insert(0, "")
-    args.knowledge_num = len(knowledgeDB)
-    args.knowledgeDB = knowledgeDB
+    args.train_knowledge_num = len(train_knowledgeDB)
+    args.train_knowledgeDB = train_knowledgeDB
+
+    args.all_knowledge_num = len(all_knowledgeDB)
+    args.all_knowledgeDB = all_knowledgeDB
 
     if 'resp' in args.task:
         # config = GPT2Config.from_pretrained(args.bert_name, max_length=args.max_gen_length+args.max_length)
@@ -204,20 +211,19 @@ def main():
         retriever = Retriever(args, bert_model)
         retriever = retriever.to(args.device)
 
-        knowledge_data = KnowledgeDataset(args, knowledgeDB, tokenizer)  # knowledge dataset class
-        args.knowledge_num = len(knowledgeDB)
-        args.knowledgeDB = knowledgeDB
+        train_knowledge_data = KnowledgeDataset(args, train_knowledgeDB, tokenizer)  # knowledge dataset class
+        all_knowledge_data = KnowledgeDataset(args, all_knowledgeDB, tokenizer)  # knowledge dataset class
 
         # train_dataset_raw = dataset_reader(args, 'train')
         # test_dataset_raw = dataset_reader(args, 'test')
-        train_dataset = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
+        train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB)
         # train_dataset, valid_dataset = split_validation(train_dataset, args.bin)
-        valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, knowledgeDB)
-        test_dataset = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
+        valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB)
+        test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
 
-        train_datamodel_know = DialogDataset(args, train_dataset, knowledgeDB, tokenizer, task='know')
-        valid_datamodel_know = DialogDataset(args, valid_dataset, knowledgeDB, tokenizer, task='know')
-        test_datamodel_know = DialogDataset(args, test_dataset, knowledgeDB, tokenizer, task='know')
+        train_datamodel_know = DialogDataset(args, train_dataset, train_knowledgeDB, tokenizer, task='know')
+        valid_datamodel_know = DialogDataset(args, valid_dataset, all_knowledgeDB, tokenizer, task='know')
+        test_datamodel_know = DialogDataset(args, test_dataset, all_knowledgeDB, tokenizer, task='know')
 
         train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
         valid_dataloader = DataLoader(test_datamodel_know, batch_size=args.batch_size, shuffle=False)
@@ -231,8 +237,8 @@ def main():
         if args.saved_model_path == '':
             print('retrieve mode')
             args.stage = 'retrieve'
-            eval_know(args, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
-            train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
+            eval_know(args, valid_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+            train_know(args, train_dataloader, valid_dataloader, retriever, train_knowledge_data, train_knowledgeDB, tokenizer)
             args.stage = 'retrieve'
         else:
             print('############################retriever load:\t%s#################################' % args.saved_model_path)
@@ -240,7 +246,7 @@ def main():
 
         if args.stage == 'rerank':
             args.stage = 'retrieve'
-            eval_know(args, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+            eval_know(args, valid_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
             print('rerank mode')
             args.stage = 'rerank'
@@ -252,8 +258,8 @@ def main():
 
             args.lr = args.lr_rerank
 
-            train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
-            eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+            train_know(args, train_dataloader, valid_dataloader, retriever, train_knowledge_data, train_knowledgeDB, tokenizer)
+            eval_know(args, test_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer, write=True)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
 
 if __name__ == "__main__":

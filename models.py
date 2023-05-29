@@ -21,15 +21,15 @@ class Retriever(nn.Module):
         self.hidden_size = args.hidden_size
         self.topic_proj = nn.Linear(self.hidden_size, args.topic_num)
         self.linear_proj = nn.Linear(self.hidden_size, 1)
-        self.know_proj = nn.Linear(self.hidden_size, self.args.knowledge_num, bias=False)
+        # self.know_proj = nn.Linear(self.hidden_size, self.args.knowledge_num, bias=False)
         self.goal_embedding = nn.Embedding(self.args.goal_num, self.args.hidden_size)
         nn.init.normal_(self.goal_embedding.weight, 0, self.args.hidden_size ** -0.5)
 
     def init_reranker(self):
         self.rerank_bert = copy.deepcopy(self.query_bert)
 
-    def init_know_proj(self, weights):
-        self.know_proj.weight = nn.Parameter(weights, requires_grad=False)
+    # def init_know_proj(self, weights):
+    #     self.know_proj.weight = nn.Parameter(weights, requires_grad=False)
 
     def forward(self, token_seq, mask):
         dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
