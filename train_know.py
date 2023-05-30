@@ -180,7 +180,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                         g_logit = torch.cat([cumsum_logit, logit], dim=1)
                         pseudo_mask = torch.cat([torch.zeros_like(cumsum_logit), exclude], dim=1)
 
-                        for idx in range(cumsum_logit.size(1)):
+                        for idx in range(args.pseudo_pos_rank):
                             # positive_score = g_logit[:, idx] / (2)
                             # for j in range(idx + 2):
                             #     exclude[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = -1e10
