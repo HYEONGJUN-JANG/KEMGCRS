@@ -178,7 +178,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                         logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
                         logit_pseudo = torch.gather(logit, 1, batch['all_negative'])  # [B, K]
                         cumsum_logit = torch.cumsum(logit_pseudo, dim=1)  # [B, K]
-
+                        loss = 0
                         for idx in range(args.pseudo_pos_rank):
                             a = cumsum_logit[:, idx:]
                             b = torch.cat([torch.zeros(cumsum_logit.size(0)).unsqueeze(1).to(args.device), cumsum_logit[:, :-(idx + 1)]], dim=1)
