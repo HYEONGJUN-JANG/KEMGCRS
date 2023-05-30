@@ -145,7 +145,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     if args.train_ablation == 'G':
                         logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
                         logit_pseudo = torch.gather(logit, 1, batch['pseudo_targets'])  # [B, K]
-                        mean_logit = torch.mean(logit_pseudo, dim=1)
+                        g_logit = torch.mean(logit_pseudo, dim=1)
                         loss = 0
                         exclude = torch.zeros_like(logit)
                         exclude[:, 0] = -1e10
