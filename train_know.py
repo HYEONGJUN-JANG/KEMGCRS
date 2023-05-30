@@ -157,7 +157,6 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                         g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
                         loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
-
                     ### List_Group
                     if args.train_ablation == 'RG':
                         logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
@@ -177,36 +176,15 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
                     if args.train_ablation == 'LG':
                         logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
-                        logit_pseudo = torch.gather(logit, 1, batch['pseudo_targets'])  # [B, K]
+                        logit_pseudo = torch.gather(logit, 1, batch['all_negative'])  # [B, K]
                         cumsum_logit = torch.cumsum(logit_pseudo, dim=1)  # [B, K]
-                        a = cumsum_logit[:, 1:]
-                        b = torch.cat([torch.zeros(cumsum_logit.size(0)).unsqueeze(1).to(args.device), cumsum_logit[:, :-2]], dim=1)
-                        cumsum_logit = (a - b) / 2  # [B, K-1]
-                        # even_idx = torch.arange(1, batch['pseudo_targets'].size(1), step=2, device=args.device)
-                        # cumsum_logit = cumsum_logit[torch.arange(logit.size(0)).to(args.device), even_idx]
-                        # cumsum_logit2 = torch.cat([torch.zeros(cumsum_logit.size(0)).unsqueeze(1).to(args.device), cumsum_logit[:, :-1]])
-
-                        exclude = torch.zeros_like(logit)
-                        exclude[:, 0] = -1e10
-
-                        for idx in range(batch['pseudo_targets'].size(1)):
-                            exclude[torch.arange(logit.size(0)), batch['pseudo_targets'][:, idx]] = -1e10
-
-                        loss = 0
-
-                        g_logit = torch.cat([cumsum_logit, logit], dim=1)
-                        pseudo_mask = torch.cat([torch.zeros_like(cumsum_logit), exclude], dim=1)
 
                         for idx in range(args.pseudo_pos_rank):
-                            # positive_score = g_logit[:, idx] / (2)
-                            # for j in range(idx + 2):
-                            #     exclude[torch.arange(logit.size(0)), batch['pseudo_targets'][:, j]] = -1e10
-                            #
-                            # pseudo_mask = torch.cat([exclude_g, exclude], dim=1)
+                            a = cumsum_logit[:, idx:]
+                            b = torch.cat([torch.zeros(cumsum_logit.size(0)).unsqueeze(1).to(args.device), cumsum_logit[:, :-(idx + 1)]], dim=1)
+                            c = (a - b) / (idx + 1)  # [B, K-1]
+                            loss += (-torch.log_softmax(c, dim=1).select(dim=1, index=idx)).mean()
 
-                            # g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
-                            loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=idx)).mean()
-                            pseudo_mask[:, idx] = -1e10
 
                         # loss = torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
                         # for idx in range(1, args.pseudo_pos_rank):
