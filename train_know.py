@@ -142,6 +142,23 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                         loss = torch.mean(torch.sum(-torch.log(pseudo_logit / denominator), dim=1))
 
                     ### List_Group
+                    if args.train_ablation == 'G':
+                        logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
+                        logit_pseudo = torch.gather(logit, 1, batch['pseudo_targets'])  # [B, K]
+                        mean_logit = torch.mean(logit_pseudo, dim=1)
+                        loss = 0
+                        exclude = torch.zeros_like(logit)
+                        exclude[:, 0] = -1e10
+                        for idx in range(args.pseudo_pos_rank):
+                            exclude[torch.arange(logit.size(0)), batch['pseudo_targets'][:, idx]] = -1e10
+
+                        pseudo_mask = torch.cat([torch.zeros(exclude.size(0)).unsqueeze(1).to(args.device), exclude], dim=1)
+
+                        g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
+                        loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
+
+
+                    ### List_Group
                     if args.train_ablation == 'RG':
                         logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
                         logit_pseudo = torch.gather(logit, 1, batch['pseudo_targets'])  # [B, K]
@@ -164,7 +181,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                         cumsum_logit = torch.cumsum(logit_pseudo, dim=1)  # [B, K]
                         a = cumsum_logit[:, 1:]
                         b = torch.cat([torch.zeros(cumsum_logit.size(0)).unsqueeze(1).to(args.device), cumsum_logit[:, :-2]], dim=1)
-                        cumsum_logit = (a - b)/2  # [B, K-1]
+                        cumsum_logit = (a - b) / 2  # [B, K-1]
                         # even_idx = torch.arange(1, batch['pseudo_targets'].size(1), step=2, device=args.device)
                         # cumsum_logit = cumsum_logit[torch.arange(logit.size(0)).to(args.device), even_idx]
                         # cumsum_logit2 = torch.cat([torch.zeros(cumsum_logit.size(0)).unsqueeze(1).to(args.device), cumsum_logit[:, :-1]])
