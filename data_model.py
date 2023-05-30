@@ -238,6 +238,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['pseudo_confidences'] = candidate_confidences_pos  # + [-1e10] * (self.args.knowledge_num - len(candidate_confidences_pos))
 
         context_batch['target_knowledge'] = target_knowledge_idx  # target_knowledge_idx  # candidate_knowledges[0]
+        context_batch['bm25_top20'] = candidate_knowledges
         context_batch['indices'] = idx
         for k, v in context_batch.items():
             if not isinstance(v, torch.Tensor):
