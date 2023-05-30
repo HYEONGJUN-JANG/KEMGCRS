@@ -110,7 +110,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         if write:
             top_candidate = torch.topk(dot_score, k=args.know_topk, dim=1).indices  # [B, K]
             input_text = '||'.join(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
-            target_knowledge_text = args.knowledgeDB[target_knowledge_idx]
+            target_knowledge_text = knowledgeDB[target_knowledge_idx]
             retrieved_knowledge_text = [knowledgeDB[idx].lower() for idx in top_candidate[0]]  # list
             correct = target_knowledge_idx in top_candidate
 
