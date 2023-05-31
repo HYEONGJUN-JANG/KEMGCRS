@@ -182,7 +182,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         else:
             assert Exception
 
-        prefix_encoding = self.tokenizer.encode(prefix)[1:-1][:128]
+        prefix_encoding = self.tokenizer.encode(prefix)[1:-1][:30]
         input_sentence = self.tokenizer('<dialog>' + dialog, add_special_tokens=False).input_ids
 
         input_sentence = [self.tokenizer.cls_token_id] + prefix_encoding + input_sentence[-(self.args.max_length - len(prefix_encoding) - 1):]
