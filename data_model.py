@@ -211,8 +211,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # candidate_knowledges = candidate_knowledges + [0] * (self.args.pseudo_pos_num - len(candidate_knowledges))
         # candidate_confidences = candidate_confidences + [0] * (self.args.pseudo_pos_num - len(candidate_confidences))
 
-        # pseudo_negative = self.negative_sampler(candidate_knowledges_pos, candidate_knowledges)
-        pseudo_negative = [] # todo: remove for rarank!!!!!!!!!!
+        pseudo_negative = self.negative_sampler(candidate_knowledges_pos, candidate_knowledges)
+        # pseudo_negative = [] # todo: remove for rarank!!!!!!!!!!
 
         ### Grouping
         # group_num = min(self.args.pseudo_pos_rank, len(candidate_knowledges)) - 1
@@ -245,6 +245,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         context_batch['target_knowledge'] = target_knowledge_idx  # target_knowledge_idx  # candidate_knowledges[0]
         context_batch['all_negative'] = candidate_knowledges + self.all_negative(candidate_knowledges)
+        context_batch['bm25_top20'] = candidate_knowledges
+
         context_batch['indices'] = idx
         for k, v in context_batch.items():
             if not isinstance(v, torch.Tensor):
