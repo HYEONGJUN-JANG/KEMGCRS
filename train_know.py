@@ -189,6 +189,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                         a = cumsum_logit[:, idx:]
                         b = torch.cat([torch.zeros(cumsum_logit.size(0)).unsqueeze(1).to(args.device), cumsum_logit[:, :-(idx + 1)]], dim=1)
                         c = (a - b) / (idx + 1)  # [B, K-1]
+                        c = c[:, :1] + c[:, idx:]
                         loss += (-torch.log_softmax(c, dim=1).select(dim=1, index=0)).mean()
 
                         # loss = torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
