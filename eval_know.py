@@ -83,7 +83,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
         if args.stage == 'rerank':
             # candidate_indice = torch.topk(dot_score, k=args.know_topk, dim=1).indices
-            candidate_indice = batch['bm25_top20']
+            candidate_indice = batch['bm25_top20'][:,:10]
             dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index_rerank[candidate_indice])
             # dot_score = torch.gather(dot_score, 1, candidate_indice)
 
@@ -137,7 +137,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             # pseudo_targets3 = pseudo_targets[2]
 
             if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':  # or goal == 'Chat about stars':
-                for k in [1, 3, 5, 10, 20]:
+                for k in [1, 3, 5, 10]:
 
                     top_candidate = torch.topk(score, k=k).indices
                     if args.stage == 'rerank':
