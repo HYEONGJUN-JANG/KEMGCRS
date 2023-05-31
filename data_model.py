@@ -6,6 +6,33 @@ from torch.utils.data import Dataset
 import numpy as np
 
 
+# def user_profile_setting(ufDic: dict) -> str:  # Accepted 제외하고 다 버림
+#     uf = ''
+#     for i, key in enumerate(ufDic.keys()):
+#         one = ufDic[key]
+#         if i == 0 or key[0].lower() != "a":
+#             pass
+#         else:
+#             uf += ' | '
+#         if type(one) == list:
+#             uf += f"{key}: {', '.join(one[:-5])}"
+#         else:
+#             uf += f"{key}: {one}"
+#     return uf
+
+
+def user_profile_setting(ufDic: dict) -> str:  # Accepted 제외하고 다 버림
+    uf = '<user_profile> '
+    for i, key in enumerate(ufDic.keys()):
+        one = ufDic[key]
+        if i == 0 or key[0].lower() != "a": continue
+        if type(one) == list:
+            uf += f"{key}: {', '.join(one[-5:])} |"
+        else:
+            uf += f"{key}: {one}|"
+    return uf
+
+
 def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
     truncate_size = max_length - len(prefix) - len(suffix)
     # input_ids = prefix + input_ids[-truncate_size:] + suffix
@@ -119,7 +146,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         negative_indice = []
         if len(candidate_knowledges) < self.args.negative_num:
-            for idx in range(self.args.negative_num-len(candidate_knowledges)):
+            for idx in range(self.args.negative_num - len(candidate_knowledges)):
                 negative_indice.append(0)
 
         while len(negative_indice) < self.args.negative_num:
@@ -155,7 +182,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         else:
             assert Exception
 
-        prefix_encoding = self.tokenizer.encode(prefix)[1:-1][:30]
+        prefix_encoding = self.tokenizer.encode(prefix)[1:-1][:128]
         input_sentence = self.tokenizer('<dialog>' + dialog, add_special_tokens=False).input_ids
 
         input_sentence = [self.tokenizer.cls_token_id] + prefix_encoding + input_sentence[-(self.args.max_length - len(prefix_encoding) - 1):]
@@ -269,7 +296,7 @@ class KnowledgeDataset(Dataset):
     def __getitem__(self, item):
         data = self.knowledgeDB[item]
         tokenized_data = self.tokenizer(data,
-                                        max_length=self.max_length,
+                                        max_length=self.know_max_length,
                                         padding='max_length',
                                         truncation=True,
                                         add_special_tokens=True)

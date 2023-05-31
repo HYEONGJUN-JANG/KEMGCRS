@@ -67,8 +67,10 @@ def parseargs():
 
     parser.add_argument('--pretrained_model', default='bert_model.pt', type=str, help="Pre-trained Retriever BERT Model Name")
 
-    parser.add_argument('--max_length', default=15, type=int, help="dataset name")
-    parser.add_argument('--batch_size', default=16, type=int, help="batch size")
+    parser.add_argument('--max_length', default=256, type=int, help="dataset name")
+    parser.add_argument('--know_max_length', default=128, type=int, help="dataset name")
+
+    parser.add_argument('--batch_size', default=2, type=int, help="batch size")
     parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate')
     parser.add_argument('--lr_rerank', type=float, default=1e-5, help='Learning rate')
 
@@ -97,7 +99,7 @@ def parseargs():
 
     # TH
     parser.add_argument('--retrieve', default='negative', type=str, help="retrieve")
-    parser.add_argument('--input_prompt', default='dialog', type=str, help="input_prompt")
+    parser.add_argument('--input_prompt', default='dialog_topic_profile', type=str, help="input_prompt")
 
     args = parser.parse_args()
     # args.model_dir = os.path.join(args.model_dir, args.device)
