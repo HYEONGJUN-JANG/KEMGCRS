@@ -289,7 +289,7 @@ class KnowledgeDataset(Dataset):
     def __init__(self, args, knowledgeDB, tokenizer):
         super(Dataset, self).__init__()
         self.tokenizer = tokenizer
-        self.max_length = args.max_length
+        self.know_max_length = args.know_max_length
         self.knowledgeDB = knowledgeDB
         self.data_samples = []
 
