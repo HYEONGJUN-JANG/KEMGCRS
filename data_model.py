@@ -211,8 +211,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # candidate_knowledges = candidate_knowledges + [0] * (self.args.pseudo_pos_num - len(candidate_knowledges))
         # candidate_confidences = candidate_confidences + [0] * (self.args.pseudo_pos_num - len(candidate_confidences))
 
-        pseudo_negative = self.negative_sampler(candidate_knowledges_pos, candidate_knowledges)
-        # pseudo_negative = [] # todo: remove for rarank!!!!!!!!!!
+        # pseudo_negative = self.negative_sampler(candidate_knowledges_pos, candidate_knowledges)
+        pseudo_negative = [] # todo: remove for rarank!!!!!!!!!!
 
         ### Grouping
         # group_num = min(self.args.pseudo_pos_rank, len(candidate_knowledges)) - 1
