@@ -144,7 +144,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
                         for idx in range(args.pseudo_pos_rank):
                             g_logit = torch.gather(logit, 1, batch['pseudo_targets'][:, idx])  # [B, K]
-                            g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
+                            g_logit = torch.cat([g_logit, logit], dim=1)
                             loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
                     ### Sampling
@@ -159,7 +159,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                         pseudo_mask = torch.cat([torch.zeros(exclude.size(0)).unsqueeze(1).to(args.device), exclude], dim=1)
 
                         g_logit = torch.gather(logit, 1, batch['pseudo_targets'][:, args.pseudo_pos_rank-1])  # [B, K]
-                        g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
+                        g_logit = torch.cat([g_logit, logit], dim=1)
                         loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
                     ### List_Group
