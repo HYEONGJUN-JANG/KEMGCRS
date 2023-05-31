@@ -179,10 +179,10 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                         logit_pseudo = torch.gather(logit, 1, batch['all_negative'])  # [B, K]
                         cumsum_logit = torch.cumsum(logit_pseudo, dim=1)  # [B, K]
                         loss = 0
-                        # for idx in range(args.pseudo_pos_rank):  #
+                        # for i in range(args.pseudo_pos_rank):  #
                         idx = args.pseudo_pos_rank
-                        a = cumsum_logit[:, idx:]
-                        b = torch.cat([torch.zeros(cumsum_logit.size(0)).unsqueeze(1).to(args.device), cumsum_logit[:, :-(idx + 1)]], dim=1)
+                        a = cumsum_logit[:, idx-1:]
+                        b = torch.cat([torch.zeros(cumsum_logit.size(0)).unsqueeze(1).to(args.device), cumsum_logit[:, :-idx]], dim=1)
                         c = (a - b) / idx  # [B, K-1]
                         c = c[:, :1] + c[:, idx:]
                         loss += (-torch.log_softmax(c, dim=1).select(dim=1, index=0)).mean()
