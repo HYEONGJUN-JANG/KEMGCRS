@@ -140,57 +140,56 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             # pseudo_targets2 = pseudo_targets[1]
             # pseudo_targets3 = pseudo_targets[2]
 
-            if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
-                if new:
-                    new_cnt += 1
-                for k in [1, 3, 5, 10]:
+            if new:
+                new_cnt += 1
+            for k in [1, 3, 5, 10]:
 
-                    top_candidate = torch.topk(score, k=k).indices
-                    if args.stage == 'rerank':
-                        top_candidate = torch.gather(candidate_indice[idx], 0, top_candidate)
+                top_candidate = torch.topk(score, k=k).indices
+                if args.stage == 'rerank':
+                    top_candidate = torch.gather(candidate_indice[idx], 0, top_candidate)
 
-                    correct_k = target in top_candidate
-                    if k == 1:
-                        hit1.append(correct_k)
-                        hit1_goal[goal].append(correct_k)
-                        if new:
-                            hit1_new.append(correct_k)
-                    elif k == 3:
-                        hit3.append(correct_k)
-                        hit3_goal[goal].append(correct_k)
-                        if new:
-                            hit3_new.append(correct_k)
-                    elif k == 5:
-                        hit5.append(correct_k)
-                        hit5_goal[goal].append(correct_k)
-                        if new:
-                            hit5_new.append(correct_k)
-                    elif k == 10:
-                        hit10.append(correct_k)
-                        hit10_goal[goal].append(correct_k)
-                        if new:
-                            hit10_new.append(correct_k)
-                    elif k == 20:
-                        hit20.append(correct_k)
-                        hit20_goal[goal].append(correct_k)
-                        if new:
-                            hit20_new.append(correct_k)
+                correct_k = target in top_candidate
+                if k == 1:
+                    hit1.append(correct_k)
+                    hit1_goal[goal].append(correct_k)
+                    if new:
+                        hit1_new.append(correct_k)
+                elif k == 3:
+                    hit3.append(correct_k)
+                    hit3_goal[goal].append(correct_k)
+                    if new:
+                        hit3_new.append(correct_k)
+                elif k == 5:
+                    hit5.append(correct_k)
+                    hit5_goal[goal].append(correct_k)
+                    if new:
+                        hit5_new.append(correct_k)
+                elif k == 10:
+                    hit10.append(correct_k)
+                    hit10_goal[goal].append(correct_k)
+                    if new:
+                        hit10_new.append(correct_k)
+                elif k == 20:
+                    hit20.append(correct_k)
+                    hit20_goal[goal].append(correct_k)
+                    if new:
+                        hit20_new.append(correct_k)
 
-                    # correct_k = pseudo_targets1 in top_candidate
-                    # if k == 20:
-                    #     hit20_p1.append(correct_k)
-                    #
-                    # correct_k = pseudo_targets2 in top_candidate
-                    # if k == 20:
-                    #     hit20_p2.append(correct_k)
-                    #
-                    # correct_k = pseudo_targets3 in top_candidate
-                    # if k == 20:
-                    #     hit20_p3.append(correct_k)
-                    #
-                    # correct_k = (pseudo_targets2 in top_candidate) or (pseudo_targets3 in top_candidate)
-                    # if k == 20:
-                    #     hit20_p23.append(correct_k)
+                # correct_k = pseudo_targets1 in top_candidate
+                # if k == 20:
+                #     hit20_p1.append(correct_k)
+                #
+                # correct_k = pseudo_targets2 in top_candidate
+                # if k == 20:
+                #     hit20_p2.append(correct_k)
+                #
+                # correct_k = pseudo_targets3 in top_candidate
+                # if k == 20:
+                #     hit20_p3.append(correct_k)
+                #
+                # correct_k = (pseudo_targets2 in top_candidate) or (pseudo_targets3 in top_candidate)
+                # if k == 20:
+                #     hit20_p23.append(correct_k)
     # for i in range(10):
     #     print("T:%s\tP:%s" %(targets[i], pred[i]))
 
