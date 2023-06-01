@@ -56,6 +56,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     goal_list = ['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A', 'Chat about stars']
     hit1_goal, hit3_goal, hit5_goal, hit10_goal, hit20_goal = defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
     hit1, hit5, hit3, hit10, hit20 = [], [], [], [], []
+    hit1_new, hit5_new, hit3_new, hit10_new, hit20_new = [], [], [], [], []
+
     hit20_p1, hit20_p2, hit20_p3, hit20_p23 = [], [], [], []
 
     cnt = 0
@@ -68,6 +70,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         dialog_token = batch['input_ids']
         dialog_mask = batch['attention_mask']
         response = batch['response']
+        new_knowledges = batch['new_knowledges']
+
         # candidate_indice = batch['candidate_indice']
         # candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
         # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
@@ -124,7 +128,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': target_knowledge_text, 'response': response, "predict5": retrieved_knowledge_text, "score5": retrieved_knowledge_score})
             # save_json(args, f"{args.time}_{args.model_name}_inout", jsonlineSave)
 
-        for idx, (score, target, pseudo_targets, goal) in enumerate(zip(dot_score, target_knowledge_idx, batch['pseudo_targets'], type_idx)):
+        for idx, (score, target, pseudo_targets, goal, new) in enumerate(zip(dot_score, target_knowledge_idx, batch['pseudo_targets'], type_idx, new_knowledges)):
             # goal = args.goalDic['int'][int(goal_idx)]
             # top_candidate = torch.topk(score, k=args.know_topk, dim=0).indices  # [K]
             # candidate_knowledge_text = [args.knowledgeDB[int(idx)] for idx in top_candidate]  # [K, .]
@@ -147,18 +151,28 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
                     if k == 1:
                         hit1.append(correct_k)
                         hit1_goal[goal].append(correct_k)
+                        if new:
+                            hit1_new.append(correct_k)
                     elif k == 3:
                         hit3.append(correct_k)
                         hit3_goal[goal].append(correct_k)
+                        if new:
+                            hit3_new.append(correct_k)
                     elif k == 5:
                         hit5.append(correct_k)
                         hit5_goal[goal].append(correct_k)
+                        if new:
+                            hit5_new.append(correct_k)
                     elif k == 10:
                         hit10.append(correct_k)
                         hit10_goal[goal].append(correct_k)
+                        if new:
+                            hit10_new.append(correct_k)
                     elif k == 20:
                         hit20.append(correct_k)
                         hit20_goal[goal].append(correct_k)
+                        if new:
+                            hit20_new.append(correct_k)
 
                     # correct_k = pseudo_targets1 in top_candidate
                     # if k == 20:
@@ -184,6 +198,12 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     hit5 = np.average(hit5)
     hit10 = np.average(hit10)
     hit20 = np.average(hit20)
+
+    hit1_new = np.average(hit1_new)
+    hit3_new = np.average(hit3_new)
+    hit5_new = np.average(hit5_new)
+    hit10_new = np.average(hit10_new)
+    hit20_new = np.average(hit20_new)
 
     # hit20_p1 = np.average(hit20_p1)
     # hit20_p2 = np.average(hit20_p2)
@@ -214,6 +234,12 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         print(f"Test Hit@10: %.4f" % np.average(hit10))
         print(f"Test Hit@20: %.4f" % np.average(hit20))
 
+        print(f"Test New Hit@1: %.4f" % np.average(hit1_new))
+        print(f"Test New Hit@3: %.4f" % np.average(hit3_new))
+        print(f"Test New Hit@5: %.4f" % np.average(hit5_new))
+        print(f"Test New Hit@10: %.4f" % np.average(hit10_new))
+        print(f"Test New Hit@20: %.4f" % np.average(hit20_new))
+
         # print(f"Test Hit@20_P1: %.4f" % np.average(hit20_p1))
         # print(f"Test Hit@20_P2: %.4f" % np.average(hit20_p2))
 
@@ -223,4 +249,4 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         # print("Chat about stars\t" + "\t".join(hit_chat_result))
         print("POI recommendation\t" + "\t".join(hit_poi_result))
 
-    return [hit1, hit3, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result]
+    return [hit1, hit3, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result, hit1_new, hit3_new, hit5_new, hit10_new, hit20_new]

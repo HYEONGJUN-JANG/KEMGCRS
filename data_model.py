@@ -129,12 +129,13 @@ def convert_idx_to_docid(idx):
 
 
 class DialogDataset(Dataset):  # knowledge용 데이터셋
-    def __init__(self, args, data_sample, knowledgeDB, tokenizer, task, mode='train'):
+    def __init__(self, args, data_sample, knowledgeDB, train_knowledgeDB, tokenizer, task, mode='train'):
         super(Dataset, self).__init__()
         self.args = args
         self.task = task
         self.tokenizer = tokenizer
         self.knowledgeDB = knowledgeDB
+        self.train_knowledgeDB = train_knowledgeDB
         self.augmented_raw_sample = data_sample
         self.mode = mode
 
@@ -273,6 +274,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['target_knowledge'] = target_knowledge_idx  # target_knowledge_idx  # candidate_knowledges[0]
         context_batch['all_negative'] = candidate_knowledges + self.all_negative(candidate_knowledges)
         context_batch['bm25_top20'] = candidate_knowledges
+        context_batch['new_knowledge'] = self.knowledgeDB[target_knowledge_idx] not in self.train_knowledgeDB
 
         context_batch['indices'] = idx
         for k, v in context_batch.items():

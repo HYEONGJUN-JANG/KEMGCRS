@@ -31,6 +31,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
     best_hit = [[], [], [], [], []]
+    best_hit_new = [[], [], [], [], []]
+
     best_hit_movie = [[], [], [], [], []]
     best_hit_poi = [[], [], [], [], []]
     best_hit_music = [[], [], [], [], []]
@@ -158,7 +160,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                             exclude[torch.arange(logit.size(0)), batch['pseudo_targets'][:, idx]] = -1e10
                         pseudo_mask = torch.cat([torch.zeros(exclude.size(0)).unsqueeze(1).to(args.device), exclude], dim=1)
 
-                        g_logit = logit[torch.arange(logit.size(0)), batch['pseudo_targets'][:, args.pseudo_pos_rank-1]]
+                        g_logit = logit[torch.arange(logit.size(0)), batch['pseudo_targets'][:, args.pseudo_pos_rank - 1]]
                         g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
                         loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
@@ -397,11 +399,14 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
-        hit1, hit3, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result = eval_know(args, test_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+        hit1, hit3, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result, hit1_new, hit3_new, hit5_new, hit10_new, hit20_new = eval_know(args, test_dataloader, retriever, all_knowledge_data, all_knowledgeDB,
+                                                                                                                                                                          tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
         with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
             f.write("EPOCH:\t%d\n" % epoch)
             f.write("Overall\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\n" % (hit1, hit3, hit5, hit10, hit20))
+            f.write("Overall new knowledge\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\n" % (hit1_new, hit3_new, hit5_new, hit10_new, hit20_new))
+
             f.write("Movie recommendation\t" + "\t".join(hit_movie_result) + "\n")
             f.write("Music recommendation\t" + "\t".join(hit_music_result) + "\n")
             f.write("Q&A\t" + "\t".join(hit_qa_result) + "\n")
@@ -415,6 +420,11 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             best_hit[2] = hit5
             best_hit[3] = hit10
             best_hit[4] = hit20
+            best_hit_new[0] = hit1_new
+            best_hit_new[1] = hit3_new
+            best_hit_new[2] = hit5_new
+            best_hit_new[3] = hit10_new
+            best_hit_new[4] = hit20_new
             best_hit_movie = hit_movie_result
             best_hit_poi = hit_poi_result
             best_hit_music = hit_music_result
@@ -436,6 +446,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
         f.write("[BEST]\n")
         f.write("Overall\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\n" % (best_hit[0], best_hit[1], best_hit[2], best_hit[3], best_hit[4]))
+        f.write("Overall\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\n" % (best_hit_new[0], best_hit_new[1], best_hit_new[2], best_hit_new[3], best_hit_new[4]))
+
         f.write("Movie recommendation\t" + "\t".join(best_hit_movie) + "\n")
         f.write("Music recommendation\t" + "\t".join(best_hit_music) + "\n")
         f.write("QA\t" + "\t".join(best_hit_qa) + "\n")

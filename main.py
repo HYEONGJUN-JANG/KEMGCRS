@@ -221,9 +221,9 @@ def main():
         valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB)
         test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
 
-        train_datamodel_know = DialogDataset(args, train_dataset, train_knowledgeDB, tokenizer, task='know')
-        valid_datamodel_know = DialogDataset(args, valid_dataset, all_knowledgeDB, tokenizer, task='know')
-        test_datamodel_know = DialogDataset(args, test_dataset, all_knowledgeDB, tokenizer, task='know')
+        train_datamodel_know = DialogDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+        valid_datamodel_know = DialogDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+        test_datamodel_know = DialogDataset(args, test_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
 
         train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
         train_dataloader_retrieve = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=False)
