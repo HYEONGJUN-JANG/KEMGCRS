@@ -139,10 +139,10 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             # pseudo_targets1 = pseudo_targets[0]
             # pseudo_targets2 = pseudo_targets[1]
             # pseudo_targets3 = pseudo_targets[2]
-            new_cnt += 1
-            if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':  # or goal == 'Chat about stars':
-                # if new:
 
+            if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A' or goal == 'Chat about stars':
+                if new:
+                    new_cnt += 1
                 for k in [1, 3, 5, 10]:
 
                     top_candidate = torch.topk(score, k=k).indices
