@@ -44,7 +44,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     # knowledge_index = knowledge_index.to(args.device)
     jsonlineSave = []
     # bert_model = bert_model.to(args.device)
-
+    new_cnt = 0
     print('Knowledge indexing for test')
     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, stage='retrieve')
     knowledge_index = knowledge_index.to(args.device)
@@ -70,7 +70,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         dialog_token = batch['input_ids']
         dialog_mask = batch['attention_mask']
         response = batch['response']
-        new_knowledges = batch['new_knowledges']
+        new_knowledge = batch['new_knowledge']
 
         # candidate_indice = batch['candidate_indice']
         # candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
@@ -128,7 +128,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': target_knowledge_text, 'response': response, "predict5": retrieved_knowledge_text, "score5": retrieved_knowledge_score})
             # save_json(args, f"{args.time}_{args.model_name}_inout", jsonlineSave)
 
-        for idx, (score, target, pseudo_targets, goal, new) in enumerate(zip(dot_score, target_knowledge_idx, batch['pseudo_targets'], type_idx, new_knowledges)):
+        for idx, (score, target, pseudo_targets, goal, new) in enumerate(zip(dot_score, target_knowledge_idx, batch['pseudo_targets'], type_idx, new_knowledge)):
             # goal = args.goalDic['int'][int(goal_idx)]
             # top_candidate = torch.topk(score, k=args.know_topk, dim=0).indices  # [K]
             # candidate_knowledge_text = [args.knowledgeDB[int(idx)] for idx in top_candidate]  # [K, .]
@@ -141,6 +141,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             # pseudo_targets3 = pseudo_targets[2]
 
             if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':  # or goal == 'Chat about stars':
+                if new:
+                    new_cnt += 1
                 for k in [1, 3, 5, 10]:
 
                     top_candidate = torch.topk(score, k=k).indices
@@ -249,4 +251,5 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         # print("Chat about stars\t" + "\t".join(hit_chat_result))
         print("POI recommendation\t" + "\t".join(hit_poi_result))
 
+    print("new knowledge %d", new_cnt)
     return [hit1, hit3, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result, hit1_new, hit3_new, hit5_new, hit10_new, hit20_new]
