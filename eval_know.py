@@ -141,8 +141,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             # pseudo_targets3 = pseudo_targets[2]
 
             if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':  # or goal == 'Chat about stars':
-                if new:
-                    new_cnt += 1
+                # if new:
+                new_cnt += 1
                 for k in [1, 3, 5, 10]:
 
                     top_candidate = torch.topk(score, k=k).indices
@@ -251,5 +251,5 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         # print("Chat about stars\t" + "\t".join(hit_chat_result))
         print("POI recommendation\t" + "\t".join(hit_poi_result))
 
-    print("new knowledge %d", new_cnt)
+    print("new knowledge %d" % new_cnt)
     return [hit1, hit3, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result, hit1_new, hit3_new, hit5_new, hit10_new, hit20_new]
