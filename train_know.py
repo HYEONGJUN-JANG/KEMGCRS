@@ -250,6 +250,9 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                         g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
                         loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
+                        if args.train_ablation == 'S':
+                            break
+
                 ### Group-wise + Seq (original)
                 # loss = torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
                 # for idx in range(1, batch['pseudo_targets'].size(1)):
