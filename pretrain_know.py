@@ -64,11 +64,12 @@ def pretrain_know(args, retriever, train_knowledge_topic, test_knowledge_topic, 
 
             # knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
             knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
-            score = retriever.topic_proj(knowledge_emb)
+            scores = retriever.topic_proj(knowledge_emb)
 
-            top_candidate = torch.topk(score, k=1).indices
-            correct_k = topic_idx in top_candidate
-            hit1.append(correct_k)
+            for idx, (score, target) in enumerate(zip(scores, topic_idx)):
+                top_candidate = torch.topk(score, k=1).indices
+                correct_k = target in top_candidate
+                hit1.append(correct_k)
 
         hit1 = np.average(hit1)
-        print(f"Pre-Test Hit@1: %.4f" % np.average(hit1))
+        print("Pre-Test Hit@1: %.4f" % np.average(hit1))
