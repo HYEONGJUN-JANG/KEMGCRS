@@ -15,7 +15,6 @@ import data
 from config import bert_special_tokens_dict, gpt_special_tokens_dict
 from data_model import GenerationDataset, DialogDataset, KnowledgeDataset, KnowledgeTopicDataset
 from eval_know import eval_know, knowledge_reindexing
-from pretrain_know import pretrain_know
 from train_know import train_know
 from utils import *
 from models import *
