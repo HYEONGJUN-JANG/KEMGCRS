@@ -168,6 +168,7 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB):
 
 def dataset_reader(args, data_name='train'):
     all_knowledge = set()
+    all_knowledge_topic = []
     conversation_sample = []
     data_path = os.path.join(args.data_dir, f"en_{data_name}_know_cand_score20.txt")
     with open(data_path, 'r', encoding='UTF-8') as f:
@@ -198,6 +199,9 @@ def dataset_reader(args, data_name='train'):
             knowledge_seq = [convert_know(know) for know in knowledge_seq]
             all_knowledge.update(knowledge_seq)
             # pseudo_knowledge_seq = [' '.join(know) for know in pseudo_knowledge_seq]
+            for topic, know in zip(dialog['goal_topic_list'], knowledge_seq):
+                if (topic, know) not in all_knowledge_topic and know != '':
+                    all_knowledge_topic.append((topic, know))
 
             user_profile = user_profile_setting(dialog['user_profile'])
             situation = dialog['situation']
@@ -217,4 +221,4 @@ def dataset_reader(args, data_name='train'):
                 'pseudo_confidence_seq': pseudo_confidence_seq
             })
 
-    return conversation_sample, list(all_knowledge)
+    return conversation_sample, list(all_knowledge), all_knowledge_topic

@@ -13,8 +13,9 @@ from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer, BartForConditionalGeneration, GPT2LMHeadModel, GPT2Config, AutoConfig
 import data
 from config import bert_special_tokens_dict, gpt_special_tokens_dict
-from data_model import GenerationDataset, DialogDataset, KnowledgeDataset
+from data_model import GenerationDataset, DialogDataset, KnowledgeDataset, KnowledgeTopicDataset
 from eval_know import eval_know, knowledge_reindexing
+from pretrain_know import pretrain_know
 from train_know import train_know
 from utils import *
 from models import *
@@ -22,7 +23,9 @@ from data_util import readDic, dataset_reader, process_augment_sample, bm_tokeni
 from train_goal_topic import topic_eval
 from rank_bm25 import BM25Okapi
 import nltk
+
 nltk.download('stopwords')
+
 
 # def train_knowledge_indexing(args, knowledge_data, retriever, optimizer):
 #     # 모든 know_index를 버트에 태움
@@ -99,9 +102,9 @@ def main():
     # Read knowledge DB
     # train_knowledgeDB = data.read_pkl(os.path.join(args.data_dir, 'train_knowledge_DB.pickle'))  # TODO: verbalize (TH)
 
-    train_dataset_raw, train_knowledge_base = dataset_reader(args, 'train')
-    test_dataset_raw, valid_knowledge_base = dataset_reader(args, 'test')
-    valid_dataset_raw, test_knowledge_base = dataset_reader(args, 'dev')
+    train_dataset_raw, train_knowledge_base, train_knowledge_topic = dataset_reader(args, 'train')
+    test_dataset_raw, valid_knowledge_base, test_knowledge_topic = dataset_reader(args, 'test')
+    valid_dataset_raw, test_knowledge_base, _ = dataset_reader(args, 'dev')
 
     train_knowledgeDB, all_knowledgeDB = set(), set()
     train_knowledgeDB.update(train_knowledge_base)
@@ -233,20 +236,21 @@ def main():
         # print('rerank mode')
         # retriever.init_reranker()
         # train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
+        pretrain_know(args, retriever, train_knowledge_topic, test_knowledge_topic, tokenizer)
 
-        # if args.saved_model_path == '':
-        #     print('retrieve mode')
-        #     args.stage = 'retrieve'
-        #     eval_know(args, valid_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
-        #     train_know(args, train_dataloader, valid_dataloader, retriever, train_knowledge_data, train_knowledgeDB, all_knowledge_data, all_knowledgeDB, tokenizer)
-        #
-        #     # eval_know(args, train_dataloader_retrieve, retriever, train_knowledge_data, train_knowledgeDB, tokenizer, retrieve=True)  # todo: remove
-        #     # eval_know(args, valid_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer, retrieve=True)  # todo: remove
-        #
-        #     args.stage = 'rerank'
-        # else:
-        #     print('############################retriever load:\t%s#################################' % args.saved_model_path)
-        #     retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path), map_location=args.device))
+        if args.saved_model_path == '':
+            print('retrieve mode')
+            args.stage = 'retrieve'
+            eval_know(args, valid_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+            train_know(args, train_dataloader, valid_dataloader, retriever, train_knowledge_data, train_knowledgeDB, all_knowledge_data, all_knowledgeDB, tokenizer)
+
+            # eval_know(args, train_dataloader_retrieve, retriever, train_knowledge_data, train_knowledgeDB, tokenizer, retrieve=True)  # todo: remove
+            # eval_know(args, valid_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer, retrieve=True)  # todo: remove
+
+            args.stage = 'rerank'
+        else:
+            print('############################retriever load:\t%s#################################' % args.saved_model_path)
+            retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path), map_location=args.device))
 
         if args.stage == 'rerank':
             args.stage = 'retrieve'

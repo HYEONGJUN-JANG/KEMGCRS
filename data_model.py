@@ -310,3 +310,30 @@ class KnowledgeDataset(Dataset):
 
     def __len__(self):
         return len(self.knowledgeDB)
+
+
+class KnowledgeTopicDataset(Dataset):
+    def __init__(self, args, knowledgeTopicDB, tokenizer):
+        super(Dataset, self).__init__()
+        self.args = args
+        self.tokenizer = tokenizer
+        self.know_max_length = args.know_max_length
+        self.knowledgeTopicDB = knowledgeTopicDB
+        self.data_samples = []
+
+    def __getitem__(self, item):
+        topic, data = self.knowledgeTopicDB[item]
+        topic_idx = self.args.topicDic['str'][topic]
+        tokenized_data = self.tokenizer(data,
+                                        max_length=self.know_max_length,
+                                        padding='max_length',
+                                        truncation=True,
+                                        add_special_tokens=True)
+        tokens = torch.LongTensor(tokenized_data.input_ids)
+        mask = torch.LongTensor(tokenized_data.attention_mask)
+        # docid = self.tokenizer.encode(convert_idx_to_docid(item), truncation=True, padding='max_length', max_length=10)[1:-1]  # 이미 Tensor로 받음
+        # docid = torch.LongTensor(docid)
+        return tokens, mask, topic_idx
+
+    def __len__(self):
+        return len(self.knowledgeTopicDB)
