@@ -13,7 +13,7 @@ from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer, BartForConditionalGeneration, GPT2LMHeadModel, GPT2Config, AutoConfig
 import data
 from config import bert_special_tokens_dict, gpt_special_tokens_dict
-from data_model import GenerationDataset, DialogDataset, KnowledgeDataset, KnowledgeTopicDataset
+from data_model import GenerationDataset, DialogDataset, KnowledgeDataset, KnowledgeTopicDataset, TopicDataset
 from eval_know import eval_know, knowledge_reindexing
 from train_know import train_know
 from train_topic import train_topic
@@ -215,9 +215,9 @@ def main():
         valid_dataset = process_augment_sample_topic(valid_dataset_raw, tokenizer, all_knowledgeDB)
         test_dataset = process_augment_sample_topic(test_dataset_raw, tokenizer, all_knowledgeDB)
 
-        train_datamodel_topic = DialogDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
-        valid_datamodel_topic = DialogDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
-        test_datamodel_topic = DialogDataset(args, test_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+        train_datamodel_topic = TopicDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+        valid_datamodel_topic = TopicDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+        test_datamodel_topic = TopicDataset(args, test_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
 
         train_dataloader_topic = DataLoader(train_datamodel_topic, batch_size=args.batch_size, shuffle=True)
         valid_dataloader_topic = DataLoader(valid_datamodel_topic, batch_size=args.batch_size, shuffle=False)
