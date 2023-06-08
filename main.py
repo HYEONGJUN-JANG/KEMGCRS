@@ -19,8 +19,8 @@ from pretrain_know import pretrain_know
 from train_know import train_know
 from utils import *
 from models import *
-from data_util import readDic, dataset_reader, process_augment_sample, bm_tokenizer
-from train_goal_topic import topic_eval
+from data_util import readDic, dataset_reader, process_augment_sample, bm_tokenizer, process_augment_sample_topic
+from train_goal_topic import topic_eval, train_topic
 from rank_bm25 import BM25Okapi
 import nltk
 
@@ -206,6 +206,25 @@ def main():
                     f.write('-------------------------------------------\n')
         else:
             generator.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
+
+    if 'topic' in args.task:
+        # KNOWLEDGE TASk
+        retriever = Retriever(args, bert_model)
+        retriever = retriever.to(args.device)
+
+        train_dataset = process_augment_sample_topic(train_dataset_raw, tokenizer, train_knowledgeDB)
+        valid_dataset = process_augment_sample_topic(valid_dataset_raw, tokenizer, all_knowledgeDB)
+        test_dataset = process_augment_sample_topic(test_dataset_raw, tokenizer, all_knowledgeDB)
+
+        train_datamodel_topic = DialogDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+        valid_datamodel_topic = DialogDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+        test_datamodel_topic = DialogDataset(args, test_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+
+        train_dataloader_topic = DataLoader(train_datamodel_topic, batch_size=args.batch_size, shuffle=True)
+        valid_dataloader_topic = DataLoader(valid_datamodel_topic, batch_size=args.batch_size, shuffle=False)
+        test_dataloader_topic = DataLoader(test_datamodel_topic, batch_size=1, shuffle=False)
+
+        train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer)
 
     if 'know' in args.task:
         # bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
