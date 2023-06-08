@@ -16,10 +16,10 @@ from config import bert_special_tokens_dict, gpt_special_tokens_dict
 from data_model import GenerationDataset, DialogDataset, KnowledgeDataset, KnowledgeTopicDataset
 from eval_know import eval_know, knowledge_reindexing
 from train_know import train_know
+from train_topic import train_topic
 from utils import *
 from models import *
 from data_util import readDic, dataset_reader, process_augment_sample, bm_tokenizer, process_augment_sample_topic
-from train_goal_topic import topic_eval, train_topic
 from rank_bm25 import BM25Okapi
 import nltk
 
