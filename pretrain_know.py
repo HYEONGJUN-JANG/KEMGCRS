@@ -38,7 +38,7 @@ def pretrain_know(args, retriever, train_knowledge_topic, test_knowledge_topic, 
     )
 
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
-    for epoch in range(10):
+    for epoch in range(args.epoch_pt):
         total_loss = 0
         for batch in tqdm(knowledgeTopicDataLoader, bar_format=' {l_bar} | {bar:23} {r_bar}'):
             input_ids = batch[0].to(args.device)
@@ -54,7 +54,7 @@ def pretrain_know(args, retriever, train_knowledge_topic, test_knowledge_topic, 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-        print('LOSS_PRETRAIN:\t%.4f', total_loss)
+        print('LOSS_PRETRAIN:\t%.4f' % total_loss)
 
         hit1 = []
         for batch in tqdm(test_knowledgeTopicDataLoader, bar_format=' {l_bar} | {bar:23} {r_bar}'):

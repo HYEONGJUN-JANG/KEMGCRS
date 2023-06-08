@@ -46,7 +46,6 @@ def parseargs():
     parser.add_argument('--negative_num', default=4, type=int, help="negative_num")
     parser.add_argument('--stage', default='rerank', type=str, choices=['retrieve', 'rerank'])
     parser.add_argument("--stage2_test", action='store_true', help="Whether to Fine-tune on type.")
-
     parser.add_argument('--update_freq', default=-1, type=int, help="update_freq")
 
     parser.add_argument("--data_dir", default='data', type=str, help="The data directory.")
@@ -80,6 +79,9 @@ def parseargs():
 
     parser.add_argument('--hidden_size', default=768, type=int, help="hidden size")
     parser.add_argument('--num_epochs', default=10, type=int, help="Number of epoch")
+
+    parser.add_argument('--epoch_pt', default=10, type=int, help="Number of epoch")
+
     parser.add_argument("--output_dir", default='output', type=str, help="The output directory where the model predictions and checkpoints will be written.")
     parser.add_argument("--usekg", action='store_true', help="use know_text for response")  # HJ: Know_text 를 사용하는지 여부
     parser.add_argument("--time", default='', type=str, help="Time for fileName")  # HJ : Log file middle Name
