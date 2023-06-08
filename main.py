@@ -221,7 +221,7 @@ def main():
 
         train_dataloader_topic = DataLoader(train_datamodel_topic, batch_size=args.batch_size, shuffle=True)
         valid_dataloader_topic = DataLoader(valid_datamodel_topic, batch_size=args.batch_size, shuffle=False)
-        test_dataloader_topic = DataLoader(test_datamodel_topic, batch_size=1, shuffle=False)
+        test_dataloader_topic = DataLoader(test_datamodel_topic, batch_size=args.batch_size, shuffle=False)
 
         train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer)
 
@@ -254,7 +254,6 @@ def main():
         # print('rerank mode')
         # retriever.init_reranker()
         # train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
-        pretrain_know(args, retriever, train_knowledge_topic, test_knowledge_topic, tokenizer)
 
         if args.saved_model_path == '':
             print('retrieve mode')
