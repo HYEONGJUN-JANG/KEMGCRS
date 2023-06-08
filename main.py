@@ -16,7 +16,7 @@ from config import bert_special_tokens_dict, gpt_special_tokens_dict
 from data_model import GenerationDataset, DialogDataset, KnowledgeDataset, KnowledgeTopicDataset, TopicDataset
 from eval_know import eval_know, knowledge_reindexing
 from train_know import train_know
-from train_topic import train_topic
+from train_topic import train_topic, pretrain_topic
 from utils import *
 from models import *
 from data_util import readDic, dataset_reader, process_augment_sample, bm_tokenizer, process_augment_sample_topic
@@ -210,6 +210,8 @@ def main():
         # KNOWLEDGE TASk
         retriever = Retriever(args, bert_model)
         retriever = retriever.to(args.device)
+
+        pretrain_topic(args, retriever, train_knowledge_topic, test_knowledge_topic, tokenizer)
 
         train_dataset = process_augment_sample_topic(train_dataset_raw, tokenizer, train_knowledgeDB)
         valid_dataset = process_augment_sample_topic(valid_dataset_raw, tokenizer, all_knowledgeDB)

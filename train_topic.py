@@ -67,7 +67,7 @@ def train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, 
         print("Pre-Test Hit@1: %.4f" % np.average(hit1))
 
 
-def pretrain_know(args, retriever, train_knowledge_topic, test_knowledge_topic, tokenizer):
+def pretrain_topic(args, retriever, train_knowledge_topic, test_knowledge_topic, tokenizer):
     train_knowledge_topic_data = KnowledgeTopicDataset(args, train_knowledge_topic, tokenizer)
     knowledgeTopicDataLoader = DataLoader(
         train_knowledge_topic_data,
