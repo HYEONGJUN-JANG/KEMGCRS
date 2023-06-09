@@ -211,7 +211,7 @@ def main():
         retriever = Retriever(args, bert_model)
         retriever = retriever.to(args.device)
 
-        pretrain_topic(args, retriever, train_knowledge_topic, test_knowledge_topic, tokenizer)
+        # pretrain_topic(args, retriever, train_knowledge_topic, test_knowledge_topic, tokenizer)
 
         train_dataset = process_augment_sample_topic(train_dataset_raw, tokenizer, train_knowledgeDB)
         valid_dataset = process_augment_sample_topic(valid_dataset_raw, tokenizer, all_knowledgeDB)
