@@ -361,7 +361,7 @@ class TopicDataset(Dataset):  # knowledge용 데이터셋
         context_batch = defaultdict()
         prefix = '<profile>' + user_profile + '<type>' + type + self.tokenizer.sep_token
 
-        prefix_encoding = self.tokenizer.encode(prefix)[1:-1][:30]
+        prefix_encoding = self.tokenizer.encode(prefix)[1:-1][:self.args.max_prefix_length]
         input_sentence = self.tokenizer('<dialog>' + dialog, add_special_tokens=False).input_ids
 
         input_sentence = [self.tokenizer.cls_token_id] + prefix_encoding + input_sentence[-(self.args.max_length - len(prefix_encoding) - 1):]
