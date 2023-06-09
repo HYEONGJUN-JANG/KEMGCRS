@@ -45,7 +45,7 @@ def train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-        print('LOSS_PRETRAIN:\t%.4f' % total_loss)
+        print('LOSS_TOPIC:\t%.4f' % total_loss)
 
         hit1 = []
         for batch in tqdm(test_dataloader_topic, bar_format=' {l_bar} | {bar:23} {r_bar}'):
