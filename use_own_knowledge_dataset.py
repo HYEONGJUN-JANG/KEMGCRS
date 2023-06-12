@@ -92,7 +92,6 @@ class RagDataset(Dataset):
                 # context_batch[k] = torch.as_tensor(v)
         return context_batch
 
-
     def __len__(self):
         return len(self.augmented_raw_sample)
 
@@ -199,7 +198,6 @@ def main(
 
     train_datamodel_know = RagDataset(args, train_dataset_resp, tokenizer)
     train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
-
 
     # bert_model = AutoModel.from_pretrained(args.bert_name).to(args.device)
     # bert_tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
@@ -343,7 +341,7 @@ def process_augment_sample(raw_data, tokenizer=None):
             role = conversation['role_seq'][i]
             utterance = conversation['dialog'][i] + eos_token
             goal = conversation['type'][i]
-            if goal == 'Q&A':  # TH 230601
+            if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':
                 if role == 'system' and len(augmented_dialog) > 0 and len(conversation['pseudo_knowledge_seq'][i]) != 0:
                     flatten_dialog = ''.join(augmented_dialog)
                     train_sample.append({'dialog': flatten_dialog,
