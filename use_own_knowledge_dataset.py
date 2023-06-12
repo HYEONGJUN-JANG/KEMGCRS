@@ -233,10 +233,10 @@ def main(
                 question_hidden_states = model.question_encoder(dialog_token, dialog_mask)[0]  # model.question_encoder(input_ids)[0]
                 # 2. Retrieve
                 # docs_dict = retriever(dialog_token.numpy(), question_hidden_states.detach().numpy(), return_tensors="pt")
-                docs_dict = retriever(dialog_token.cpu().numpy(), question_hidden_states.cpu().detach().numpy(), return_tensors="pt")
+                docs_dict = retriever(dialog_token.cpu().numpy(), question_hidden_states.cpu().detach().numpy(), return_tensors="pt").to(args.device)
 
                 doc_scores = torch.bmm(
-                    question_hidden_states.unsqueeze(1), docs_dict["retrieved_doc_embeds"].float().transpose(1, 2).to(args.device)
+                    question_hidden_states.unsqueeze(1), docs_dict["retrieved_doc_embeds"].float().transpose(1, 2)
                 ).squeeze(1)
 
                 generated = model.generate(
