@@ -358,7 +358,7 @@ if __name__ == "__main__":
     dev_dataset_resp = process_augment_sample(dev_dataset_raw)
     test_dataset_resp = process_augment_sample(test_dataset_raw)
 
-
+    os.makedirs('test_data', exist_ok=True)
     def save(mode, listdataset):
         s_path, t_path = os.path.join('test_data', mode + '.source'), os.path.join(args.home, 'test_data', mode + '.target')
         with open(s_path, 'w', encoding='utf-8') as ss, open(t_path, 'w', encoding='utf-8') as tt:
