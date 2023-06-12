@@ -245,7 +245,7 @@ def main(
                     doc_scores=doc_scores,
                 )
                 generated_string = tokenizer.batch_decode(generated, skip_special_tokens=True)
-                print("[dialog]\n%s" % tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
+                print("[dialog]\n%s" % tokenizer.question_encoder.batch_decode(dialog_token, skip_special_tokens=True))
                 print('[generated]\n%s' % generated_string)
                 print("[response]\n%s" % tokenizer.batch_decode(response, skip_special_tokens=True))
 
