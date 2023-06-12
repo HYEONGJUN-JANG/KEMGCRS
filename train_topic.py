@@ -114,4 +114,4 @@ def pretrain_topic(args, retriever, train_knowledge_topic, test_knowledge_topic,
                 hit1.append(correct_k)
 
         hit1 = np.average(hit1)
-        print("Pre-Test Hit@1: %.4f" % np.average(hit1))
+        print("Topic-Test Hit@1: %.4f" % np.average(hit1))
