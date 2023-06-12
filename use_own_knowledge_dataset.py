@@ -212,35 +212,7 @@ def main(
             dialog_token = batch['input_ids']
             dialog_mask = batch['attention_mask']
             response = batch['labels']
-
-            # # 1. Encode
-            # # input_ids = tokenizer.question_encoder(dialog_token, return_tensors="pt")["input_ids"]
-            # question_hidden_states = model.question_encoder(dialog_token, dialog_mask)[0]  # model.question_encoder(input_ids)[0]
-            # # 2. Retrieve
-            # # docs_dict = retriever(dialog_token.numpy(), question_hidden_states.detach().numpy(), return_tensors="pt")
-            # docs_dict = retriever(dialog_token.cpu().numpy(), question_hidden_states.cpu().detach().numpy(), return_tensors="pt")
-
-            # doc_scores = torch.bmm(
-            #     question_hidden_states.unsqueeze(1), docs_dict["retrieved_doc_embeds"].float().transpose(1, 2)
-            # ).squeeze(1)
-            # outputs = model(
-            #     context_input_ids=docs_dict["context_input_ids"],
-            #     context_attention_mask=docs_dict["context_attention_mask"],
-            #     doc_scores=doc_scores,
-            #     labels=response,
-            # )
-
             outputs = model(input_ids=dialog_token, attention_mask=dialog_mask, labels=response)
-
-            # generated = model.generate(dialog_token)
-            # generated_string = tokenizer.batch_decode(generated, skip_special_tokens=True)
-            # generated_dialog = tokenizer.question_encoder.batch_decode(dialog_token)
-            # generated_response = tokenizer.question_encoder.batch_decode(dialog_token)
-            #
-            # print('generated:]t%s' % generated_string)
-            # print('dialog:\t%s' % generated_dialog)
-            # print('response:\t%s' % generated_response)
-
             loss = outputs.loss.mean()
             train_epoch_loss += loss
             optimizer.zero_grad()
@@ -264,7 +236,7 @@ def main(
                 docs_dict = retriever(dialog_token.cpu().numpy(), question_hidden_states.cpu().detach().numpy(), return_tensors="pt")
 
                 doc_scores = torch.bmm(
-                    question_hidden_states.unsqueeze(1), docs_dict["retrieved_doc_embeds"].float().transpose(1, 2)
+                    question_hidden_states.unsqueeze(1), docs_dict["retrieved_doc_embeds"].float().transpose(1, 2).to(args.device)
                 ).squeeze(1)
 
                 generated = model.generate(
