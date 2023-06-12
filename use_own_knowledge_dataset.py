@@ -212,14 +212,14 @@ def main(
 
             outputs = model(input_ids=dialog_token, attention_mask=dialog_mask, labels=response)
 
-            generated = model.generate(dialog_token)
-            generated_string = tokenizer.batch_decode(generated, skip_special_tokens=True)
-            generated_dialog = tokenizer.question_encoder.batch_decode(dialog_token)
-            generated_response = tokenizer.question_encoder.batch_decode(dialog_token)
-
-            print('generated:]t%s' % generated_string)
-            print('dialog:\t%s' % generated_dialog)
-            print('response:\t%s' % generated_response)
+            # generated = model.generate(dialog_token)
+            # generated_string = tokenizer.batch_decode(generated, skip_special_tokens=True)
+            # generated_dialog = tokenizer.question_encoder.batch_decode(dialog_token)
+            # generated_response = tokenizer.question_encoder.batch_decode(dialog_token)
+            #
+            # print('generated:]t%s' % generated_string)
+            # print('dialog:\t%s' % generated_dialog)
+            # print('response:\t%s' % generated_response)
 
             loss = outputs.loss.mean()
             train_epoch_loss += loss
