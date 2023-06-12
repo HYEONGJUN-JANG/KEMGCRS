@@ -11,7 +11,6 @@ from typing import List, Optional
 import faiss
 import torch
 from datasets import Features, Sequence, Value, load_dataset
-from pytorch_transformers import AutoModel, AutoTokenizer
 from torch import nn, optim
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
