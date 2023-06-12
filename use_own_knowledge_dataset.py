@@ -1,5 +1,6 @@
 import logging
 import os
+from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import partial
@@ -10,6 +11,7 @@ from typing import List, Optional
 import faiss
 import torch
 from datasets import Features, Sequence, Value, load_dataset
+from pytorch_transformers import AutoModel, AutoTokenizer
 from torch import nn, optim
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
@@ -28,7 +30,7 @@ from transformers import (
 from data_model import DialogDataset
 
 logger = logging.getLogger(__name__)
-torch.set_grad_enabled(False)
+# torch.set_grad_enabled(False)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -54,6 +56,7 @@ def embed(documents: dict, ctx_encoder: DPRContextEncoder, ctx_tokenizer: DPRCon
     input_ids = ctx_tokenizer(
         documents["title"], documents["text"], truncation=True, padding="longest", return_tensors="pt"
     )["input_ids"]
+
     embeddings = ctx_encoder(input_ids.to(device=device), return_dict=True).pooler_output
     return {"embeddings": embeddings.detach().cpu().numpy()}
 
@@ -70,13 +73,26 @@ class RagDataset(Dataset):
         cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge', 'candidate_knowledges', 'candidate_confidences']
         dialog, user_profile, response, type, topic, situation, target_knowledge_idx, candidate_knowledges, candidate_confidences = [data[i] for i in cbdicKeys]
 
-        input_dict = self.tokenizer.prepare_seq2seq_batch(dialog, response, return_tensors="pt", max_length=args.max_length, max_target_length=args.max_length, padding='max_length', truncation=True)
+        # input_dict = self.tokenizer.prepare_seq2seq_batch(dialog, response, return_tensors="pt", )
 
-        input_ids = input_dict["input_ids"]
-        attention_mask = input_dict['attention_mask']
-        labels = input_dict['labels']
+        input_ids = self.tokenizer(dialog, max_length=args.max_length, padding='max_length', truncation=True)['input_ids']
+        attention_mask = self.tokenizer(dialog, max_length=args.max_length, padding='max_length', truncation=True)['attention_mask']
 
-        return input_ids, attention_mask, labels
+        with self.tokenizer.as_target_tokenizer():
+            labels = self.tokenizer(response, max_length=args.max_length, padding='max_length', truncation=True)['input_ids']
+
+        context_batch = defaultdict()
+
+        context_batch['input_ids'] = input_ids
+        context_batch['attention_mask'] = attention_mask
+        context_batch['labels'] = labels
+
+        for k, v in context_batch.items():
+            if not isinstance(v, torch.Tensor):
+                context_batch[k] = torch.as_tensor(v, device=self.args.device)
+                # context_batch[k] = torch.as_tensor(v)
+        return context_batch
+
 
     def __len__(self):
         return len(self.augmented_raw_sample)
@@ -146,10 +162,11 @@ def main(
     ######################################
 
     # Easy way to load the model
-    retriever = RagRetriever.from_pretrained(
-        rag_example_args.rag_model_name, index_name="custom", indexed_dataset=dataset
-    )
-    model = RagSequenceForGeneration.from_pretrained(rag_example_args.rag_model_name, retriever=retriever)
+    # retriever = RagRetriever.from_pretrained(
+    #     rag_example_args.rag_model_name, index_name="custom", indexed_dataset=dataset
+    # )
+    retriever = RagRetriever.from_pretrained('facebook/rag-sequence-nq', index_name='custom', indexed_dataset=dataset, init_retrieval=True)
+    model = RagSequenceForGeneration.from_pretrained(rag_example_args.rag_model_name, retriever=retriever).to(args.device)
     tokenizer = RagTokenizer.from_pretrained(rag_example_args.rag_model_name)
 
     # For distributed fine-tuning you'll need to provide the paths instead, as the dataset and the index are loaded separately.
@@ -184,14 +201,18 @@ def main(
     train_datamodel_know = RagDataset(args, train_dataset_resp, tokenizer)
     train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
 
-    train_epoch_loss = 0
-    model = model.to(args.device)
+
+    # bert_model = AutoModel.from_pretrained(args.bert_name).to(args.device)
+    # bert_tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
+
     for epoch in range(20):
+        train_epoch_loss = 0
+        model.train()
+
         for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-            model.train()
-            dialog_token = batch[0].squeeze(1).to(args.device)
-            dialog_mask = batch[1].squeeze(1).to(args.device)
-            response = batch[2].squeeze(1).to(args.device)
+            dialog_token = batch['input_ids']
+            dialog_mask = batch['attention_mask']
+            response = batch['labels']
 
             # # 1. Encode
             # # input_ids = tokenizer.question_encoder(dialog_token, return_tensors="pt")["input_ids"]
@@ -226,6 +247,36 @@ def main(
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+        print("LOSS:\t%.4f" % train_epoch_loss)
+        model.eval()
+
+        with torch.no_grad():
+            for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+                dialog_token = batch['input_ids']
+                dialog_mask = batch['attention_mask']
+                response = batch['labels']
+
+                # 1. Encode
+                # input_ids = tokenizer.question_encoder(dialog_token, return_tensors="pt")["input_ids"]
+                question_hidden_states = model.question_encoder(dialog_token, dialog_mask)[0]  # model.question_encoder(input_ids)[0]
+                # 2. Retrieve
+                # docs_dict = retriever(dialog_token.numpy(), question_hidden_states.detach().numpy(), return_tensors="pt")
+                docs_dict = retriever(dialog_token.cpu().numpy(), question_hidden_states.cpu().detach().numpy(), return_tensors="pt")
+
+                doc_scores = torch.bmm(
+                    question_hidden_states.unsqueeze(1), docs_dict["retrieved_doc_embeds"].float().transpose(1, 2)
+                ).squeeze(1)
+
+                generated = model.generate(
+                    context_input_ids=docs_dict["context_input_ids"],
+                    context_attention_mask=docs_dict["context_attention_mask"],
+                    doc_scores=doc_scores,
+                )
+                generated_string = tokenizer.batch_decode(generated, skip_special_tokens=True)
+                print("[dialog]\n%s" % tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
+                print('[generated]\n%s' % generated_string)
+                print("[response]\n%s" % tokenizer.batch_decode(response, skip_special_tokens=True))
 
     # inputs = tokenizer("How many people live in Paris?", return_tensors="pt")
     # targets = tokenizer(text_target="In Paris, there are 10 million people.", return_tensors="pt")
@@ -359,6 +410,8 @@ if __name__ == "__main__":
     test_dataset_resp = process_augment_sample(test_dataset_raw)
 
     os.makedirs('test_data', exist_ok=True)
+
+
     def save(mode, listdataset):
         s_path, t_path = os.path.join('test_data', mode + '.source'), os.path.join(args.home, 'test_data', mode + '.target')
         with open(s_path, 'w', encoding='utf-8') as ss, open(t_path, 'w', encoding='utf-8') as tt:
@@ -372,7 +425,7 @@ if __name__ == "__main__":
     # os.path.join(args.home, 'test_run','dummy-kb','my_knowledge_dataset.csv')
     with open(os.path.join('test_data', 'my_knowledge_dataset.csv'), 'w', encoding='utf-8') as f:
         for know in train_knowledge_seq_set:
-            f.write(f"{know}\t{know}\n")
+            f.write(f" \t{know}\n")
 
     save('train', train_dataset_resp)
     save('val', dev_dataset_resp)
