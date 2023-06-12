@@ -204,7 +204,7 @@ def main(
     # bert_model = AutoModel.from_pretrained(args.bert_name).to(args.device)
     # bert_tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
 
-    for epoch in range(20):
+    for epoch in range(10):
         train_epoch_loss = 0
         model.train()
 
@@ -222,32 +222,32 @@ def main(
         print("LOSS:\t%.4f" % train_epoch_loss)
         model.eval()
 
-        with torch.no_grad():
-            for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-                dialog_token = batch['input_ids']
-                dialog_mask = batch['attention_mask']
-                response = batch['labels']
+    with torch.no_grad():
+        for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+            dialog_token = batch['input_ids']
+            dialog_mask = batch['attention_mask']
+            response = batch['labels']
 
-                # 1. Encode
-                # input_ids = tokenizer.question_encoder(dialog_token, return_tensors="pt")["input_ids"]
-                question_hidden_states = model.question_encoder(dialog_token, dialog_mask)[0]  # model.question_encoder(input_ids)[0]
-                # 2. Retrieve
-                # docs_dict = retriever(dialog_token.numpy(), question_hidden_states.detach().numpy(), return_tensors="pt")
-                docs_dict = retriever(dialog_token.cpu().numpy(), question_hidden_states.cpu().detach().numpy(), return_tensors="pt").to(args.device)
+            # 1. Encode
+            # input_ids = tokenizer.question_encoder(dialog_token, return_tensors="pt")["input_ids"]
+            question_hidden_states = model.question_encoder(dialog_token, dialog_mask)[0]  # model.question_encoder(input_ids)[0]
+            # 2. Retrieve
+            # docs_dict = retriever(dialog_token.numpy(), question_hidden_states.detach().numpy(), return_tensors="pt")
+            docs_dict = retriever(dialog_token.cpu().numpy(), question_hidden_states.cpu().detach().numpy(), return_tensors="pt").to(args.device)
 
-                doc_scores = torch.bmm(
-                    question_hidden_states.unsqueeze(1), docs_dict["retrieved_doc_embeds"].float().transpose(1, 2)
-                ).squeeze(1)
+            doc_scores = torch.bmm(
+                question_hidden_states.unsqueeze(1), docs_dict["retrieved_doc_embeds"].float().transpose(1, 2)
+            ).squeeze(1)
 
-                generated = model.generate(
-                    context_input_ids=docs_dict["context_input_ids"],
-                    context_attention_mask=docs_dict["context_attention_mask"],
-                    doc_scores=doc_scores,
-                )
-                generated_string = tokenizer.batch_decode(generated, skip_special_tokens=True)
-                print("[dialog]\n%s" % tokenizer.question_encoder.batch_decode(dialog_token, skip_special_tokens=True))
-                print('[generated]\n%s' % generated_string)
-                print("[response]\n%s" % tokenizer.batch_decode(response, skip_special_tokens=True))
+            generated = model.generate(
+                context_input_ids=docs_dict["context_input_ids"],
+                context_attention_mask=docs_dict["context_attention_mask"],
+                doc_scores=doc_scores,
+            )
+            generated_string = tokenizer.batch_decode(generated, skip_special_tokens=True)
+            print("[dialog]\n%s" % tokenizer.question_encoder.batch_decode(dialog_token, skip_special_tokens=True))
+            print('[generated]\n%s' % generated_string)
+            print("[response]\n%s" % tokenizer.batch_decode(response, skip_special_tokens=True))
 
     # inputs = tokenizer("How many people live in Paris?", return_tensors="pt")
     # targets = tokenizer(text_target="In Paris, there are 10 million people.", return_tensors="pt")
