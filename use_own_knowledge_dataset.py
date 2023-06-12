@@ -221,6 +221,7 @@ def main(
         model.eval()
 
     with torch.no_grad():
+        sample = 0
         for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
             dialog_token = batch['input_ids']
             dialog_mask = batch['attention_mask']
@@ -246,6 +247,11 @@ def main(
             print("[dialog]\n%s" % tokenizer.question_encoder.batch_decode(dialog_token, skip_special_tokens=True))
             print('[generated]\n%s' % generated_string)
             print("[response]\n%s" % tokenizer.batch_decode(response, skip_special_tokens=True))
+
+            if sample > 100:
+                break
+            else:
+                sample += 1
 
     # inputs = tokenizer("How many people live in Paris?", return_tensors="pt")
     # targets = tokenizer(text_target="In Paris, there are 10 million people.", return_tensors="pt")
