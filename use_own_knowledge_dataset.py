@@ -248,7 +248,7 @@ def main(
             print('[generated]\n%s' % generated_string)
             print("[response]\n%s" % tokenizer.batch_decode(response, skip_special_tokens=True))
 
-            if sample > 100:
+            if sample > 10:
                 break
             else:
                 sample += 1
