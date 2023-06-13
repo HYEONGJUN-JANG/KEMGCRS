@@ -202,7 +202,7 @@ def main(
     # bert_model = AutoModel.from_pretrained(args.bert_name).to(args.device)
     # bert_tokenizer = AutoTokenizer.from_pretrained(args.bert_name)
 
-    for epoch in range(10):
+    for epoch in range(30):
         train_epoch_loss = 0
         model.train()
 
