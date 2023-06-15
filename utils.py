@@ -32,7 +32,7 @@ def parseargs():
     parser.add_argument("--ft_topic", action='store_true', help="Whether to Fine-tune on topic.")
     parser.add_argument("--ft_know", action='store_true', help="Whether to Fine-tune on know.")
     parser.add_argument("--earlystop", action='store_true', help="Whether to Use EarlyStopping.")
-    parser.add_argument("--task", default='topic', type=str, help="Choose the task")
+    parser.add_argument("--task", default='know', type=str, help="Choose the task")
     parser.add_argument("--knowledge", action='store_true', help="Whether to Use knowledge in response.")
     parser.add_argument("--know_ablation", default='pseudo', type=str, help="know_ablation", choices=['target', 'pseudo'])
     parser.add_argument("--train_ablation", default='LG', type=str, help="train ablation", choices=['R', 'S', 'RG', 'LG','G','O'])
