@@ -2,6 +2,7 @@ import random
 from collections import defaultdict
 
 import torch
+from responses import target
 from torch.utils.data import Dataset
 import numpy as np
 
@@ -212,6 +213,13 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # candidate_knowledges = [target_knowledge_idx] + candidate_knowledges
         # candidate_confidences = [100] + candidate_confidences
 
+        if target_knowledge_idx in candidate_knowledges:
+            idxinlist = candidate_knowledges.index(target_knowledge_idx)
+            candidate_knowledges.pop(idxinlist)
+            candidate_knowledges.insert(0, target_knowledge_idx)
+            target_confidence = candidate_confidences.pop(idxinlist)
+            candidate_confidences.insert(0, target_confidence)
+
         candidate_knowledges_pos = candidate_knowledges[:self.args.pseudo_pos_num]
         candidate_confidences_pos = candidate_confidences[:self.args.pseudo_pos_num]
 
@@ -273,7 +281,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['pseudo_targets'] = candidate_knowledges_pos  # [candidate_knowledges[0]]
         context_batch['pseudo_confidences'] = candidate_confidences_pos  # + [-1e10] * (self.args.knowledge_num - len(candidate_confidences_pos))
 
-        context_batch['target_knowledge'] = target_knowledge_idx # candidate_knowledges[0]  # target_knowledge_idx
+        context_batch['target_knowledge'] = target_knowledge_idx  # candidate_knowledges[0]  # target_knowledge_idx
         context_batch['all_negative'] = candidate_knowledges + self.all_negative(candidate_knowledges)
         context_batch['bm25_top20'] = candidate_knowledges
         context_batch['new_knowledge'] = self.knowledgeDB[target_knowledge_idx] not in self.train_knowledgeDB
