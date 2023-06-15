@@ -134,7 +134,7 @@ def main(
         batched=True,
         batch_size=processing_args.batch_size,
         features=new_features,
-    )
+    ) # dataset 내 각 document 를 ctx_encoder 에 태워서 'embeddings' 안에 저장
 
     # And finally save your dataset
     passages_path = os.path.join(rag_example_args.output_dir, "my_knowledge_dataset")
@@ -164,7 +164,10 @@ def main(
     #     rag_example_args.rag_model_name, index_name="custom", indexed_dataset=dataset
     # )
     retriever = RagRetriever.from_pretrained('facebook/rag-sequence-nq', index_name='custom', indexed_dataset=dataset, init_retrieval=True)
+    # retriever.set_ctx_encoder_tokenizer(ctx_tokenizer)
+
     model = RagSequenceForGeneration.from_pretrained(rag_example_args.rag_model_name, retriever=retriever).to(args.device)
+    # model.set_context_encoder_for_training(ctx_encoder)
     tokenizer = RagTokenizer.from_pretrained(rag_example_args.rag_model_name)
 
     # For distributed fine-tuning you'll need to provide the paths instead, as the dataset and the index are loaded separately.
@@ -218,8 +221,8 @@ def main(
             optimizer.step()
 
         print("LOSS:\t%.4f" % train_epoch_loss)
-        model.eval()
 
+    model.eval()
     with torch.no_grad():
         sample = 0
         for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
@@ -372,6 +375,8 @@ def process_augment_sample(raw_data, tokenizer=None):
 if __name__ == "__main__":
 
     args = utils.parseargs()
+    args.batch_size=2
+    args.max_length=4
     args.pseudo, args.usePseudoLabel, args.inputWithKnowledge = True, True, True
     train_dataset_raw, train_knowledge_seq_set = data_pseudo.dataset_reader(args, 'train')
     dev_dataset_raw, dev_knowledge_seq_set = data_pseudo.dataset_reader(args, 'dev')
