@@ -213,12 +213,12 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         # candidate_knowledges = [target_knowledge_idx] + candidate_knowledges
         # candidate_confidences = [100] + candidate_confidences
 
-        if target_knowledge_idx in candidate_knowledges:
-            idxinlist = candidate_knowledges.index(target_knowledge_idx)
-            candidate_knowledges.pop(idxinlist)
-            candidate_knowledges.insert(0, target_knowledge_idx)
-            target_confidence = candidate_confidences.pop(idxinlist)
-            candidate_confidences.insert(0, target_confidence)
+        # if target_knowledge_idx in candidate_knowledges:
+        #     idxinlist = candidate_knowledges.index(target_knowledge_idx)
+        #     candidate_knowledges.pop(idxinlist)
+        #     candidate_knowledges.insert(0, target_knowledge_idx)
+        #     target_confidence = candidate_confidences.pop(idxinlist)
+        #     candidate_confidences.insert(0, target_confidence)
 
         candidate_knowledges_pos = candidate_knowledges[:self.args.pseudo_pos_num]
         candidate_confidences_pos = candidate_confidences[:self.args.pseudo_pos_num]
