@@ -9,6 +9,7 @@ from utils import write_pkl, save_json
 import numpy as np
 import pickle
 
+
 def knowledge_reindexing(args, knowledge_data, retriever, stage):
     # 모든 know_index를 버트에 태움
     print('...knowledge indexing...(%s)' % stage)
@@ -146,9 +147,10 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
                 top_candidate = torch.topk(score, k=k).indices
                 if args.stage == 'rerank':
-                    top_candidate = torch.gather(candidate_indice[idx], 0, top_candidate) # todo: roll-back
-
-                correct_k = target in top_candidate
+                    top_candidate = torch.gather(candidate_indice[idx], 0, top_candidate)  # todo: roll-back
+                correct_k = False
+                for t in target:
+                    correct_k |= (t in top_candidate)
                 if k == 1:
                     hit1.append(correct_k)
                     hit1_goal[goal].append(correct_k)

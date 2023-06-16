@@ -281,7 +281,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['pseudo_targets'] = candidate_knowledges_pos  # [candidate_knowledges[0]]
         context_batch['pseudo_confidences'] = candidate_confidences_pos  # + [-1e10] * (self.args.knowledge_num - len(candidate_confidences_pos))
 
-        context_batch['target_knowledge'] = target_knowledge_idx  # candidate_knowledges[0]  # target_knowledge_idx
+        context_batch['target_knowledge'] = candidate_knowledges[:3]  # target_knowledge_idx
         context_batch['all_negative'] = candidate_knowledges + self.all_negative(candidate_knowledges)
         context_batch['bm25_top20'] = candidate_knowledges
         context_batch['new_knowledge'] = self.knowledgeDB[target_knowledge_idx] not in self.train_knowledgeDB
