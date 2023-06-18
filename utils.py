@@ -53,6 +53,7 @@ def parseargs():
     # parser.add_argument('--data_name', default='en_test.txt', type=str, help="dataset name")
     parser.add_argument('--k_DB_name', default='all_knowledge_DB.pickle', type=str, help="knowledge DB file name in data_dir")
     parser.add_argument('--k_idx_name', default='knowledge_index.npy', type=str, help="knowledge index file name in data_dir")
+    parser.add_argument('--goal_list', default='Movie_Music_POI_QA', type=str, help="input goal type")
 
     ## Model BERT or BART
     parser.add_argument("--type_aware", action='store_true', help="Whether to Use Type-aware Matching")

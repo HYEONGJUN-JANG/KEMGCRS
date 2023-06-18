@@ -239,10 +239,21 @@ def main():
 
         # train_dataset_raw = dataset_reader(args, 'train')
         # test_dataset_raw = dataset_reader(args, 'test')
-        train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB)
+        goal_list = []
+        # ['Movie recommendation', 'POI recommendation', 'Music recommendation', 'QA']
+        if 'Movie' in args.goal_list:
+            goal_list.append('Movie recommendation')
+        if 'POI' in args.goal_list:
+            goal_list.append('POI recommendation')
+        if 'Music' in args.goal_list:
+            goal_list.append('Music recommendation')
+        if 'QA' in args.goal_list:
+            goal_list.append('QA')
+
+        train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB, goal_list=goal_list)
         # train_dataset, valid_dataset = split_validation(train_dataset, args.bin)
         valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB)
-        test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB, test=True)
+        test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
 
         train_datamodel_know = DialogDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
         valid_datamodel_know = DialogDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')

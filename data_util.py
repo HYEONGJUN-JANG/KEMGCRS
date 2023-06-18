@@ -151,7 +151,7 @@ def process_augment_sample_topic(raw_data, tokenizer, knowledgeDB):
     return train_sample
 
 
-def process_augment_sample(raw_data, tokenizer, knowledgeDB, test=False):
+def process_augment_sample(raw_data, tokenizer, knowledgeDB, goal_list=['Movie recommendation', 'POI recommendation', 'Music recommendation', 'QA']):
 
     train_sample = []
     if tokenizer.eos_token is not None:
@@ -165,7 +165,8 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB, test=False):
             role = conversation['role_seq'][i]
             utterance = conversation['dialog'][i] + eos_token
             goal = conversation['type'][i]
-            if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':
+            # if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':
+            if goal in goal_list:
                 if role == 'System' and len(augmented_dialog) > 0 and len(conversation['pseudo_knowledge_seq'][i]) != 0:
                     # prob = conversation['pseudo_confidence_seq'][i] + [-1e10] * (len(knowledgeDB) - len(conversation['pseudo_knowledge_seq'][i]))
                     # prob = softmax(prob)
