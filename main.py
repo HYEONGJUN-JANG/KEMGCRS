@@ -53,14 +53,16 @@ nltk.download('stopwords')
 #         optimizer.step()
 #     print(f"Knowledge Indexing Loss: {train_epoch_loss}")
 
-def split_validation(train_dataset_raw, idx=0):
-    sidx = np.arange(len(train_dataset_raw))
-    # np.random.shuffle(sidx)
-    bin = int(np.round(len(train_dataset_raw) * 0.2))
-    valid_dataset = train_dataset_raw[bin * idx: bin * (idx + 1)]
-    # valid_dataset = train_dataset_raw[n_train:]
-    train_dataset = train_dataset_raw[:bin * idx] + train_dataset_raw[bin * (idx + 1):]
-    return train_dataset, valid_dataset
+def split_validation(train_dataset_raw, train_ratio=1.0):
+    # train_set_x, train_set_y = train_set
+    n_samples = len(train_dataset_raw)
+    sidx = np.arange(n_samples, dtype='int32')
+    np.random.shuffle(sidx)
+    n_train = int(np.round(n_samples * train_ratio))
+    train_set = [train_dataset_raw[s] for s in sidx[:n_train]]
+    valid_set = [train_dataset_raw[s] for s in sidx[n_train:]]
+
+    return train_set, valid_set
 
 
 def main():
@@ -251,7 +253,7 @@ def main():
             goal_list.append('Q&A')
 
         train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB, goal_list=goal_list)
-        # train_dataset, valid_dataset = split_validation(train_dataset, args.bin)
+        train_dataset, valid_dataset = split_validation(train_dataset, args.train_ratio)
         valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB)
         test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
 
