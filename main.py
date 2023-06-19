@@ -243,13 +243,13 @@ def main():
         # test_dataset_raw = dataset_reader(args, 'test')
         goal_list = []
         # ['Movie recommendation', 'POI recommendation', 'Music recommendation', 'QA']
-        if 'Movie' in args.model_name:
+        if 'Movie' in args.goal_list:
             goal_list.append('Movie recommendation')
-        if 'POI' in args.model_name:
+        if 'POI' in args.goal_list:
             goal_list.append('POI recommendation')
-        if 'Music' in args.model_name:
+        if 'Music' in args.goal_list:
             goal_list.append('Music recommendation')
-        if 'QA' in args.model_name:
+        if 'QA' in args.goal_list:
             goal_list.append('Q&A')
 
         train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB, goal_list=goal_list)
