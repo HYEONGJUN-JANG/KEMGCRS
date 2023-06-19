@@ -92,7 +92,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
             if args.know_ablation == 'target':
                 logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
-                loss = torch.mean(criterion(logit, target_knowledge_idx))  # For MLP predict
+                loss = torch.mean(criterion(logit, target_knowledge_idx[:, 0]))  # For MLP predict
 
             if args.know_ablation == 'pseudo':
                 # dialog_token = dialog_token.unsqueeze(1).repeat(1, batch['pseudo_target'].size(1), 1).view(-1, dialog_mask.size(1))  # [B, K, L] -> [B * K, L]
