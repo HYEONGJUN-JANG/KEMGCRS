@@ -252,8 +252,8 @@ def main():
         if 'QA' in args.goal_list:
             goal_list.append('Q&A')
 
+        train_dataset_raw, valid_dataset_raw = split_validation(train_dataset_raw, args.train_ratio)
         train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB, goal_list=goal_list)
-        train_dataset, valid_dataset = split_validation(train_dataset, args.train_ratio)
         valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB)
         test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
 
