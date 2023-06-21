@@ -212,7 +212,7 @@ def main():
                     hitDic['count'] += 1
                     # total_cnt=sum([hitDic[type]['hit1'] for type in typelist])
                     # hitDic['total_hit1_ratio'] = round(sum([hitDic[type]['hit1'] for type in typelist ]) / total_cnt,3)
-                print("[Hit1]\t.4f" % (hitDic['hit1'] / hitDic['count']))
+                print("[Hit1]\t%.4f" % (hitDic['hit1'] / hitDic['count']))
 
             with open(f"response_write_{args.time}_{args.model_name}.txt", 'w', encoding='UTF-8') as f:
                 for (a, b, c) in zip(all_dialog, all_response, all_generated):
