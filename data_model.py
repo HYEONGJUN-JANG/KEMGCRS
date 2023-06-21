@@ -47,15 +47,14 @@ def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
 
 
 class GenerationDataset(Dataset):  # knowledge용 데이터셋
-    def __init__(self, args, data_sample, knowledgeDB, tokenizer, mode='train', knowledge=False):
+    def __init__(self, args, data_sample, knowledgeDB, tokenizer, mode='train', task='response'):
         super(Dataset, self).__init__()
         self.args = args
         self.tokenizer = tokenizer
         self.knowledgeDB = knowledgeDB
         self.augmented_raw_sample = data_sample
         self.mode = mode
-        self.knowledge = knowledge
-        print(knowledge)
+        self.task = task
         self.generate_prompt_ids = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize('System:'))
 
     def __getitem__(self, idx):  # TODO 구현 전
@@ -69,29 +68,33 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         context_len_batch = []
 
         prefix = ''
-        topic_prompt = self.tokenizer.encode('predict the next response: ')[1:]
 
+        prompt = self.tokenizer.encode('predict the next %s: ' % self.task)[1:]
         prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
         knowledge_text = self.knowledgeDB[target_knowledge_idx]
 
         max_knowledge_length = 30
-        if self.knowledge:
-            knowledge_text = self.tokenizer('<knowledge>' + self.knowledgeDB[target_knowledge_idx], max_length=max_knowledge_length,
-                                            truncation=True).input_ids
-        else:
-            knowledge_text = []
+        # if self.knowledge:
+        #     knowledge_text = self.tokenizer('<knowledge>' + self.knowledgeDB[target_knowledge_idx], max_length=max_knowledge_length,
+        #                                     truncation=True).input_ids
+        # else:
+        #     knowledge_text = []
 
-        dialog = self.tokenizer('<dialog>' + dialog, max_length=self.args.max_length - len(knowledge_text),
+        dialog = self.tokenizer('<dialog>' + dialog, max_length=self.args.max_length - len(prompt),
                                 truncation=True).input_ids
-        dialog = knowledge_text + dialog
+        dialog = dialog + prompt
+
+        if self.task == 'type':
+            label = self.tokenizer(type, max_length=self.args.max_gen_length, truncation=True).input_ids
+        elif self.task == 'topic':
+            label = self.tokenizer(topic, max_length=self.args.max_gen_length, truncation=True).input_ids
+        elif self.task == 'response':
+            label = self.tokenizer(response, max_length=self.args.max_gen_length, truncation=True).input_ids
 
         if self.mode == 'train':
-            response = self.tokenizer(response, max_length=self.args.max_gen_length,
-                                      truncation=True).input_ids
-
             # self.tokenizer.padding_side = 'right'
             max_length = self.args.max_length + self.args.max_gen_length
-            context_ids = dialog + response
+            context_ids = dialog + label
             context_ids = context_ids[-max_length:]
             context_ids = context_ids + [pad_token_id] * (max_length - len(context_ids))
             # resp_batch = [token_id if token_id != self.tokenizer.pad_token_id else -100 for token_id in context_ids]
@@ -112,7 +115,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             context_batch['input_ids'] = torch.LongTensor(context_ids)
             context_batch['attention_mask'] = torch.ne(context_batch['input_ids'], pad_token_id)
 
-            context_batch['response'] = response
+            context_batch['response'] = label
             context_batch['context_len'] = context_len_batch
 
         # for k, v in context_batch.items():
@@ -281,7 +284,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['pseudo_targets'] = candidate_knowledges_pos  # [candidate_knowledges[0]]
         context_batch['pseudo_confidences'] = candidate_confidences_pos  # + [-1e10] * (self.args.knowledge_num - len(candidate_confidences_pos))
 
-        context_batch['target_knowledge'] = [target_knowledge_idx] # candidate_knowledges[:3]  # target_knowledge_idx
+        context_batch['target_knowledge'] = [target_knowledge_idx]  # candidate_knowledges[:3]  # target_knowledge_idx
         context_batch['all_negative'] = candidate_knowledges + self.all_negative(candidate_knowledges)
         context_batch['bm25_top20'] = candidate_knowledges
         context_batch['new_knowledge'] = self.knowledgeDB[target_knowledge_idx] not in self.train_knowledgeDB

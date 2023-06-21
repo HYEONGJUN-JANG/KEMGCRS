@@ -32,7 +32,7 @@ def parseargs():
     parser.add_argument("--ft_topic", action='store_true', help="Whether to Fine-tune on topic.")
     parser.add_argument("--ft_know", action='store_true', help="Whether to Fine-tune on know.")
     parser.add_argument("--earlystop", action='store_true', help="Whether to Use EarlyStopping.")
-    parser.add_argument("--task", default='know', type=str, help="Choose the task")
+    parser.add_argument("--task", default='resp', type=str, help="Choose the task")
     parser.add_argument("--knowledge", action='store_true', help="Whether to Use knowledge in response.")
     parser.add_argument("--know_ablation", default='pseudo', type=str, help="know_ablation", choices=['target', 'pseudo'])
     parser.add_argument("--train_ablation", default='LG', type=str, help="train ablation", choices=['R', 'S', 'RG', 'LG','G','O'])
@@ -43,7 +43,7 @@ def parseargs():
     parser.add_argument('--pseudo_pos_rank', default=2, type=int, help="pseudo_pos_rank")
     parser.add_argument("--pseudo_confidence", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument('--tau', type=float, default=1.0, help='Learning rate')
-    parser.add_argument('--train_ratio', type=float, default=1.0, help='train_ratio')
+    parser.add_argument('--train_ratio', type=float, default=0.5, help='train_ratio')
     parser.add_argument('--negative_num', default=4, type=int, help="negative_num")
     parser.add_argument('--stage', default='rerank', type=str, choices=['retrieve', 'rerank'])
     parser.add_argument("--stage2_test", action='store_true', help="Whether to Fine-tune on type.")
@@ -70,6 +70,7 @@ def parseargs():
 
     parser.add_argument('--max_length', default=128, type=int, help="dataset name")
     parser.add_argument('--max_prefix_length', default=30, type=int, help="dataset name")
+    parser.add_argument('--max_gen_length', default=30, type=int, help="dataset name")
 
     parser.add_argument('--know_max_length', default=128, type=int, help="dataset name")
 

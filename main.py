@@ -72,7 +72,6 @@ def main():
     args.who = "TH"
     # args.bert_name = 'facebook/bart-base'
     # args.task = 'know'
-    args.max_gen_length = 50
     print(args)
 
     checkPath(args.log_dir)
@@ -142,11 +141,13 @@ def main():
         gpt_model.resize_token_embeddings(len(tokenizer))
         args.hidden_size = gpt_model.config.hidden_size  # BERT large 쓸 때 대비
 
-        train_dataset_resp = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
-        test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
+        # train_dataset_resp = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
+        # test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
+        train_dataset_resp = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB)
+        test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
 
-        train_datamodel_resp = GenerationDataset(args, train_dataset_resp, knowledgeDB, tokenizer, mode='train', knowledge=args.knowledge)
-        test_datamodel_resp = GenerationDataset(args, test_dataset_resp, knowledgeDB, tokenizer, mode='test', knowledge=args.knowledge)
+        train_datamodel_resp = GenerationDataset(args, train_dataset_resp, train_knowledgeDB, tokenizer, mode='train', task="topic")
+        test_datamodel_resp = GenerationDataset(args, test_dataset_resp, all_knowledgeDB, tokenizer, mode='test', task="topic")
 
         train_dataloader_resp = DataLoader(train_datamodel_resp, batch_size=args.batch_size, shuffle=True)
         test_dataloader_resp = DataLoader(test_datamodel_resp, batch_size=args.batch_size, shuffle=False)
