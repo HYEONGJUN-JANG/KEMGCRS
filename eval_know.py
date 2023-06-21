@@ -37,7 +37,7 @@ def knowledge_reindexing(args, knowledge_data, retriever, stage):
     return knowledge_index
 
 
-def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=None, retrieve=None):
+def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=None, retrieve=None, data_type='train'):
     print(args.stage)
     retriever.eval()
     # Read knowledge DB
@@ -111,7 +111,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
                 # sorted_list_idx = np.argsort(candidate_list_score)[::-1]
                 # sorted_candidates = [candidate_list[idx] for idx in sorted_list_idx]
                 # test_dataloader.dataset.augmented_raw_sample[current + idx]['candidate_knowledges'] = sorted_candidates
-                test_dataloader.dataset.augmented_raw_sample[current + idx]['candidate_knowledges'] = top_candidate
+                test_dataloader.dataset.augmented_raw_sample[current + idx]['candidate_knowledges'] = top_candidate[idx].cpu().tolist()
 
             current += batch_size
 
@@ -224,8 +224,9 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     hit_poi_result = ["%.4f" % hit for hit in hit_poi_result]
 
     if retrieve:
-        with open('augmented_train.txt', 'wb') as f:
+        with open(f'augmented_dataset_{data_type}.txt', 'wb') as f:
             pickle.dump(test_dataloader.dataset.augmented_raw_sample, f)
+
     if write:
         # TODO HJ: 입출력 저장 args처리 필요시 args.save_know_output 에 store_true 옵션으로 만들 필요
         write_pkl(obj=jsonlineSave, filename='jsonline.pkl')  # 입출력 저장
