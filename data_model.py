@@ -91,7 +91,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             candidate_knowledge_text = [self.knowledgeDB[idx] for idx in pseudo_knowledges]
 
             related_knowledges = ' '.join(candidate_knowledge_text)
-            prompt = self.tokenizer.encode('%s predict the next %s: ' % (related_knowledges, self.subtask))[:128]
+            prompt = self.tokenizer.encode('<knowledge> %s%spredict the next %s: ' % (related_knowledges, self.tokenizer.eos_token, self.subtask))[:128]
         else:
             prompt = self.tokenizer.encode('predict the next %s: ' % self.subtask)
         # prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
