@@ -174,33 +174,45 @@ def main():
                     loss.backward()
                     optimizer.step()
                 print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
-            torch.save(generator.state_dict(), os.path.join(args.model_dir, f"{args.time}_{args.model_name}_gen_bin.pt"))  # TIME_MODELNAME 형식
 
-            # test generation task
-            all_dialog = []
-            all_response = []
-            all_generated = []
-            for batch in tqdm(test_dataloader_resp, desc="Generate Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-                generator.eval()
-                dialog_token = batch['input_ids'].to(args.device)
-                dialog_mask = batch['attention_mask'].to(args.device)
-                response = batch['response']
+                # test generation task
+                all_dialog = []
+                all_response = []
+                all_generated = []
+                for batch in tqdm(test_dataloader_resp, desc="Generate Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+                    generator.eval()
+                    dialog_token = batch['input_ids'].to(args.device)
+                    dialog_mask = batch['attention_mask'].to(args.device)
+                    response = batch['response']
 
-                batch_size = dialog_token.shape[0]
-                generated = generator.gpt_model.generate(input_ids=dialog_token,
-                                                         attention_mask=dialog_mask,
-                                                         pad_token_id=tokenizer.pad_token_id,
-                                                         max_length=args.max_gen_length + args.max_length)
-                # decoded_generated = tokenizer.batch_decode(generated)
+                    batch_size = dialog_token.shape[0]
+                    generated = generator.gpt_model.generate(input_ids=dialog_token,
+                                                             attention_mask=dialog_mask,
+                                                             pad_token_id=tokenizer.pad_token_id,
+                                                             max_length=args.max_gen_length + args.max_length)
+                    # decoded_generated = tokenizer.batch_decode(generated)
 
-                gen_resp_ids = []
-                for gen_seq, length in zip(generated, batch['context_len']):
-                    gen_seq = [token_id for token_id in gen_seq if token_id != tokenizer.pad_token_id]
-                    gen_resp_ids.append(gen_seq[length:])
+                    gen_resp_ids = []
+                    for gen_seq, length in zip(generated, batch['context_len']):
+                        gen_seq = [token_id for token_id in gen_seq if token_id != tokenizer.pad_token_id]
+                        gen_resp_ids.append(gen_seq[length:])
 
-                all_generated.extend(tokenizer.batch_decode(gen_resp_ids))
-                all_response.extend(response)
-                all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
+                    all_generated.extend(tokenizer.batch_decode(gen_resp_ids))
+                    all_response.extend(response)
+                    all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
+
+                typelist = ['Q&A', 'POI recommendation', 'Movie recommendation', 'Music recommendation']
+                # typelist=['Q&A'] if args.onlyQA else
+                hitDic = {'hit1': 0, 'hit3': 0, 'hit5': 0, 'count': 0}
+                for idx in range(len(all_generated)):
+                    gold = all_response[idx]
+                    pred = all_generated[idx]
+                    if gold == pred:
+                        hitDic['hit1'] += 1
+                    hitDic['count'] += 1
+                    # total_cnt=sum([hitDic[type]['hit1'] for type in typelist])
+                    # hitDic['total_hit1_ratio'] = round(sum([hitDic[type]['hit1'] for type in typelist ]) / total_cnt,3)
+                print("[Hit1]\t.4f" % (hitDic['hit1'] / hitDic['count']))
 
             with open(f"response_write_{args.time}_{args.model_name}.txt", 'w', encoding='UTF-8') as f:
                 for (a, b, c) in zip(all_dialog, all_response, all_generated):
