@@ -107,9 +107,10 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         elif self.mode == 'test':
             # self.tokenizer.padding_side = 'left'
 
-            context_ids = dialog[-(self.args.max_length - len(self.generate_prompt_ids)):]
+            context_ids = dialog
+            # context_ids = dialog[-(self.args.max_length - len(self.generate_prompt_ids)):]
             context_len_batch = len([token for token in context_ids if token != pad_token_id])
-            context_ids += self.generate_prompt_ids
+            # context_ids += self.generate_prompt_ids
 
             context_ids = [pad_token_id] * (self.args.max_length - len(context_ids)) + context_ids
             context_batch['input_ids'] = torch.LongTensor(context_ids)
@@ -118,10 +119,10 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             context_batch['response'] = label + [pad_token_id] * (self.args.max_gen_length - len(label))
             context_batch['context_len'] = context_len_batch
 
-        # for k, v in context_batch.items():
-        #     if not isinstance(v, torch.Tensor):
-        #         context_batch[k] = torch.as_tensor(v, device=self.args.device)
-        # context_batch[k] = torch.as_tensor(v)
+        for k, v in context_batch.items():
+            if not isinstance(v, torch.Tensor):
+                context_batch[k] = torch.as_tensor(v, device=self.args.device)
+        context_batch[k] = torch.as_tensor(v)
         return context_batch
 
     def __len__(self):
