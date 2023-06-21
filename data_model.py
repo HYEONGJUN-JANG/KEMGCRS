@@ -47,20 +47,33 @@ def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
 
 
 class GenerationDataset(Dataset):  # knowledge용 데이터셋
-    def __init__(self, args, data_sample, knowledgeDB, tokenizer, mode='train', task='response'):
+    def __init__(self, args, data_sample, knowledgeDB, tokenizer, mode='train', subtask='response'):
         super(Dataset, self).__init__()
         self.args = args
         self.tokenizer = tokenizer
         self.knowledgeDB = knowledgeDB
         self.augmented_raw_sample = data_sample
         self.mode = mode
-        self.task = task
+        self.subtask = subtask
         self.generate_prompt_ids = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize('System:'))
+
+    def negative_sampler(self, target_knowledge, candidate_knowledges):
+        negative_indice = []
+        if len(candidate_knowledges) < self.args.negative_num:
+            for idx in range(self.args.negative_num - len(candidate_knowledges)):
+                negative_indice.append(0)
+
+        while len(negative_indice) < self.args.negative_num:
+            # negative_idx = random.randint(0, total_knowledge_num - 1)
+            negative_idx = random.choice(candidate_knowledges)
+            if (negative_idx not in negative_indice) and (negative_idx not in target_knowledge):
+                negative_indice.append(negative_idx)
+        return negative_indice
 
     def __getitem__(self, idx):  # TODO 구현 전
         data = self.augmented_raw_sample[idx]
-        cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge']
-        dialog, user_profile, response, type, topic, situation, target_knowledge_idx = [data[i] for i in cbdicKeys]
+        cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge', 'candidate_knowledges', 'candidate_confidences']
+        dialog, user_profile, response, type, topic, situation, target_knowledge_idx, candidate_knowledges, candidate_confidences = [data[i] for i in cbdicKeys]
         pad_token_id = self.tokenizer.pad_token_id
 
         context_batch = defaultdict()
@@ -69,8 +82,18 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         context_len_batch = []
 
         prefix = ''
+        if self.subtask == 'know':
+            if self.mode == 'train':
+                pseudo_negative = self.negative_sampler([target_knowledge_idx], candidate_knowledges)
+                pseudo_knowledges = [target_knowledge_idx] + pseudo_negative
+            else:
+                pseudo_knowledges = candidate_knowledges[:5]
+            candidate_knowledge_text = [self.knowledgeDB[idx] for idx in pseudo_knowledges]
 
-        prompt = self.tokenizer.encode('predict the next %s: ' % self.task)
+            related_knowledges = ' '.join(candidate_knowledge_text)
+            prompt = self.tokenizer.encode('%s predict the next %s: ' % (related_knowledges, self.subtask))[:128]
+        else:
+            prompt = self.tokenizer.encode('predict the next %s: ' % self.subtask)
         # prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
         # knowledge_text = self.knowledgeDB[target_knowledge_idx]
 
@@ -85,12 +108,14 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         dialog = self.tokenizer('<dialog>' + dialog).input_ids[-(self.args.max_length - len(prompt)):]
         dialog = dialog + prompt
 
-        if self.task == 'type':
+        if self.subtask == 'type':
             label = self.tokenizer(type, max_length=self.args.max_gen_length, truncation=True).input_ids
-        elif self.task == 'topic':
+        elif self.subtask == 'topic':
             label = self.tokenizer(topic, max_length=self.args.max_gen_length, truncation=True).input_ids
-        elif self.task == 'response':
+        elif self.subtask == 'response':
             label = self.tokenizer(response, max_length=self.args.max_gen_length, truncation=True).input_ids
+        elif self.subtask == 'know':
+            label = self.tokenizer(self.knowledgeDB[target_knowledge_idx], max_length=self.args.max_gen_length, truncation=True).input_ids
 
         if self.mode == 'train':
             # self.tokenizer.padding_side = 'right'

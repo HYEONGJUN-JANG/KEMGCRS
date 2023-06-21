@@ -144,10 +144,15 @@ def main():
         # train_dataset_resp = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
         # test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
         train_dataset_resp = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB)
-        test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
+        # test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
+        with open('augmented_dataset_test.txt', 'rb') as f:
+            test_dataset_resp = pickle.load(f)
 
-        train_datamodel_resp = GenerationDataset(args, train_dataset_resp, train_knowledgeDB, tokenizer, mode='train', task=args.subtask)
-        test_datamodel_resp = GenerationDataset(args, test_dataset_resp, all_knowledgeDB, tokenizer, mode='test', task=args.subtask)
+        for sample in test_dataset_resp:
+            sample['dialog'] = sample['dialog'].replace('[SEP]', tokenizer.eos_token)
+
+        train_datamodel_resp = GenerationDataset(args, train_dataset_resp, train_knowledgeDB, tokenizer, mode='train', subtask=args.subtask)
+        test_datamodel_resp = GenerationDataset(args, test_dataset_resp, all_knowledgeDB, tokenizer, mode='test', subtask=args.subtask)
 
         train_dataloader_resp = DataLoader(train_datamodel_resp, batch_size=args.batch_size, shuffle=True)
         test_dataloader_resp = DataLoader(test_datamodel_resp, batch_size=args.batch_size, shuffle=False)
@@ -298,7 +303,7 @@ def main():
             eval_know(args, valid_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
             train_know(args, train_dataloader, valid_dataloader, retriever, train_knowledge_data, train_knowledgeDB, all_knowledge_data, all_knowledgeDB, tokenizer)
 
-            eval_know(args, train_dataloader_retrieve, retriever, train_knowledge_data, train_knowledgeDB, tokenizer, retrieve=True)  # todo: remove
+            # eval_know(args, train_dataloader_retrieve, retriever, train_knowledge_data, train_knowledgeDB, tokenizer, retrieve=True)  # todo: remove
             eval_know(args, valid_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer, retrieve=True)  # todo: remove
 
             args.stage = 'rerank'

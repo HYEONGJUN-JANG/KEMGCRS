@@ -37,7 +37,7 @@ def knowledge_reindexing(args, knowledge_data, retriever, stage):
     return knowledge_index
 
 
-def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=None, retrieve=None, data_type='train'):
+def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=None, retrieve=None, data_type='test'):
     print(args.stage)
     retriever.eval()
     # Read knowledge DB
