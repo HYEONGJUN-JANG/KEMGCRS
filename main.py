@@ -206,19 +206,21 @@ def main():
                 typelist = ['Q&A', 'POI recommendation', 'Movie recommendation', 'Music recommendation']
                 # typelist=['Q&A'] if args.onlyQA else
                 hitDic = {type: {'hit1': 0, 'hit3': 0, 'hit5': 0, 'count': 0} for type in typelist}
-
+                hit_all = 0
                 for idx in range(len(all_generated)):
                     gold = all_response[idx]
                     pred = all_generated[idx]
                     goal_type = goal_types[idx]
 
                     if gold == pred:
+                        hit_all += 1
                         hitDic[goal_type]['hit1'] += 1
                     hitDic[goal_type]['count'] += 1
                     # total_cnt=sum([hitDic[type]['hit1'] for type in typelist])
                     # hitDic['total_hit1_ratio'] = round(sum([hitDic[type]['hit1'] for type in typelist ]) / total_cnt,3)
                 for goal_type in typelist:
                     print("[%s]\t%.4f" % (goal_type, hitDic[goal_type]['hit1'] / hitDic[goal_type]['count']))
+                print("[All]\t%.4f" % (hit_all / hitDic[goal_type]['count']))
 
                 with open(f"response_write_{args.time}_{args.model_name}_{args.gpt_name}_{args.lr}_{epoch}.txt", 'w', encoding='UTF-8') as f:
                     for (a, b, c) in zip(all_dialog, all_response, all_generated):
