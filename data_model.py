@@ -69,9 +69,9 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
 
         prefix = ''
 
-        prompt = self.tokenizer.encode('predict the next %s: ' % self.task)[1:]
-        prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
-        knowledge_text = self.knowledgeDB[target_knowledge_idx]
+        prompt = self.tokenizer.encode('predict the next %s: ' % self.task)
+        # prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
+        # knowledge_text = self.knowledgeDB[target_knowledge_idx]
 
         max_knowledge_length = 30
         # if self.knowledge:
@@ -115,7 +115,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             context_batch['input_ids'] = torch.LongTensor(context_ids)
             context_batch['attention_mask'] = torch.ne(context_batch['input_ids'], pad_token_id)
 
-            context_batch['response'] = label
+            context_batch['response'] = label + [pad_token_id] * (self.args.max_gen_length - len(label))
             context_batch['context_len'] = context_len_batch
 
         # for k, v in context_batch.items():
