@@ -160,25 +160,26 @@ def main():
         # train generate task
         if args.saved_model_path == '':
             for epoch in range(args.num_epochs):
-                train_epoch_loss = 0
-                for batch in tqdm(train_dataloader_resp, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-                    generator.train()
-                    dialog_token = batch['input_ids'].to(args.device)
-                    dialog_mask = batch['attention_mask'].to(args.device)
-                    response = batch['response'].to(args.device)
-
-                    loss = generator.generation(dialog_token, dialog_mask, response)
-                    # loss = criterion(dot_score, targets)
-                    train_epoch_loss += loss
-                    optimizer.zero_grad()
-                    loss.backward()
-                    optimizer.step()
-                print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+                # train_epoch_loss = 0
+                # for batch in tqdm(train_dataloader_resp, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+                #     generator.train()
+                #     dialog_token = batch['input_ids'].to(args.device)
+                #     dialog_mask = batch['attention_mask'].to(args.device)
+                #     response = batch['response'].to(args.device)
+                #
+                #     loss = generator.generation(dialog_token, dialog_mask, response)
+                #     # loss = criterion(dot_score, targets)
+                #     train_epoch_loss += loss
+                #     optimizer.zero_grad()
+                #     loss.backward()
+                #     optimizer.step()
+                # print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
                 # test generation task
                 all_dialog = []
                 all_response = []
                 all_generated = []
+                goal_types = []
                 for batch in tqdm(test_dataloader_resp, desc="Generate Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
                     generator.eval()
                     dialog_token = batch['input_ids'].to(args.device)
@@ -200,17 +201,24 @@ def main():
                     all_generated.extend(tokenizer.batch_decode(gen_resp_ids))
                     all_response.extend(tokenizer.batch_decode(response, skip_special_tokens=True))
                     all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
+                    goal_types.extend(tokenizer.batch_decode(batch['goal_type'], skip_special_tokens=True))
 
-                hitDic = {'hit1': 0, 'hit3': 0, 'hit5': 0, 'count': 0}
+                typelist = ['Q&A', 'POI recommendation', 'Movie recommendation', 'Music recommendation']
+                # typelist=['Q&A'] if args.onlyQA else
+                hitDic = {type: {'hit1': 0, 'hit3': 0, 'hit5': 0, 'count': 0} for type in typelist}
+
                 for idx in range(len(all_generated)):
                     gold = all_response[idx]
                     pred = all_generated[idx]
+                    goal_type = goal_types[idx]
+
                     if gold == pred:
-                        hitDic['hit1'] += 1
-                    hitDic['count'] += 1
+                        hitDic[goal_type]['hit1'] += 1
+                    hitDic[goal_type]['count'] += 1
                     # total_cnt=sum([hitDic[type]['hit1'] for type in typelist])
                     # hitDic['total_hit1_ratio'] = round(sum([hitDic[type]['hit1'] for type in typelist ]) / total_cnt,3)
-                print("[Hit1]\t%.4f" % (hitDic['hit1'] / hitDic['count']))
+                for goal_type in typelist:
+                    print("[%s]\t%.4f" % (goal_type, hitDic[goal_type]['hit1'] / hitDic[goal_type]['count']))
 
                 with open(f"response_write_{args.time}_{args.model_name}_{args.gpt_name}_{args.lr}_{epoch}.txt", 'w', encoding='UTF-8') as f:
                     for (a, b, c) in zip(all_dialog, all_response, all_generated):

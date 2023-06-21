@@ -64,6 +64,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         pad_token_id = self.tokenizer.pad_token_id
 
         context_batch = defaultdict()
+        context_batch['goal_type'] = self.tokenizer(type, max_length=self.args.max_gen_length, truncation=True, padding='max_length').input_ids
         resp_batch = []
         context_len_batch = []
 
