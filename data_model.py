@@ -81,8 +81,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         #     knowledge_text = []
 
         # dialog = self.tokenizer('<dialog>' + dialog, max_length=self.args.max_length - len(prompt), truncation=True).input_ids
-        dialog = self.tokenizer('<dialog>' + dialog).input_ids[:-(self.args.max_length - len(prompt))]
-        dialog = dialog
+        dialog = self.tokenizer('<dialog>' + dialog).input_ids[-(self.args.max_length - len(prompt)):]
         dialog = dialog + prompt
 
         if self.task == 'type':
