@@ -214,10 +214,10 @@ def main():
                     # hitDic['total_hit1_ratio'] = round(sum([hitDic[type]['hit1'] for type in typelist ]) / total_cnt,3)
                 print("[Hit1]\t%.4f" % (hitDic['hit1'] / hitDic['count']))
 
-            with open(f"response_write_{args.time}_{args.model_name}_{args.lr}.txt", 'w', encoding='UTF-8') as f:
-                for (a, b, c) in zip(all_dialog, all_response, all_generated):
-                    f.write('[DIALOG]\t%s\n[RESPONSE]\t%s\n[GENERATED]\t%s\n' % (a, b, c))
-                    f.write('-------------------------------------------\n')
+                with open(f"response_write_{args.time}_{args.model_name}_{args.lr}_{epoch}.txt", 'w', encoding='UTF-8') as f:
+                    for (a, b, c) in zip(all_dialog, all_response, all_generated):
+                        f.write('[DIALOG]\t%s\n[RESPONSE]\t%s\n[GENERATED]\t%s\n' % (a, b, c))
+                        f.write('-------------------------------------------\n')
         else:
             generator.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
 
