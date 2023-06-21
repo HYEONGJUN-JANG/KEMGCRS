@@ -201,8 +201,6 @@ def main():
                     all_response.extend(tokenizer.batch_decode(response, skip_special_tokens=True))
                     all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
 
-                typelist = ['Q&A', 'POI recommendation', 'Movie recommendation', 'Music recommendation']
-                # typelist=['Q&A'] if args.onlyQA else
                 hitDic = {'hit1': 0, 'hit3': 0, 'hit5': 0, 'count': 0}
                 for idx in range(len(all_generated)):
                     gold = all_response[idx]
