@@ -208,6 +208,11 @@ def main():
                     all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
                     goal_types.extend(tokenizer.batch_decode(batch['goal_type'], skip_special_tokens=True))
 
+                with open(f"response_write_{args.time}_{args.model_name}_{args.gpt_name}_{args.lr}_{epoch}.txt", 'w', encoding='UTF-8') as f:
+                    for (a, b, c) in zip(all_dialog, all_response, all_generated):
+                        f.write('[DIALOG]\t%s\n[RESPONSE]\t%s\n[GENERATED]\t%s\n' % (a, b, c))
+                        f.write('-------------------------------------------\n')
+
                 typelist = ['Q&A', 'POI recommendation', 'Movie recommendation', 'Music recommendation']
                 # typelist=['Q&A'] if args.onlyQA else
                 hitDic = {type: {'hit1': 0, 'hit3': 0, 'hit5': 0, 'count': 0} for type in typelist}
@@ -228,10 +233,7 @@ def main():
                     print("[%s]\t%.4f" % (goal_type, hitDic[goal_type]['hit1'] / hitDic[goal_type]['count']))
                 print("[All]\t%.4f" % (hit_all / cnt_all))
 
-                # with open(f"response_write_{args.time}_{args.model_name}_{args.gpt_name}_{args.lr}_{epoch}.txt", 'w', encoding='UTF-8') as f:
-                #     for (a, b, c) in zip(all_dialog, all_response, all_generated):
-                #         f.write('[DIALOG]\t%s\n[RESPONSE]\t%s\n[GENERATED]\t%s\n' % (a, b, c))
-                #         f.write('-------------------------------------------\n')
+
         else:
             generator.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
 
