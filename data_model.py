@@ -86,13 +86,13 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             if self.mode == 'train':
                 pseudo_negative = self.negative_sampler([target_knowledge_idx], candidate_knowledges)
                 pseudo_knowledges = [target_knowledge_idx] + pseudo_negative
-                random.shuffle(pseudo_knowledges)
+                # random.shuffle(pseudo_knowledges)
             else:
                 pseudo_knowledges = candidate_knowledges[:5]
             candidate_knowledge_text = [self.knowledgeDB[idx] for idx in pseudo_knowledges]
 
-            related_knowledges = ' '.join(candidate_knowledge_text)
-            prompt = self.tokenizer.encode('<knowledge> %s%spredict the next %s: ' % (related_knowledges, self.tokenizer.eos_token, self.subtask))[:256]
+            related_knowledges = '|'.join(candidate_knowledge_text)
+            prompt = self.tokenizer.encode('<knowledge>%s. predict the next %s: ' % (related_knowledges, self.tokenizer.eos_token, self.subtask))[:256]
         else:
             prompt = self.tokenizer.encode('predict the next %s: ' % self.subtask)
         # prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
