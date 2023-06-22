@@ -72,7 +72,7 @@ def parseargs():
 
     parser.add_argument('--max_length', default=128, type=int, help="dataset name")
     parser.add_argument('--max_prefix_length', default=30, type=int, help="dataset name")
-    parser.add_argument('--max_gen_length', default=128, type=int, help="dataset name")
+    parser.add_argument('--max_gen_length', default=200, type=int, help="dataset name")
 
     parser.add_argument('--know_max_length', default=128, type=int, help="dataset name")
 
