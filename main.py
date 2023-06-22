@@ -135,8 +135,8 @@ def main():
         # config = GPT2Config.from_pretrained(args.bert_name, max_length=args.max_gen_length+args.max_length) # for GPT
         # gpt_model = GPT2LMHeadModel.from_pretrained(args.gpt_name, cache_dir=os.path.join("cache", args.gpt_name)) # for GPT
         # tokenizer = AutoTokenizer.from_pretrained(args.gpt_name)
-        tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
-        gpt_model = BartForConditionalGeneration.from_pretrained('facebook/bart-base')
+        tokenizer = BartTokenizer.from_pretrained(args.bart_name)
+        gpt_model = BartForConditionalGeneration.from_pretrained(args.bart_name)
 
         # tokenizer.pad_token = tokenizer.eos_token # for GPT
         tokenizer.add_special_tokens(gpt_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
