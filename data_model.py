@@ -85,6 +85,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         if self.subtask == 'know':
 
             pseudo_knowledges = candidate_knowledges[:10]
+            positive_knowledges = candidate_knowledges[:self.args.pseudo_pos_num]
             random.shuffle(pseudo_knowledges)
 
             # if self.mode == 'train':
@@ -137,7 +138,12 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             context_ids = context_ids[-max_length:]
             context_ids = context_ids + [pad_token_id] * (max_length - len(context_ids))
             # resp_batch = [token_id if token_id != self.tokenizer.pad_token_id else -100 for token_id in context_ids]
-            resp_batch = label + [pad_token_id] * (self.args.max_gen_length - len(label))
+
+            positive_labels = [self.knowledgeDB[idx] for idx in positive_knowledges]
+            positive_labels = '|'.join(positive_labels)
+            positive_labels = self.tokenizer(positive_labels, max_length=self.args.max_length, truncation=True).input_ids
+
+            resp_batch = positive_labels + [pad_token_id] * (self.args.max_length - len(positive_labels))
 
             context_batch['input_ids'] = torch.LongTensor(context_ids)
             context_batch['attention_mask'] = torch.ne(context_batch['input_ids'], pad_token_id)

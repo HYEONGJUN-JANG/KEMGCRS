@@ -220,23 +220,28 @@ def main():
 
                 typelist = ['Q&A', 'POI recommendation', 'Movie recommendation', 'Music recommendation']
                 # typelist=['Q&A'] if args.onlyQA else
-                hitDic = {type: {'hit1': 0, 'hit3': 0, 'hit5': 0, 'count': 0} for type in typelist}
-                hit_all, cnt_all = 0, 0
+                hitDic = {type: {'hit1': [], 'hit3': [], 'hit5': []} for type in typelist}
+                hitAll = {'hit1': [], 'hit3': [], 'hit5': []}
+                hit_list = [1,3,5]
                 for idx in range(len(all_generated)):
                     gold = all_response[idx]
                     pred = all_generated[idx]
                     goal_type = goal_types[idx]
 
-                    if gold == pred:
-                        hit_all += 1
-                        hitDic[goal_type]['hit1'] += 1
-                    hitDic[goal_type]['count'] += 1
-                    cnt_all += 1
+                    pred = pred.split('|')
+
+                    for k in hit_list:
+                        correct = gold in pred[:k + 1]
+                        hitAll[f"hit{k}"].append(correct)
+                        hitDic[goal_type][f"hit{k}"].append(correct)
+
                     # total_cnt=sum([hitDic[type]['hit1'] for type in typelist])
                     # hitDic['total_hit1_ratio'] = round(sum([hitDic[type]['hit1'] for type in typelist ]) / total_cnt,3)
-                for goal_type in typelist:
-                    print("[%s]\t%.4f" % (goal_type, hitDic[goal_type]['hit1'] / hitDic[goal_type]['count']))
-                print("[All]\t%.4f" % (hit_all / cnt_all))
+
+                for k in hit_list:
+                    for goal_type in typelist:
+                        print("[hit%d]\t[%s]\t%.4f" % (k, goal_type, np.average(hitDic[goal_type][f"hit{k}"])))
+                    print("[hit%d]\t[All]\t%.4f" % (k, np.average(hitAll[f"hit{k}"])))
 
 
         else:
