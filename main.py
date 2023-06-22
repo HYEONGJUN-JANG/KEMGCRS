@@ -10,7 +10,7 @@ import torch
 from torch import optim
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
-from transformers import AutoModel, AutoTokenizer, BartForConditionalGeneration, GPT2LMHeadModel, GPT2Config, AutoConfig
+from transformers import AutoModel, AutoTokenizer, BartForConditionalGeneration, GPT2LMHeadModel, GPT2Config, AutoConfig, BartTokenizer
 import data
 from config import bert_special_tokens_dict, gpt_special_tokens_dict
 from data_model import GenerationDataset, DialogDataset, KnowledgeDataset, KnowledgeTopicDataset, TopicDataset
@@ -133,9 +133,12 @@ def main():
 
     if 'resp' in args.task:
         # config = GPT2Config.from_pretrained(args.bert_name, max_length=args.max_gen_length+args.max_length)
-        gpt_model = GPT2LMHeadModel.from_pretrained(args.gpt_name, cache_dir=os.path.join("cache", args.gpt_name))
-        tokenizer = AutoTokenizer.from_pretrained(args.gpt_name)
-        tokenizer.pad_token = tokenizer.eos_token
+        # gpt_model = GPT2LMHeadModel.from_pretrained(args.gpt_name, cache_dir=os.path.join("cache", args.gpt_name))
+        # tokenizer = AutoTokenizer.from_pretrained(args.gpt_name)
+        tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
+        gpt_model = BartForConditionalGeneration.from_pretrained('facebook/bart-base')
+
+        # tokenizer.pad_token = tokenizer.eos_token
         tokenizer.add_special_tokens(gpt_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
 
         gpt_model.resize_token_embeddings(len(tokenizer))
