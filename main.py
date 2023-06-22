@@ -132,13 +132,13 @@ def main():
     args.all_knowledgeDB = all_knowledgeDB
 
     if 'resp' in args.task:
-        # config = GPT2Config.from_pretrained(args.bert_name, max_length=args.max_gen_length+args.max_length)
-        # gpt_model = GPT2LMHeadModel.from_pretrained(args.gpt_name, cache_dir=os.path.join("cache", args.gpt_name))
+        # config = GPT2Config.from_pretrained(args.bert_name, max_length=args.max_gen_length+args.max_length) # for GPT
+        # gpt_model = GPT2LMHeadModel.from_pretrained(args.gpt_name, cache_dir=os.path.join("cache", args.gpt_name)) # for GPT
         # tokenizer = AutoTokenizer.from_pretrained(args.gpt_name)
         tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
         gpt_model = BartForConditionalGeneration.from_pretrained('facebook/bart-base')
 
-        # tokenizer.pad_token = tokenizer.eos_token
+        # tokenizer.pad_token = tokenizer.eos_token # for GPT
         tokenizer.add_special_tokens(gpt_special_tokens_dict)  # [TH] add bert special token (<dialog>, <topic> , <type>)
 
         gpt_model.resize_token_embeddings(len(tokenizer))
@@ -205,7 +205,8 @@ def main():
                     gen_resp_ids = []
                     for gen_seq, length in zip(generated, batch['context_len']):
                         gen_seq = [token_id for token_id in gen_seq if token_id != tokenizer.pad_token_id]
-                        gen_resp_ids.append(gen_seq[length:])
+                        # gen_resp_ids.append(gen_seq[length:]) # for GPT
+                        gen_resp_ids.append(gen_seq)
 
                     all_generated.extend(tokenizer.batch_decode(gen_resp_ids))
                     all_response.extend(tokenizer.batch_decode(response, skip_special_tokens=True))
