@@ -86,9 +86,9 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             if self.mode == 'train':
                 pseudo_negative = self.negative_sampler([target_knowledge_idx], candidate_knowledges)
                 pseudo_knowledges = [target_knowledge_idx] + pseudo_negative
-                # random.shuffle(pseudo_knowledges)
             else:
                 pseudo_knowledges = candidate_knowledges[:5]
+            random.shuffle(pseudo_knowledges)
             candidate_knowledge_text = [self.knowledgeDB[idx] for idx in pseudo_knowledges]
 
             related_knowledges = '|'.join(candidate_knowledge_text)
