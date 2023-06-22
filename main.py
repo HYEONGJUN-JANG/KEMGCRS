@@ -208,7 +208,7 @@ def main():
                         # gen_resp_ids.append(gen_seq[length:]) # for GPT
                         gen_resp_ids.append(gen_seq)
 
-                    all_generated.extend(tokenizer.batch_decode(gen_resp_ids))
+                    all_generated.extend(tokenizer.batch_decode(gen_resp_ids, skip_special_tokens=True))
                     all_response.extend(tokenizer.batch_decode(response, skip_special_tokens=True))
                     all_dialog.extend(tokenizer.batch_decode(dialog_token, skip_special_tokens=True))
                     goal_types.extend(tokenizer.batch_decode(batch['goal_type'], skip_special_tokens=True))
