@@ -111,7 +111,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
                 # sorted_list_idx = np.argsort(candidate_list_score)[::-1]
                 # sorted_candidates = [candidate_list[idx] for idx in sorted_list_idx]
                 # test_dataloader.dataset.augmented_raw_sample[current + idx]['candidate_knowledges'] = sorted_candidates
-                test_dataloader.dataset.augmented_raw_sample[current + idx]['candidate_knowledges'] = top_candidate[idx].cpu().tolist()
+                test_dataloader.dataset.augmented_raw_sample[current + idx]['candidate_knowledges'] = [knowledgeDB[rank] for rank in top_candidate[idx].cpu().tolist()]
 
             current += batch_size
 
