@@ -222,7 +222,7 @@ def main():
                 # typelist=['Q&A'] if args.onlyQA else
                 hitDic = {type: {'hit1': [], 'hit3': [], 'hit5': []} for type in typelist}
                 hitAll = {'hit1': [], 'hit3': [], 'hit5': []}
-                hit_list = [1,3,5]
+                hit_list = [1, 3, 5]
                 for idx in range(len(all_generated)):
                     gold = all_response[idx]
                     pred = all_generated[idx]

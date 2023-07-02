@@ -99,6 +99,8 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
 
             related_knowledges = '|'.join(candidate_knowledge_text)
             prompt = self.tokenizer.encode('<knowledge>%s. predict the next %s: ' % (related_knowledges, self.subtask))[:400]
+        elif self.subtask == 'topic':
+            prompt = self.tokenizer.encode('<user_profile>%s. predict the next %s: ' % (user_profile, self.subtask))[:400]
         else:
             prompt = self.tokenizer.encode('predict the next %s: ' % self.subtask)
         # prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
@@ -118,7 +120,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         if self.subtask == 'type':
             label = self.tokenizer(type, max_length=self.args.max_gen_length, truncation=True).input_ids
         elif self.subtask == 'topic':
-            label = self.tokenizer(topic, max_length=self.args.max_gen_length, truncation=True).input_ids
+            label = self.tokenizer(topic, max_length=self.args.max_gen_length, truncation=True, padding='max_length').input_ids
         elif self.subtask == 'response':
             label = self.tokenizer(response, max_length=self.args.max_gen_length, truncation=True).input_ids
         elif self.subtask == 'know':
@@ -139,11 +141,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             context_ids = context_ids + [pad_token_id] * (max_length - len(context_ids))
             # resp_batch = [token_id if token_id != self.tokenizer.pad_token_id else -100 for token_id in context_ids]
 
-            positive_labels = [self.knowledgeDB[idx] for idx in positive_knowledges]
-            positive_labels = '|'.join(positive_labels)
-            positive_labels = self.tokenizer(positive_labels, max_length=self.args.max_length, truncation=True).input_ids
-
-            resp_batch = positive_labels + [pad_token_id] * (self.args.max_length - len(positive_labels))
+            resp_batch = label
 
             context_batch['input_ids'] = torch.LongTensor(context_ids)
             context_batch['attention_mask'] = torch.ne(context_batch['input_ids'], pad_token_id)
