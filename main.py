@@ -167,8 +167,8 @@ def main():
 
         # train_dataset_resp = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
         # test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
-        train_dataset_resp = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB)
-        test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
+        train_dataset_resp = process_augment_sample_topic(train_dataset_raw, tokenizer, train_knowledgeDB)
+        test_dataset_resp = process_augment_sample_topic(test_dataset_raw, tokenizer, all_knowledgeDB)
 
         # with open('augmented_dataset_test.txt', 'rb') as f:
         #     test_dataset_resp = pickle.load(f)
