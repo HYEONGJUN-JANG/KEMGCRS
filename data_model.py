@@ -140,9 +140,9 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             context_ids = dialog
             context_ids = context_ids[-max_length:]
             context_ids = context_ids + [pad_token_id] * (max_length - len(context_ids))
-            # resp_batch = [token_id if token_id != self.tokenizer.pad_token_id else -100 for token_id in context_ids]
 
-            resp_batch = label
+            resp_batch = [token_id if token_id != self.tokenizer.pad_token_id else -100 for token_id in label]
+            # resp_batch = label
 
             context_batch['input_ids'] = torch.LongTensor(context_ids)
             context_batch['attention_mask'] = torch.ne(context_batch['input_ids'], pad_token_id)
