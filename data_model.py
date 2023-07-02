@@ -432,7 +432,7 @@ class TopicDataset(Dataset):  # knowledge용 데이터셋
                                                    padding='max_length',
                                                    truncation=True).input_ids
 
-        context_batch['type'] = self.args.goalDic['str'][type]  # index로 바꿈
+        context_batch['goal_idx'] = self.args.goalDic['str'][type]  # index로 바꿈
         context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
