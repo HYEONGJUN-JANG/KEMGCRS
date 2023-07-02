@@ -100,7 +100,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             related_knowledges = '|'.join(candidate_knowledge_text)
             prompt = self.tokenizer.encode('<knowledge>%s. predict the next %s: ' % (related_knowledges, self.subtask))[:400]
         elif self.subtask == 'topic':
-            prefix = self.tokenizer.encode('<goal>%s. <profile>%s.' % (type, user_profile))[:int(self.args.max_length / 2)]
+            prefix = self.tokenizer.encode('<goal>%s. <profile>%s.' % (type, user_profile))[:int(self.args.max_length * 2 / 3)]
             prompt = self.tokenizer.encode('. predict the next topic: ')
         else:
             prompt = self.tokenizer.encode('predict the next %s: ' % self.subtask)
@@ -415,7 +415,7 @@ class TopicDataset(Dataset):  # knowledge용 데이터셋
         pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
 
         context_batch = defaultdict()
-        prefix = '<profile>' + user_profile # + '<type>' + type + self.tokenizer.sep_token
+        prefix = '<profile>' + user_profile  # + '<type>' + type + self.tokenizer.sep_token
 
         prefix_encoding = self.tokenizer.encode(prefix)[1:-1][:self.args.max_prefix_length]
         input_sentence = self.tokenizer('<dialog>' + dialog, add_special_tokens=False).input_ids
