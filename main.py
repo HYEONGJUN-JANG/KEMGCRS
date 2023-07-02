@@ -264,10 +264,10 @@ def main():
                     # total_cnt=sum([hitDic[type]['hit1'] for type in typelist])
                     # hitDic['total_hit1_ratio'] = round(sum([hitDic[type]['hit1'] for type in typelist ]) / total_cnt,3)
 
-                for k in hit_list:
-                    for goal_type in typelist:
-                        print("[hit%d]\t[%s]\t%.4f" % (k, goal_type, np.average(hitDic[goal_type][f"hit{k}"])))
-                    print("[hit%d]\t[All]\t%.4f" % (k, np.average(hitAll[f"hit{k}"])))
+                # for k in hit_list:
+                #     for goal_type in typelist:
+                #         print("[hit%d]\t[%s]\t%.4f" % (k, goal_type, np.average(hitDic[goal_type][f"hit{k}"])))
+                print("[hit1]\t[All]\t%.4f" % (np.average(hitAll[f"hit1"])))
 
         else:
             generator.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
