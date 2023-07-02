@@ -252,7 +252,7 @@ def main():
 
                     correct = gold == pred
                     hitAll["hit1"].append(correct)
-                    hitDic[goal_type]["hit1"].append(correct)
+                    # hitDic[goal_type]["hit1"].append(correct)
 
                     # pred = pred.split('|')
                     #
