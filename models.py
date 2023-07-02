@@ -37,11 +37,13 @@ class Retriever(nn.Module):
         dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         return dialog_emb
 
-    def generation(self, token_seq, mask, labels):
-        outputs = self.gpt_model(input_ids=token_seq, attention_mask=mask, labels=labels)
+    def generation(self, token_seq, mask, labels, label_idx):
+        outputs = self.gpt_model(input_ids=token_seq, attention_mask=mask, labels=labels, output_hidden_states=True)
         # outputs = self.gpt_model(input_ids=token_seq, labels=labels)
+        logit = self.topic_proj(outputs.decoder_hidden_states[-1][:, 0, :])
+        loss = torch.nn.CrossEntropyLoss()(logit, label_idx)
 
-        return outputs[0]
+        return loss # outputs[0]
 
     def compute_know_score(self, token_seq, mask, knowledge_index, type_idx):
         """
