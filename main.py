@@ -131,6 +131,27 @@ def main():
     args.all_knowledge_num = len(all_knowledgeDB)
     args.all_knowledgeDB = all_knowledgeDB
 
+    if 'goal' in args.task:
+        # KNOWLEDGE TASk
+        retriever = Retriever(args, bert_model)
+        retriever = retriever.to(args.device)
+
+        # pretrain_topic(args, retriever, train_knowledge_topic, test_knowledge_topic, tokenizer)
+
+        train_dataset = process_augment_sample_topic(train_dataset_raw, tokenizer, train_knowledgeDB)
+        valid_dataset = process_augment_sample_topic(valid_dataset_raw, tokenizer, all_knowledgeDB)
+        test_dataset = process_augment_sample_topic(test_dataset_raw, tokenizer, all_knowledgeDB)
+
+        train_datamodel_topic = TopicDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+        valid_datamodel_topic = TopicDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+        test_datamodel_topic = TopicDataset(args, test_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+
+        train_dataloader_topic = DataLoader(train_datamodel_topic, batch_size=args.batch_size, shuffle=True)
+        valid_dataloader_topic = DataLoader(valid_datamodel_topic, batch_size=args.batch_size, shuffle=False)
+        test_dataloader_topic = DataLoader(test_datamodel_topic, batch_size=args.batch_size, shuffle=False)
+
+        train_goal(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer)
+
     if 'resp' in args.task:
         # config = GPT2Config.from_pretrained(args.bert_name, max_length=args.max_gen_length+args.max_length) # for GPT
         # gpt_model = GPT2LMHeadModel.from_pretrained(args.gpt_name, cache_dir=os.path.join("cache", args.gpt_name)) # for GPT
@@ -244,7 +265,6 @@ def main():
                         print("[hit%d]\t[%s]\t%.4f" % (k, goal_type, np.average(hitDic[goal_type][f"hit{k}"])))
                     print("[hit%d]\t[All]\t%.4f" % (k, np.average(hitAll[f"hit{k}"])))
 
-
         else:
             generator.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
 
@@ -268,27 +288,6 @@ def main():
         test_dataloader_topic = DataLoader(test_datamodel_topic, batch_size=args.batch_size, shuffle=False)
 
         train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer)
-
-    if 'goal' in args.task:
-        # KNOWLEDGE TASk
-        retriever = Retriever(args, bert_model)
-        retriever = retriever.to(args.device)
-
-        # pretrain_topic(args, retriever, train_knowledge_topic, test_knowledge_topic, tokenizer)
-
-        train_dataset = process_augment_sample_topic(train_dataset_raw, tokenizer, train_knowledgeDB)
-        valid_dataset = process_augment_sample_topic(valid_dataset_raw, tokenizer, all_knowledgeDB)
-        test_dataset = process_augment_sample_topic(test_dataset_raw, tokenizer, all_knowledgeDB)
-
-        train_datamodel_topic = TopicDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
-        valid_datamodel_topic = TopicDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
-        test_datamodel_topic = TopicDataset(args, test_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
-
-        train_dataloader_topic = DataLoader(train_datamodel_topic, batch_size=args.batch_size, shuffle=True)
-        valid_dataloader_topic = DataLoader(valid_datamodel_topic, batch_size=args.batch_size, shuffle=False)
-        test_dataloader_topic = DataLoader(test_datamodel_topic, batch_size=args.batch_size, shuffle=False)
-
-        train_goal(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer)
 
     if 'know' in args.task:
         # bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
