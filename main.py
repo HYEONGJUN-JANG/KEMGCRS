@@ -168,7 +168,7 @@ def main():
 
         # train generate task
         if args.saved_model_path == '':
-            # for epoch in range(args.num_epochs):
+            for epoch in range(args.num_epochs):
                 train_epoch_loss = 0
                 for batch in tqdm(train_dataloader_resp, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
                     generator.train()
