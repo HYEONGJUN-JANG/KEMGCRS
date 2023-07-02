@@ -152,7 +152,6 @@ def process_augment_sample_topic(raw_data, tokenizer, knowledgeDB):
 
 
 def process_augment_sample(raw_data, tokenizer, knowledgeDB, goal_list=['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A']):
-
     train_sample = []
     if tokenizer.eos_token is not None:
         eos_token = tokenizer.eos_token
@@ -198,35 +197,6 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB, goal_list=['Movie r
             augmented_dialog.append(utterance)
     return train_sample
 
-def process_augment_sample_topic(raw_data, tokenizer, knowledgeDB):
-
-    train_sample = []
-    if tokenizer.eos_token is not None:
-        eos_token = tokenizer.eos_token
-    else:
-        eos_token = tokenizer.sep_token
-    for ij in range(len(raw_data)):
-        conversation = raw_data[ij]
-        augmented_dialog = []
-        for i in range(len(conversation['dialog'])):
-            role = conversation['role_seq'][i]
-            utterance = conversation['dialog'][i] + eos_token
-            if role == 'System' and len(augmented_dialog) > 0:
-                candidate_knowledges = [knowledgeDB.index(cand) for cand in conversation['pseudo_knowledge_seq'][i]]
-
-                flatten_dialog = ''.join(augmented_dialog)
-                train_sample.append({'dialog': flatten_dialog,
-                                     'user_profile': conversation['user_profile'],
-                                     'response': utterance,
-                                     'type': conversation['type'][i],
-                                     'topic': conversation['topic'][i],
-                                     'situation': conversation['situation'],
-                                     'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i]),
-                                     'candidate_knowledges': candidate_knowledges,
-                                     'candidate_confidences': conversation['pseudo_confidence_seq'][i]  # prob
-                                     })
-            augmented_dialog.append(utterance)
-    return train_sample
 
 def dataset_reader(args, data_name='train'):
     all_knowledge = set()
