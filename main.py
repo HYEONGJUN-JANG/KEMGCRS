@@ -147,13 +147,14 @@ def main():
         # train_dataset_resp = process_augment_sample(train_dataset_raw, tokenizer, knowledgeDB)
         # test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, knowledgeDB)
         train_dataset_resp = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB)
-        # test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
-        with open('augmented_dataset_test.txt', 'rb') as f:
-            test_dataset_resp = pickle.load(f)
-        for sample in test_dataset_resp:
-            sample['dialog'] = sample['dialog'].replace('[SEP]', tokenizer.eos_token)
-            sample['target_knowledge'] = all_knowledgeDB.index(sample['target_knowledge'])
-            sample['candidate_knowledges'] = [all_knowledgeDB.index(c_know) for c_know in sample['candidate_knowledges']]
+        test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
+
+        # with open('augmented_dataset_test.txt', 'rb') as f:
+        #     test_dataset_resp = pickle.load(f)
+        # for sample in test_dataset_resp:
+        #     sample['dialog'] = sample['dialog'].replace('[SEP]', tokenizer.eos_token)
+        #     sample['target_knowledge'] = all_knowledgeDB.index(sample['target_knowledge'])
+        #     sample['candidate_knowledges'] = [all_knowledgeDB.index(c_know) for c_know in sample['candidate_knowledges']]
 
         train_datamodel_resp = GenerationDataset(args, train_dataset_resp, train_knowledgeDB, tokenizer, mode='train', subtask=args.subtask)
         test_datamodel_resp = GenerationDataset(args, test_dataset_resp, all_knowledgeDB, tokenizer, mode='test', subtask=args.subtask)
@@ -222,7 +223,7 @@ def main():
                 # typelist=['Q&A'] if args.onlyQA else
                 hitDic = {type: {'hit1': [], 'hit3': [], 'hit5': []} for type in typelist}
                 hitAll = {'hit1': [], 'hit3': [], 'hit5': []}
-                hit_list = [1, 3, 5]
+                hit_list = [1]
                 for idx in range(len(all_generated)):
                     gold = all_response[idx]
                     pred = all_generated[idx]
