@@ -415,7 +415,7 @@ class TopicDataset(Dataset):  # knowledge용 데이터셋
         pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
 
         context_batch = defaultdict()
-        prefix = '<profile>' + user_profile + '<type>' + type + self.tokenizer.sep_token
+        prefix = '<profile>' + user_profile # + '<type>' + type + self.tokenizer.sep_token
 
         prefix_encoding = self.tokenizer.encode(prefix)[1:-1][:self.args.max_prefix_length]
         input_sentence = self.tokenizer('<dialog>' + dialog, add_special_tokens=False).input_ids
