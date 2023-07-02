@@ -250,12 +250,16 @@ def main():
                     pred = all_generated[idx]
                     goal_type = goal_types[idx]
 
-                    pred = pred.split('|')
+                    correct = gold == pred
+                    hitAll["hit1"].append(correct)
+                    hitDic[goal_type]["hit1"].append(correct)
 
-                    for k in hit_list:
-                        correct = gold in pred[:k + 1]
-                        hitAll[f"hit{k}"].append(correct)
-                        hitDic[goal_type][f"hit{k}"].append(correct)
+                    # pred = pred.split('|')
+                    #
+                    # for k in hit_list:
+                    #     correct = gold in pred[:k + 1]
+                    #     hitAll[f"hit{k}"].append(correct)
+                    #     hitDic[goal_type][f"hit{k}"].append(correct)
 
                     # total_cnt=sum([hitDic[type]['hit1'] for type in typelist])
                     # hitDic['total_hit1_ratio'] = round(sum([hitDic[type]['hit1'] for type in typelist ]) / total_cnt,3)
