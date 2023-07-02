@@ -16,7 +16,7 @@ from config import bert_special_tokens_dict, gpt_special_tokens_dict
 from data_model import GenerationDataset, DialogDataset, KnowledgeDataset, KnowledgeTopicDataset, TopicDataset
 from eval_know import eval_know, knowledge_reindexing
 from train_know import train_know
-from train_topic import train_topic, pretrain_topic
+from train_topic import train_topic, pretrain_topic, train_goal
 from utils import *
 from models import *
 from data_util import readDic, dataset_reader, process_augment_sample, bm_tokenizer, process_augment_sample_topic
@@ -268,6 +268,27 @@ def main():
         test_dataloader_topic = DataLoader(test_datamodel_topic, batch_size=args.batch_size, shuffle=False)
 
         train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer)
+
+    if 'goal' in args.task:
+        # KNOWLEDGE TASk
+        retriever = Retriever(args, bert_model)
+        retriever = retriever.to(args.device)
+
+        # pretrain_topic(args, retriever, train_knowledge_topic, test_knowledge_topic, tokenizer)
+
+        train_dataset = process_augment_sample_topic(train_dataset_raw, tokenizer, train_knowledgeDB)
+        valid_dataset = process_augment_sample_topic(valid_dataset_raw, tokenizer, all_knowledgeDB)
+        test_dataset = process_augment_sample_topic(test_dataset_raw, tokenizer, all_knowledgeDB)
+
+        train_datamodel_topic = TopicDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+        valid_datamodel_topic = TopicDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+        test_datamodel_topic = TopicDataset(args, test_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+
+        train_dataloader_topic = DataLoader(train_datamodel_topic, batch_size=args.batch_size, shuffle=True)
+        valid_dataloader_topic = DataLoader(valid_datamodel_topic, batch_size=args.batch_size, shuffle=False)
+        test_dataloader_topic = DataLoader(test_datamodel_topic, batch_size=args.batch_size, shuffle=False)
+
+        train_goal(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer)
 
     if 'know' in args.task:
         # bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))
