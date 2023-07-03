@@ -273,7 +273,7 @@ def main():
                 print("[hit1]\t[All]\t%.4f" % (np.average(hitAll[f"hit1"])))
                 if best_hit < np.average(hitAll[f"hit1"]):
                     best_hit = np.average(hitAll[f"hit1"])
-                    torch.save(generator.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_{args.bart_name}_{args.task}_{args.subtask}_{args.num_epochs}.pt"))  # TIME_MODELNAME 형식
+                    torch.save(generator.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_{args.task}_{args.subtask}_{args.num_epochs}.pt"))  # TIME_MODELNAME 형식
 
             print("[BEST][hit1]\t[All]\t%.4f" % best_hit)
 
