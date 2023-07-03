@@ -214,7 +214,7 @@ def main():
                                                               pad_token_id=tokenizer.pad_token_id,
                                                               max_length=args.max_gen_length)
                 decoded_generated_goal = tokenizer.batch_decode(generated_goal, skip_special_tokens=True)
-                all_generated.extend(tokenizer.batch_decode(decoded_generated_goal, skip_special_tokens=True))
+                all_generated.extend(decoded_generated_goal)
                 all_response.extend(tokenizer.batch_decode(response, skip_special_tokens=True))
 
                 for idx in range(len(decoded_generated_goal)):
