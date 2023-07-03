@@ -131,9 +131,6 @@ def main():
     args.all_knowledge_num = len(all_knowledgeDB)
     args.all_knowledgeDB = all_knowledgeDB
 
-    args.saved_model_path = 'myretriever_resp'
-    args.subtask = 'topic'
-
     if 'goal' in args.task:
         # KNOWLEDGE TASk
         retriever = Retriever(args, bert_model)
