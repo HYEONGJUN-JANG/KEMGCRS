@@ -163,7 +163,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
 
             context_ids = dialog
             context_ids = context_ids[-self.args.max_length:]
-            context_ids = [pad_token_id] * (self.args.max_length - len(context_ids)) + context_ids
+            context_ids = context_ids + [pad_token_id] * (self.args.max_length - len(context_ids))
 
             context_len_batch = len([token for token in context_ids if token != pad_token_id])
             # context_ids += self.generate_prompt_ids
