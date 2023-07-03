@@ -271,7 +271,7 @@ def main():
                 #         print("[hit%d]\t[%s]\t%.4f" % (k, goal_type, np.average(hitDic[goal_type][f"hit{k}"])))
                 print("[hit1]\t[All]\t%.4f" % (np.average(hitAll[f"hit1"])))
 
-            torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_{args.bart_name}_{args.task}_{args.subtask}.pt"))  # TIME_MODELNAME 형식
+            torch.save(generator.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_{args.bart_name}_{args.task}_{args.subtask}.pt"))  # TIME_MODELNAME 형식
 
         else:
             generator.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
