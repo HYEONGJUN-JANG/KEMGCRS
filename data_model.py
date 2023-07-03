@@ -73,11 +73,11 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
     def __getitem__(self, idx):  # TODO 구현 전
         data = self.augmented_raw_sample[idx]
         cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge', 'candidate_knowledges', 'candidate_confidences']
-        dialog, user_profile, response, type, topic, situation, target_knowledge_idx, candidate_knowledges, candidate_confidences = [data[i] for i in cbdicKeys]
+        dialog, user_profile, response, goal, topic, situation, target_knowledge_idx, candidate_knowledges, candidate_confidences = [data[i] for i in cbdicKeys]
         pad_token_id = self.tokenizer.pad_token_id
 
         context_batch = defaultdict()
-        context_batch['goal_type'] = self.tokenizer(type, max_length=self.args.max_gen_length, truncation=True, padding='max_length').input_ids
+        context_batch['goal_type'] = self.tokenizer(goal, max_length=self.args.max_gen_length, truncation=True, padding='max_length').input_ids
         resp_batch = []
         context_len_batch = []
 
@@ -102,6 +102,9 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         elif self.subtask == 'topic':
             prefix = self.tokenizer.encode('<goal>%s. <profile>%s.' % (type, user_profile))[:int(self.args.max_length * 2 / 3)]
             prompt = self.tokenizer.encode('. predict the next topic: ')
+        elif self.subtask == 'goal':
+            prefix = self.tokenizer.encode('<profile>%s.' % user_profile)[:int(self.args.max_length * 2 / 3)]
+            prompt = self.tokenizer.encode('predict the next goal: ')
         else:
             prompt = self.tokenizer.encode('predict the next %s: ' % self.subtask)
         # prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
@@ -118,8 +121,8 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         dialog = self.tokenizer('<dialog>' + dialog).input_ids[-(self.args.max_length - len(prefix) - len(prompt)):]
         dialog = prefix + dialog + prompt
 
-        if self.subtask == 'type':
-            label = self.tokenizer(type, max_length=self.args.max_gen_length, truncation=True).input_ids
+        if self.subtask == 'goal':
+            label = self.tokenizer(goal, max_length=16, truncation=True, padding='max_length').input_ids
         elif self.subtask == 'topic':
             label = self.tokenizer(topic, max_length=self.args.max_gen_length, truncation=True, padding='max_length').input_ids
         elif self.subtask == 'response':
@@ -163,7 +166,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             context_batch['response'] = label + [pad_token_id] * (self.args.max_gen_length - len(label))
             context_batch['context_len'] = context_len_batch
 
-        context_batch['goal_idx'] = self.args.goalDic['str'][type]  # index로 바꿈
+        context_batch['goal_idx'] = self.args.goalDic['str'][goal]  # index로 바꿈
         context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
 
         for k, v in context_batch.items():
