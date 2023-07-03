@@ -180,8 +180,8 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             context_batch['response'] = label + [pad_token_id] * (self.args.max_gen_length - len(label))
             context_batch['context_len'] = context_len_batch
 
-        # context_batch['goal_idx'] = self.args.goalDic['str'][goal]  # index로 바꿈
-        # context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
+        context_batch['goal_idx'] = self.args.goalDic['str'][goal]  # index로 바꿈
+        context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
 
         for k, v in context_batch.items():
             if not isinstance(v, torch.Tensor):
