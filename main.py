@@ -189,28 +189,6 @@ def main():
         criterion = nn.CrossEntropyLoss().to(args.device)
         optimizer = optim.AdamW(generator.parameters(), lr=args.lr)
 
-        if args.saved_premodel_path == '':
-            train_datamodel_pre = GenerationDataset(args, train_dataset_resp, train_knowledgeDB, tokenizer, mode='train', subtask='pretrain')
-
-            for epoch in range(2):
-                train_epoch_loss = 0
-                for batch in tqdm(train_datamodel_pre, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-                    generator.train()
-                    dialog_token = batch['input_ids'].to(args.device)
-                    dialog_mask = batch['attention_mask'].to(args.device)
-                    response = batch['response'].to(args.device)
-                    topic_idx = batch['topic_idx'].to(args.device)
-
-                    loss = generator.generation(dialog_token, dialog_mask, response, topic_idx)
-                    # loss = criterion(dot_score, targets)
-                    train_epoch_loss += loss
-                    optimizer.zero_grad()
-                    loss.backward()
-                    optimizer.step()
-                print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
-        else:
-            generator.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path)))
-
         # train generate task
         if args.saved_model_path == '':
             best_hit = 0
