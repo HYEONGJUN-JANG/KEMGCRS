@@ -224,7 +224,7 @@ def main():
                     generated = generator.gpt_model.generate(input_ids=dialog_token,
                                                              attention_mask=dialog_mask,
                                                              pad_token_id=tokenizer.pad_token_id,
-                                                             max_length=args.max_gen_length + args.max_length)
+                                                             max_length=args.max_gen_length)
                     # decoded_generated = tokenizer.batch_decode(generated)
 
                     gen_resp_ids = []
