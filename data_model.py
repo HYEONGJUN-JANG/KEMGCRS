@@ -144,9 +144,12 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             # # resp_batch = [token_id if token_id != self.tokenizer.pad_token_id else -100 for token_id in context_ids]
             # resp_batch = context_ids
             max_length = self.args.max_length + self.args.max_gen_length
-            context_ids = dialog + label
-            context_ids = context_ids[-max_length:]
-            context_ids = context_ids + [pad_token_id] * (max_length - len(context_ids))
+            # context_ids = dialog + label
+            # context_ids = context_ids[-max_length:]
+            # context_ids = context_ids + [pad_token_id] * (max_length - len(context_ids))
+            context_ids = dialog
+            context_ids = context_ids[-self.args.max_length:]
+            context_ids = context_ids + [pad_token_id] * (self.args.max_length - len(context_ids))
 
             resp_batch = [token_id if token_id != self.tokenizer.pad_token_id else -100 for token_id in context_ids]
             # resp_batch = label
