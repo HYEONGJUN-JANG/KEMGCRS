@@ -125,7 +125,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         dialog = prefix + dialog + prompt
 
         if self.subtask == 'goal':
-            label = self.tokenizer(goal, max_length=16, truncation=True, padding='max_length').input_ids
+            label = self.tokenizer(goal, max_length=self.args.max_gen_length, truncation=True, padding='max_length').input_ids
         elif self.subtask == 'topic':
             label = self.tokenizer(topic, max_length=self.args.max_gen_length, truncation=True, padding='max_length').input_ids
         elif self.subtask == 'response':
@@ -152,6 +152,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             context_ids = context_ids[-self.args.max_length:]
             context_ids = context_ids + [pad_token_id] * (self.args.max_length - len(context_ids))
 
+            label = label + [pad_token_id] * (self.args.max_gen_length - len(label))
             resp_batch = [token_id if token_id != self.tokenizer.pad_token_id else -100 for token_id in label]
             # resp_batch = label
 
