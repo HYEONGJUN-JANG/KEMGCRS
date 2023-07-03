@@ -127,7 +127,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         if self.subtask == 'goal':
             label = self.tokenizer(goal, max_length=16, truncation=True, padding='max_length').input_ids
         elif self.subtask == 'topic':
-            label = self.tokenizer(topic, max_length=self.args.max_gen_length, truncation=True).input_ids
+            label = self.tokenizer(topic, max_length=self.args.max_gen_length, truncation=True, padding='max_length').input_ids
         elif self.subtask == 'response':
             label = self.tokenizer(response, max_length=self.args.max_gen_length, truncation=True).input_ids
         elif self.subtask == 'know':
