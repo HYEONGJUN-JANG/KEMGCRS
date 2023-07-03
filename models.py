@@ -40,10 +40,10 @@ class Retriever(nn.Module):
     def generation(self, token_seq, mask, labels, label_idx):
         outputs = self.gpt_model(input_ids=token_seq, attention_mask=mask, labels=labels, output_hidden_states=True)
         # outputs = self.gpt_model(input_ids=token_seq, labels=labels)
-        logit = self.topic_proj(outputs.decoder_hidden_states[-1][:, 0, :])
-        loss = torch.nn.CrossEntropyLoss()(logit, label_idx)
+        # logit = self.topic_proj(outputs.decoder_hidden_states[-1][:, 0, :])
+        # loss = torch.nn.CrossEntropyLoss()(logit, label_idx)
 
-        return loss # outputs[0]
+        return outputs[0]
 
     def compute_know_score(self, token_seq, mask, knowledge_index, type_idx):
         """
