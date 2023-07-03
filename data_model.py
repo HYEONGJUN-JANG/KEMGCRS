@@ -105,8 +105,11 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         elif self.subtask == 'goal':
             prefix = self.tokenizer.encode('<profile>%s.' % user_profile)[:int(self.args.max_length * 2 / 3)]
             prompt = self.tokenizer.encode('predict the next goal: ')
-        else:
+        elif self.subtask == 'resp':
             prompt = self.tokenizer.encode('predict the next %s: ' % self.subtask)
+        else:
+            prefix = []
+            prompt = []
         # prefix_encoding = self.tokenizer.encode(prefix)[1:][:30]
         # knowledge_text = self.knowledgeDB[target_knowledge_idx]
 
@@ -121,6 +124,10 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         dialog = self.tokenizer('<dialog>' + dialog).input_ids[-(self.args.max_length - len(prefix) - len(prompt)):]
         dialog = prefix + dialog + prompt
 
+        context_ids = dialog
+        context_ids = context_ids[-self.args.max_length:]
+        context_ids = context_ids + [pad_token_id] * (self.args.max_length - len(context_ids))
+
         if self.subtask == 'goal':
             label = self.tokenizer(goal, max_length=16, truncation=True, padding='max_length').input_ids
         elif self.subtask == 'topic':
@@ -129,6 +136,8 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             label = self.tokenizer(response, max_length=self.args.max_gen_length, truncation=True).input_ids
         elif self.subtask == 'know':
             label = self.tokenizer(self.knowledgeDB[target_knowledge_idx], max_length=self.args.max_gen_length, truncation=True).input_ids
+        elif self.subtask == 'pretrain':
+            label = dialog
 
         if self.mode == 'train':
             # self.tokenizer.padding_side = 'right'
@@ -138,11 +147,6 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             # context_ids = context_ids + [pad_token_id] * (max_length - len(context_ids))
             # # resp_batch = [token_id if token_id != self.tokenizer.pad_token_id else -100 for token_id in context_ids]
             # resp_batch = context_ids
-
-            max_length = self.args.max_length
-            context_ids = dialog
-            context_ids = context_ids[-max_length:]
-            context_ids = context_ids + [pad_token_id] * (max_length - len(context_ids))
 
             resp_batch = [token_id if token_id != self.tokenizer.pad_token_id else -100 for token_id in label]
             # resp_batch = label
@@ -154,16 +158,17 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
         elif self.mode == 'test':
             # self.tokenizer.padding_side = 'left'
 
-            context_ids = dialog + [pad_token_id] * (self.args.max_length - len(dialog))
+            # context_ids = dialog + [pad_token_id] * (self.args.max_length - len(dialog))
             # context_ids = dialog[-(self.args.max_length - len(self.generate_prompt_ids)):]
             context_len_batch = len([token for token in context_ids if token != pad_token_id])
             # context_ids += self.generate_prompt_ids
 
-            context_ids = [pad_token_id] * (self.args.max_length - len(context_ids)) + context_ids
+            # context_ids = [pad_token_id] * (self.args.max_length - len(context_ids)) + context_ids
+
             context_batch['input_ids'] = torch.LongTensor(context_ids)
             context_batch['attention_mask'] = torch.ne(context_batch['input_ids'], pad_token_id)
 
-            context_batch['response'] = label + [pad_token_id] * (self.args.max_gen_length - len(label))
+            context_batch['response'] = label # + [pad_token_id] * (self.args.max_gen_length - len(label))
             context_batch['context_len'] = context_len_batch
 
         context_batch['goal_idx'] = self.args.goalDic['str'][goal]  # index로 바꿈
