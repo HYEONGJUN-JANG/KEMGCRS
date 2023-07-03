@@ -199,29 +199,6 @@ def main():
         # train generate task
         if args.saved_model_path != '':
             generator.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_model_path}_goal_best.pt")))
-            current = 0
-            for batch in tqdm(test_dataloader_resp, desc="Generate Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-                generator.eval()
-                dialog_token = batch['input_ids'].to(args.device)
-                dialog_mask = batch['attention_mask'].to(args.device)
-                response = batch['response']
-
-                batch_size = dialog_token.shape[0]
-                generated = generator.gpt_model.generate(input_ids=dialog_token,
-                                                         attention_mask=dialog_mask,
-                                                         pad_token_id=tokenizer.pad_token_id,
-                                                         max_length=args.max_gen_length)
-                decoded_generated = tokenizer.batch_decode(generated, skip_special_tokens=True)
-
-                for idx in range(len(decoded_generated)):
-                    test_dataloader_resp.dataset.augmented_raw_sample[current + idx]['predicted_goal'] = decoded_generated[idx]
-                current += batch_size
-
-                # gen_resp_ids = []
-                # for gen_seq, length in zip(generated, batch['context_len']):
-                #     gen_seq = [token_id for token_id in gen_seq if token_id != tokenizer.pad_token_id]
-                #     # gen_resp_ids.append(gen_seq[length:]) # for GPT
-                #     gen_resp_ids.append(gen_seq)
 
         best_hit = 0
         for epoch in range(args.num_epochs):
