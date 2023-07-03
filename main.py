@@ -201,19 +201,34 @@ def main():
             generator.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_model_path}_goal_best.pt")))
             test_dataloader_resp.dataset.subtask = 'goal'
             current = 0
-            for batch in tqdm(test_dataloader_resp, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+            all_response = []
+            all_generated = []
+            for batch in tqdm(test_dataloader_resp, desc="Generate_Predicted_Goal", bar_format=' {l_bar} | {bar:23} {r_bar}'):
                 generator.eval()
                 dialog_token = batch['input_ids'].to(args.device)
                 dialog_mask = batch['attention_mask'].to(args.device)
+                response = batch['response'].to(args.device)
+
                 generated_goal = generator.gpt_model.generate(input_ids=dialog_token,
                                                               attention_mask=dialog_mask,
                                                               pad_token_id=tokenizer.pad_token_id,
                                                               max_length=args.max_gen_length)
                 decoded_generated_goal = tokenizer.batch_decode(generated_goal, skip_special_tokens=True)
+                all_generated.extend(tokenizer.batch_decode(decoded_generated_goal, skip_special_tokens=True))
+                all_response.extend(tokenizer.batch_decode(response, skip_special_tokens=True))
 
                 for idx in range(len(decoded_generated_goal)):
                     test_dataloader_resp.dataset.augmented_raw_sample[current + idx]['goal'] = decoded_generated_goal[idx]
                 current += dialog_token.size(0)
+            hitAll = {'hit1': [], 'hit3': [], 'hit5': []}
+            for idx in range(len(all_generated)):
+                gold = all_response[idx]
+                pred = all_generated[idx]
+
+                correct = (gold == pred)
+                hitAll["hit1"].append(correct)
+
+            print("[hit1]\t[%s]\t%.4f" % (args.subtask, np.average(hitAll[f"hit1"])))
             test_dataloader_resp.dataset.subtask = 'topic'
 
         best_hit = 0
