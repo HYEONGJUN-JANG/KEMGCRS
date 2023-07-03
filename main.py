@@ -199,6 +199,22 @@ def main():
         # train generate task
         if args.saved_model_path != '':
             generator.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_model_path}_goal_best.pt")))
+            test_dataloader_resp.dataset.subtask = 'goal'
+            current = 0
+            for batch in tqdm(test_dataloader_resp, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+                generator.eval()
+                dialog_token = batch['input_ids'].to(args.device)
+                dialog_mask = batch['attention_mask'].to(args.device)
+                generated_goal = generator.gpt_model.generate(input_ids=dialog_token,
+                                                              attention_mask=dialog_mask,
+                                                              pad_token_id=tokenizer.pad_token_id,
+                                                              max_length=args.max_gen_length)
+                decoded_generated_goal = tokenizer.batch_decode(generated_goal, skip_special_tokens=True)
+
+                for idx in range(len(decoded_generated_goal)):
+                    test_dataloader_resp.dataset.augmented_raw_sample[current + idx]['goal'] = decoded_generated_goal[idx]
+                current += dialog_token.size(0)
+            test_dataloader_resp.dataset.subtask = 'topic'
 
         best_hit = 0
         for epoch in range(args.num_epochs):
@@ -207,16 +223,6 @@ def main():
                 generator.train()
                 dialog_token = batch['input_ids'].to(args.device)
                 dialog_mask = batch['attention_mask'].to(args.device)
-
-                generated_goal = generator.gpt_model.generate(input_ids=dialog_token,
-                                                         attention_mask=dialog_mask,
-                                                         pad_token_id=tokenizer.pad_token_id,
-                                                         max_length=args.max_gen_length)
-                decoded_generated_goal = tokenizer.batch_decode(generated_goal, skip_special_tokens=True)
-
-                dialog_token = torch.cat([generated_goal[:, 1:], dialog_token], dim=-1)
-                dialog_mask = torch.ne(dialog_token, tokenizer.pad_token_id)
-
                 response = batch['response'].to(args.device)
                 topic_idx = batch['topic_idx'].to(args.device)
 
