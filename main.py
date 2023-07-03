@@ -131,7 +131,8 @@ def main():
     args.all_knowledge_num = len(all_knowledgeDB)
     args.all_knowledgeDB = all_knowledgeDB
 
-    # args.saved_model_path = 'myretriever_resp'
+    args.saved_model_path = 'myretriever_resp'
+    args.subtask = 'topic'
 
     if 'goal' in args.task:
         # KNOWLEDGE TASk
@@ -191,30 +192,54 @@ def main():
 
         generator = Retriever(args, gpt_model=gpt_model)
         generator = generator.to(args.device)
+
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.AdamW(generator.parameters(), lr=args.lr)
 
         # train generate task
         if args.saved_model_path != '':
             generator.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_model_path}_goal_best.pt")))
+            current = 0
+            for batch in tqdm(test_dataloader_resp, desc="Generate Test", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+                generator.eval()
+                dialog_token = batch['input_ids'].to(args.device)
+                dialog_mask = batch['attention_mask'].to(args.device)
+                response = batch['response']
+
+                batch_size = dialog_token.shape[0]
+                generated = generator.gpt_model.generate(input_ids=dialog_token,
+                                                         attention_mask=dialog_mask,
+                                                         pad_token_id=tokenizer.pad_token_id,
+                                                         max_length=args.max_gen_length)
+                decoded_generated = tokenizer.batch_decode(generated, skip_special_tokens=True)
+
+                for idx in range(len(decoded_generated)):
+                    test_dataloader_resp.dataset.augmented_raw_sample[current + idx]['predicted_goal'] = decoded_generated[idx]
+                current += batch_size
+
+                # gen_resp_ids = []
+                # for gen_seq, length in zip(generated, batch['context_len']):
+                #     gen_seq = [token_id for token_id in gen_seq if token_id != tokenizer.pad_token_id]
+                #     # gen_resp_ids.append(gen_seq[length:]) # for GPT
+                #     gen_resp_ids.append(gen_seq)
 
         best_hit = 0
         for epoch in range(args.num_epochs):
-            # train_epoch_loss = 0
-            # for batch in tqdm(train_dataloader_resp, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
-            #     generator.train()
-            #     dialog_token = batch['input_ids'].to(args.device)
-            #     dialog_mask = batch['attention_mask'].to(args.device)
-            #     response = batch['response'].to(args.device)
-            #     topic_idx = batch['topic_idx'].to(args.device)
-            #
-            #     loss = generator.generation(dialog_token, dialog_mask, response, topic_idx)
-            #     # loss = criterion(dot_score, targets)
-            #     train_epoch_loss += loss
-            #     optimizer.zero_grad()
-            #     loss.backward()
-            #     optimizer.step()
-            # print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+            train_epoch_loss = 0
+            for batch in tqdm(train_dataloader_resp, desc="Generate_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+                generator.train()
+                dialog_token = batch['input_ids'].to(args.device)
+                dialog_mask = batch['attention_mask'].to(args.device)
+                response = batch['response'].to(args.device)
+                topic_idx = batch['topic_idx'].to(args.device)
+
+                loss = generator.generation(dialog_token, dialog_mask, response, topic_idx)
+                # loss = criterion(dot_score, targets)
+                train_epoch_loss += loss
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+            print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
             # test generation task
             all_dialog = []
@@ -277,11 +302,11 @@ def main():
             # for k in hit_list:
             #     for goal_type in typelist:
             #         print("[hit%d]\t[%s]\t%.4f" % (k, goal_type, np.average(hitDic[goal_type][f"hit{k}"])))
-            print("[hit1]\t[%s]\t%.4f" % (np.average(hitAll[f"hit1"]), args.subtask))
+            print("[hit1]\t[%s]\t%.4f" % (args.subtask, np.average(hitAll[f"hit1"])))
             if best_hit < np.average(hitAll[f"hit1"]):
                 best_hit = np.average(hitAll[f"hit1"])
                 torch.save(generator.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_{args.task}_{args.subtask}_{args.num_epochs}.pt"))  # TIME_MODELNAME 형식
-        print("[BEST][hit1]\t[%s]\t%.4f" % (best_hit, args.subtask))
+        print("[BEST][hit1]\t[%s]\t%.4f" % (args.subtask, best_hit))
 
     if 'topic' in args.task:
         # KNOWLEDGE TASk
