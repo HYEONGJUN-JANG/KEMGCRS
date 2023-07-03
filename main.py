@@ -207,6 +207,16 @@ def main():
                 generator.train()
                 dialog_token = batch['input_ids'].to(args.device)
                 dialog_mask = batch['attention_mask'].to(args.device)
+
+                generated_goal = generator.gpt_model.generate(input_ids=dialog_token,
+                                                         attention_mask=dialog_mask,
+                                                         pad_token_id=tokenizer.pad_token_id,
+                                                         max_length=args.max_gen_length)
+                decoded_generated_goal = tokenizer.batch_decode(generated_goal, skip_special_tokens=True)
+
+                dialog_token = torch.cat([generated_goal[:, 1:], dialog_token], dim=-1)
+                dialog_mask = torch.ne(dialog_token, tokenizer.pad_token_id)
+
                 response = batch['response'].to(args.device)
                 topic_idx = batch['topic_idx'].to(args.device)
 
