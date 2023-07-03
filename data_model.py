@@ -134,6 +134,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             label = self.tokenizer(self.knowledgeDB[target_knowledge_idx], max_length=self.args.max_gen_length, truncation=True).input_ids
         elif self.subtask == 'pretrain':
             label = dialog
+            self.args.max_gen_length = self.args.max_length
 
         if self.mode == 'train':
             # self.tokenizer.padding_side = 'right'
@@ -143,7 +144,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             # context_ids = context_ids + [pad_token_id] * (max_length - len(context_ids))
             # # resp_batch = [token_id if token_id != self.tokenizer.pad_token_id else -100 for token_id in context_ids]
             # resp_batch = context_ids
-            max_length = self.args.max_length + self.args.max_gen_length
+            # max_length = self.args.max_length + self.args.max_gen_length
             # context_ids = dialog + label
             # context_ids = context_ids[-max_length:]
             # context_ids = context_ids + [pad_token_id] * (max_length - len(context_ids))
@@ -151,7 +152,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             context_ids = context_ids[-self.args.max_length:]
             context_ids = context_ids + [pad_token_id] * (self.args.max_length - len(context_ids))
 
-            resp_batch = [token_id if token_id != self.tokenizer.pad_token_id else -100 for token_id in context_ids]
+            resp_batch = [token_id if token_id != self.tokenizer.pad_token_id else -100 for token_id in label]
             # resp_batch = label
 
             context_batch['input_ids'] = torch.LongTensor(context_ids)
@@ -179,8 +180,8 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             context_batch['response'] = label + [pad_token_id] * (self.args.max_gen_length - len(label))
             context_batch['context_len'] = context_len_batch
 
-        context_batch['goal_idx'] = self.args.goalDic['str'][goal]  # index로 바꿈
-        context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
+        # context_batch['goal_idx'] = self.args.goalDic['str'][goal]  # index로 바꿈
+        # context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
 
         for k, v in context_batch.items():
             if not isinstance(v, torch.Tensor):
