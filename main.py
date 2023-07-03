@@ -225,7 +225,7 @@ def main():
                 correct = (gold == pred)
                 hitAll["hit1"].append(correct)
 
-            print("[hit1]\t[%s]\t%.4f" % (args.subtask, np.average(hitAll[f"hit1"])))
+            print("[hit1]\t[Goal]\t%.4f" % np.average(hitAll[f"hit1"]))
             test_dataloader_resp.dataset.subtask = 'topic'
 
         best_hit = 0
