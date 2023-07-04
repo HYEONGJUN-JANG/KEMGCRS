@@ -110,8 +110,7 @@ def write_goal_topic_result(args, generator, tokenizer, test_dataloader, subtask
         for idx in range(len(decoded_generated_goal)):
             test_dataloader.dataset.augmented_raw_sample[current + idx][subtask] = decoded_generated_goal[idx]
         current += dialog_token.size(0)
-        if current > 0:
-            break
+
     hitAll = {'hit1': [], 'hit3': [], 'hit5': []}
     for idx in range(len(all_generated)):
         gold = all_response[idx]
