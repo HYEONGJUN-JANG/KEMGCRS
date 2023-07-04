@@ -126,7 +126,7 @@ class Retriever(nn.Module):
 
         knowledge_index_pos = knowledge_index[:, :self.args.pseudo_pos_rank, :]  # [B, 1, d]
         knowledge_index_neg = knowledge_index[:, self.args.pseudo_pos_rank:, :]  # [B, N, d]
-        knowledge_index_neg = knowledge_index_neg.view(-1, self.hidden_size)
+        knowledge_index_neg = knowledge_index_neg.reshape(-1, self.hidden_size)
         # inbatch_index = torch.repeat(knowledge_index_pos.squeeze(1).repeat(batch_size, 1))  # [B * B, d]
         # inbatch_index = inbatch_index.view(batch_size, batch_size, -1)  # [B, B, d]
         #
