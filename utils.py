@@ -103,6 +103,9 @@ def parseargs():
     parser.add_argument('--log_dir', default='logs', type=str, help="logging file directory")  # HJ: log file directory
     parser.add_argument('--model_dir', default='models', type=str, help="saved model directory")  # TH: model file directory
     parser.add_argument('--saved_model_path', default='', type=str, help="saved model file name")  # TH: model file directory
+    parser.add_argument('--saved_goal_model_path', default='myretriever_resp_goal_best', type=str, help="saved model file name")  # TH: model file directory
+    parser.add_argument('--saved_topic_model_path', default='', type=str, help="saved model file name")  # TH: model file directory
+
 
     parser.add_argument('--log_name', default='', type=str, help="log file name")  # HJ: log file name
 

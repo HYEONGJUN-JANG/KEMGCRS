@@ -133,14 +133,14 @@ def process_augment_sample_topic(raw_data, tokenizer, knowledgeDB):
         for i in range(len(conversation['dialog'])):
             role = conversation['role_seq'][i]
             utterance = conversation['dialog'][i] + eos_token
-            goal = conversation['type'][i]
+            goal = conversation['goal'][i]
             if role == 'System' and len(augmented_dialog) > 0:
                 flatten_dialog = ''.join(augmented_dialog)
                 candidate_knowledges = [knowledgeDB.index(cand) for cand in conversation['pseudo_knowledge_seq'][i]]
                 train_sample.append({'dialog': flatten_dialog,
                                      'user_profile': conversation['user_profile'],
                                      'response': utterance,
-                                     'type': conversation['type'][i],
+                                     'goal': conversation['goal'][i],
                                      'topic': conversation['topic'][i],
                                      'situation': conversation['situation'],
                                      'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i]),
@@ -164,30 +164,15 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB, goal_list=['Movie r
             role = conversation['role_seq'][i]
             utterance = conversation['dialog'][i] + eos_token
             goal = conversation['type'][i]
-            # if goal == 'Movie recommendation' or goal == 'POI recommendation' or goal == 'Music recommendation' or goal == 'Q&A':
             if goal in goal_list:
                 if role == 'System' and len(augmented_dialog) > 0 and len(conversation['pseudo_knowledge_seq'][i]) != 0:
-                    # prob = conversation['pseudo_confidence_seq'][i] + [-1e10] * (len(knowledgeDB) - len(conversation['pseudo_knowledge_seq'][i]))
-                    # prob = softmax(prob)
-                    # prob = prob[:len(conversation['pseudo_knowledge_seq'][i])]
-
-                    # for pseudo_idx, pseudo_label in enumerate(conversation['pseudo_knowledge_seq'][i]):
-                    # if pseudo_idx < 5:
-                    # candidate_knowledges = []
-                    # for cand in conversation['pseudo_knowledge_seq'][i]:
-                    #     if cand in knowledgeDB:
-                    #         candidate_knowledges.append(knowledgeDB.index(cand))
-                    #     else:
-                    #         continue
-                    # if len(candidate_knowledges) < 3:
-                    #     print("less than 3")
                     candidate_knowledges = [knowledgeDB.index(cand) for cand in conversation['pseudo_knowledge_seq'][i]]
 
                     flatten_dialog = ''.join(augmented_dialog)
                     train_sample.append({'dialog': flatten_dialog,
                                          'user_profile': conversation['user_profile'],
                                          'response': utterance,
-                                         'type': conversation['type'][i],
+                                         'goal': conversation['goal'][i],
                                          'topic': conversation['topic'][i],
                                          'situation': conversation['situation'],
                                          'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i]),
@@ -244,7 +229,7 @@ def dataset_reader(args, data_name='train'):
             conversation_sample.append({
                 'dialog': conversation,
                 'role_seq': role_seq,
-                'type': dialog['goal_type_list'],
+                'goal': dialog['goal_type_list'],
                 'topic': dialog['goal_topic_list'],
                 'situation': situation,
                 'user_profile': user_profile,
