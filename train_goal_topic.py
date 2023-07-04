@@ -87,7 +87,7 @@ def train_goal_topic(args, generator, tokenizer, train_dataloader, test_dataload
 
 def write_goal_topic_result(args, generator, tokenizer, test_dataloader, subtask):
     test_dataloader.dataset.subtask = subtask
-
+    print('[write_goal_topic_result] subtask is %s' % subtask)
     current = 0
     all_response = []
     all_generated = []
