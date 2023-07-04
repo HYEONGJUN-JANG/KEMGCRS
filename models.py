@@ -91,9 +91,9 @@ class Retriever(nn.Module):
         knowledge_index_neg = knowledge_index[:, self.args.pseudo_pos_rank:, :].squeeze(1)  # [B, d]
 
         logit = torch.matmul(dialog_emb, knowledge_index_pos.transpose(1, 0))  # [B, B]
-        # logit_hn = torch.sum(dialog_emb * knowledge_index_neg, dim=-1, keepdim=True)  # [B, 1]
-        # logit = torch.cat([logit_inbatch, logit_hn], dim=-1)  # [B, B+1]
-        loss = torch.diagonal(-torch.log_softmax(logit, dim=-1)).mean()  # [B]
+        logit_hn = torch.sum(dialog_emb * knowledge_index_neg, dim=-1, keepdim=True)  # [B, 1]
+        logit = torch.cat([logit, logit_hn], dim=-1)  # [B, B+1]
+        loss = -torch.log_softmax(logit, dim=-1).diagonal().mean()  # [B]
         return loss
 
     def knowledge_retrieve(self, token_seq, mask, candidate_knowledge_token, candidate_knowledge_mask, ablation=None, labels=None):
