@@ -38,7 +38,7 @@ class Retriever(nn.Module):
         return dialog_emb
 
     def generation(self, token_seq, mask, labels):
-        outputs = self.gpt_model(input_ids=token_seq, attention_mask=mask, labels=labels) #  , output_hidden_states=True)
+        outputs = self.gpt_model(input_ids=token_seq, attention_mask=mask, labels=labels)  # , output_hidden_states=True)
         # outputs = self.gpt_model(input_ids=token_seq, labels=labels)
         # logit = self.topic_proj(outputs.decoder_hidden_states[-1][:, 0, :])
         # loss = torch.nn.CrossEntropyLoss()(logit, label_idx)
@@ -100,12 +100,21 @@ class Retriever(nn.Module):
         else:
             dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
 
+        # candidate_knowledge_token_pos = candidate_knowledge_token[:, :self.args.pseudo_pos_rank, :]
+        # candidate_knowledge_token_neg = candidate_knowledge_token[:, self.args.pseudo_pos_rank:, :]
+        # candidate_knowledge_mask_pos = candidate_knowledge_mask[:, :self.args.pseudo_pos_rank, :]
+        # candidate_knowledge_mask_neg = candidate_knowledge_mask[:, self.args.pseudo_pos_rank:, :]
+
         candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B*K, L]
         candidate_knowledge_mask = candidate_knowledge_mask.view(-1, self.args.max_length)  # [B*K, L]
 
         knowledge_index = self.rerank_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask).last_hidden_state[:, 0, :]  # [B*K, L]
         knowledge_index = knowledge_index.view(batch_size, -1, dialog_emb.size(-1))  # [B, K, d]
-        # dialog_emb = self.linear_proj(dialog_emb)
-        # knowledge_index = self.linear_proj(knowledge_index)
-        logit = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2)  # [B, 1, d] * [B, K, d] = [B, K]
+
+        knowledge_index_pos = knowledge_index[:, :self.args.pseudo_pos_rank, :]  # [B, K-1, d]
+        knowledge_index_neg = knowledge_index[:, self.args.pseudo_pos_rank:, :]  # [B, 1, d]
+
+        logit_pos = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index_pos, dim=2)  # [B, 1, d] * [B, K, d] = [B, K]
+        logit_neg = torch.matmul(dialog_emb, knowledge_index_neg.squeeze(1).transpose(1, 0))  # [B, d] x [d, B] = [B, B]
+        logit = torch.cat([logit_pos, logit_neg], dim=-1)  # [B, K+B]
         return logit

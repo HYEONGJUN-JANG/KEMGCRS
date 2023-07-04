@@ -163,7 +163,7 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB, goal_list=['Movie r
         for i in range(len(conversation['dialog'])):
             role = conversation['role_seq'][i]
             utterance = conversation['dialog'][i] + eos_token
-            goal = conversation['type'][i]
+            goal = conversation['goal'][i]
             if goal in goal_list:
                 if role == 'System' and len(augmented_dialog) > 0 and len(conversation['pseudo_knowledge_seq'][i]) != 0:
                     candidate_knowledges = [knowledgeDB.index(cand) for cand in conversation['pseudo_knowledge_seq'][i]]

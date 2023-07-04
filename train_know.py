@@ -74,7 +74,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             retriever.train()
             dialog_token = batch['input_ids']
             dialog_mask = batch['attention_mask']
-            goal_type = batch['type']
+            goal_type = batch['goal']
             # response = batch['response']
             candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,2,256]
             candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,2,256]

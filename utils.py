@@ -32,7 +32,7 @@ def parseargs():
     parser.add_argument("--ft_topic", action='store_true', help="Whether to Fine-tune on topic.")
     parser.add_argument("--ft_know", action='store_true', help="Whether to Fine-tune on know.")
     parser.add_argument("--earlystop", action='store_true', help="Whether to Use EarlyStopping.")
-    parser.add_argument("--task", default='resp', type=str, help="Choose the task")
+    parser.add_argument("--task", default='know', type=str, help="Choose the task")
     parser.add_argument("--subtask", default='topic', type=str, help="Choose the task")
 
     parser.add_argument("--knowledge", action='store_true', help="Whether to Use knowledge in response.")
@@ -46,7 +46,7 @@ def parseargs():
     parser.add_argument("--pseudo_confidence", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument('--tau', type=float, default=1.0, help='Learning rate')
     parser.add_argument('--train_ratio', type=float, default=1.0, help='train_ratio')
-    parser.add_argument('--negative_num', default=4, type=int, help="negative_num")
+    parser.add_argument('--negative_num', default=1, type=int, help="negative_num")
     parser.add_argument('--stage', default='rerank', type=str, choices=['retrieve', 'rerank'])
     parser.add_argument("--stage2_test", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument('--update_freq', default=-1, type=int, help="update_freq")

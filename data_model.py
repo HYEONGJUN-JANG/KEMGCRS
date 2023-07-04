@@ -237,23 +237,23 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
     def __getitem__(self, idx):  # TODO 구현 전
         data = self.augmented_raw_sample[idx]
-        cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge', 'candidate_knowledges', 'candidate_confidences']
-        dialog, user_profile, response, type, topic, situation, target_knowledge_idx, candidate_knowledges, candidate_confidences = [data[i] for i in cbdicKeys]
+        cbdicKeys = ['dialog', 'user_profile', 'response', 'goal', 'topic', 'situation', 'target_knowledge', 'candidate_knowledges', 'candidate_confidences']
+        dialog, user_profile, response, goal, topic, situation, target_knowledge_idx, candidate_knowledges, candidate_confidences = [data[i] for i in cbdicKeys]
         pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
 
         context_batch = defaultdict()
         if self.args.input_prompt == 'dialog':
             prefix = ''
         elif self.args.input_prompt == 'dialog_goal':
-            prefix = '<type>' + type + self.tokenizer.sep_token
+            prefix = '<goal>' + goal + self.tokenizer.sep_token
         elif self.args.input_prompt == 'dialog_topic':
             prefix = '<topic>' + topic + self.tokenizer.sep_token
         elif self.args.input_prompt == 'dialog_goal_topic':
-            prefix = '<type>' + type + '<topic>' + topic + self.tokenizer.sep_token
+            prefix = '<goal>' + goal + '<topic>' + topic + self.tokenizer.sep_token
         elif self.args.input_prompt == 'dialog_topic_profile':
             prefix = '<profile>' + user_profile + '<topic>' + topic + self.tokenizer.sep_token
-        elif self.args.input_prompt == 'dialog_type_profile':
-            prefix = '<profile>' + user_profile + '<type>' + type + self.tokenizer.sep_token
+        elif self.args.input_prompt == 'dialog_goal_profile':
+            prefix = '<profile>' + user_profile + '<goal>' + goal + self.tokenizer.sep_token
         else:
             assert Exception
 
@@ -272,7 +272,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
                                                    padding='max_length',
                                                    truncation=True).input_ids
 
-        context_batch['type'] = self.args.goalDic['str'][type]  # index로 바꿈
+        context_batch['goal'] = self.args.goalDic['str'][goal]  # index로 바꿈
         context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
@@ -433,12 +433,12 @@ class TopicDataset(Dataset):  # knowledge용 데이터셋
 
     def __getitem__(self, idx):  # TODO 구현 전
         data = self.augmented_raw_sample[idx]
-        cbdicKeys = ['dialog', 'user_profile', 'response', 'type', 'topic', 'situation', 'target_knowledge', 'candidate_knowledges', 'candidate_confidences']
-        dialog, user_profile, response, type, topic, situation, target_knowledge_idx, candidate_knowledges, candidate_confidences = [data[i] for i in cbdicKeys]
+        cbdicKeys = ['dialog', 'user_profile', 'response', 'goal', 'topic', 'situation', 'target_knowledge', 'candidate_knowledges', 'candidate_confidences']
+        dialog, user_profile, response, goal, topic, situation, target_knowledge_idx, candidate_knowledges, candidate_confidences = [data[i] for i in cbdicKeys]
         pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
 
         context_batch = defaultdict()
-        prefix = '<profile>' + user_profile  # + '<type>' + type + self.tokenizer.sep_token
+        prefix = '<profile>' + user_profile  # + '<goal>' + goal + self.tokenizer.sep_token
 
         prefix_encoding = self.tokenizer.encode(prefix)[1:-1][:self.args.max_prefix_length]
         input_sentence = self.tokenizer('<dialog>' + dialog, add_special_tokens=False).input_ids
@@ -455,7 +455,7 @@ class TopicDataset(Dataset):  # knowledge용 데이터셋
                                                    padding='max_length',
                                                    truncation=True).input_ids
 
-        context_batch['goal_idx'] = self.args.goalDic['str'][type]  # index로 바꿈
+        context_batch['goal_idx'] = self.args.goalDic['str'][goal]  # index로 바꿈
         context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
