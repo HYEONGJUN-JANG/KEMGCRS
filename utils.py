@@ -76,7 +76,7 @@ def parseargs():
 
     parser.add_argument('--know_max_length', default=128, type=int, help="dataset name")
 
-    parser.add_argument('--batch_size', default=2, type=int, help="batch size")
+    parser.add_argument('--batch_size', default=8, type=int, help="batch size")
     parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate')
     parser.add_argument('--lr_rerank', type=float, default=1e-5, help='Learning rate')
 
