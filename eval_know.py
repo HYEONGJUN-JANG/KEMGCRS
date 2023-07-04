@@ -88,8 +88,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
 
         if args.stage == 'rerank':
             candidate_indice = torch.topk(dot_score, k=args.know_topk, dim=1).indices
-            dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index_rerank[candidate_indice]) # todo: 2-stage
-            # dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index_rerank)  # todo: DPR용 임시
+            # dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index_rerank[candidate_indice]) # todo: 2-stage
+            dot_score = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index_rerank)  # todo: DPR용 임시
 
             # dot_score = torch.gather(dot_score, 1, candidate_indice)
 
@@ -148,8 +148,8 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             for k in [1, 3, 5, 10]:
 
                 top_candidate = torch.topk(score, k=k).indices
-                if args.stage == 'rerank':
-                    top_candidate = torch.gather(candidate_indice[idx], 0, top_candidate)  # todo: roll-back
+                # if args.stage == 'rerank': # todo: DPR시 주석처리
+                #     top_candidate = torch.gather(candidate_indice[idx], 0, top_candidate)  # todo: 2-stage 시 roll-back
                 correct_k = False
                 for t in target:
                     correct_k |= (t in top_candidate)
