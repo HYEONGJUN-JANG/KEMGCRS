@@ -116,7 +116,7 @@ def write_goal_topic_result(args, generator, tokenizer, test_dataloader, subtask
         pred = all_generated[idx]
         correct = (gold == pred)
         hitAll["hit1"].append(correct)
-    print("[hit1]\t[Goal]\t%.4f" % np.average(hitAll[f"hit1"]))
+    print("[hit1]\t[%s]\t%.4f" % (subtask, np.average(hitAll[f"hit1"])))
 
     return test_dataloader.dataset.augmented_raw_sample
     # test_dataloader.dataset.subtask = 'topic'
