@@ -39,7 +39,7 @@ def parseargs():
     parser.add_argument("--know_ablation", default='pseudo', type=str, help="know_ablation", choices=['target', 'pseudo'])
     parser.add_argument("--train_ablation", default='LG', type=str, help="train ablation", choices=['R', 'S', 'RG', 'LG','G','O'])
 
-    parser.add_argument("--siamese", action='store_false', help="Whether to Fine-tune on type.")
+    parser.add_argument("--siamese", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument("--pseudo", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument('--pseudo_pos_num', default=2, type=int, help="pseudo_pos_num")
     parser.add_argument('--pseudo_pos_rank', default=2, type=int, help="pseudo_pos_rank")
