@@ -37,7 +37,7 @@ class Retriever(nn.Module):
         dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
         return dialog_emb
 
-    def generation(self, token_seq, mask, labels, label_idx):
+    def generation(self, token_seq, mask, labels):
         outputs = self.gpt_model(input_ids=token_seq, attention_mask=mask, labels=labels) #  , output_hidden_states=True)
         # outputs = self.gpt_model(input_ids=token_seq, labels=labels)
         # logit = self.topic_proj(outputs.decoder_hidden_states[-1][:, 0, :])

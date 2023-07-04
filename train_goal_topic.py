@@ -23,9 +23,8 @@ def train_goal_topic(args, generator, tokenizer, train_dataloader, test_dataload
             dialog_token = batch['input_ids'].to(args.device)
             dialog_mask = batch['attention_mask'].to(args.device)
             response = batch['response'].to(args.device)
-            topic_idx = batch['topic_idx'].to(args.device)
 
-            loss = generator.generation(dialog_token, dialog_mask, response, topic_idx)
+            loss = generator.generation(dialog_token, dialog_mask, response)
             # loss = criterion(dot_score, targets)
             train_epoch_loss += loss
             optimizer.zero_grad()

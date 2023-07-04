@@ -67,6 +67,8 @@ def split_validation(train_dataset_raw, train_ratio=1.0):
 
 
 def main():
+
+    test = read_pkl('augmented_raw_sample_goal.txt')
     # TH 작업 main
     args = parseargs()
     # args.data_cache = False
