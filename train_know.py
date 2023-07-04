@@ -76,6 +76,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             dialog_mask = batch['attention_mask']
             goal_type = batch['goal']
             # response = batch['response']
+            candidate_indice = batch['candidate_indice']
             candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,2,256]
             candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,2,256]
             # pseudo_positive_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
@@ -235,15 +236,15 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 # logit = retriever.compute_know_score_candidate(dialog_token, dialog_mask, knowledge_index[batch['candidate_indice']])
 
                 if args.stage == 'rerank':
-                    loss = retriever.dpr_retrieve_train(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+                    # loss = retriever.dpr_retrieve_train(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
 
-                    # logit_pos, logit_neg = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
-                    # cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]
-                    # loss = 0
-                    # for idx in range(args.pseudo_pos_rank):
-                    #     g_logit = cumsum_logit[:, idx] / (idx + 1)
-                    #     g_logit = torch.cat([g_logit.unsqueeze(1), logit_neg], dim=1)
-                    #     loss += (-torch.log_softmax(g_logit, dim=1).select(dim=1, index=0)).mean()
+                    logit_pos, logit_neg = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_indice, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
+                    cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]
+                    loss = 0
+                    for idx in range(args.pseudo_pos_rank):
+                        g_logit = cumsum_logit[:, idx] / (idx + 1)
+                        g_logit = torch.cat([g_logit.unsqueeze(1), logit_neg], dim=1)
+                        loss += (-torch.log_softmax(g_logit, dim=1).select(dim=1, index=0)).mean()
 
 
                 ### Group-wise + Seq (original)
