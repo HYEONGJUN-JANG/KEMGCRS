@@ -236,6 +236,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
                 if args.stage == 'rerank':
                     loss = retriever.dpr_retrieve_train(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
+
                     # logit_pos, logit_neg = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
                     # cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]
                     # loss = 0
