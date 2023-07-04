@@ -91,8 +91,8 @@ class Retriever(nn.Module):
         knowledge_index_neg = knowledge_index[:, self.args.pseudo_pos_rank:, :].squeeze(1)  # [B, d]
 
         logit = torch.matmul(dialog_emb, knowledge_index_pos.transpose(1, 0))  # [B, B]
-        logit_hn = torch.sum(dialog_emb * knowledge_index_neg, dim=-1, keepdim=True)  # [B, 1]
-        logit = torch.cat([logit, logit_hn], dim=-1)  # [B, B+1]
+        # logit_hn = torch.sum(dialog_emb * knowledge_index_neg, dim=-1, keepdim=True)  # [B, 1]
+        # logit = torch.cat([logit, logit_hn], dim=-1)  # [B, B+1]
         loss = -torch.log_softmax(logit, dim=-1).diagonal().mean()  # [B]
         return loss
 
@@ -114,19 +114,14 @@ class Retriever(nn.Module):
         #     dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask, output_hidden_states=True).decoder_hidden_states[-1][:, 0, :].squeeze(1)
         # else:
         #     dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
-        if self.args.siamese:
-            dialog_emb = self.rerank_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
-        else:
-            dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
-
-        # candidate_knowledge_token_pos = candidate_knowledge_token[:, :self.args.pseudo_pos_rank, :]
-        # candidate_knowledge_token_neg = candidate_knowledge_token[:, self.args.pseudo_pos_rank:, :]
-        # candidate_knowledge_mask_pos = candidate_knowledge_mask[:, :self.args.pseudo_pos_rank, :]
-        # candidate_knowledge_mask_neg = candidate_knowledge_mask[:, self.args.pseudo_pos_rank:, :]
+        # if self.args.siamese:
+        #     dialog_emb = self.rerank_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        # else:
+        #     dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+        dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
 
         candidate_knowledge_token = candidate_knowledge_token.view(-1, self.args.max_length)  # [B*K, L]
         candidate_knowledge_mask = candidate_knowledge_mask.view(-1, self.args.max_length)  # [B*K, L]
-
         knowledge_index = self.rerank_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask).last_hidden_state[:, 0, :]  # [B*K, L]
         knowledge_index = knowledge_index.view(batch_size, -1, dialog_emb.size(-1))  # [B, K, d]
 
