@@ -106,7 +106,6 @@ class Retriever(nn.Module):
         Returns:
         """
         batch_size = mask.size(0)
-
         if ablation is None:
             ablation = self.args.know_ablation
         # dot-product
@@ -126,15 +125,15 @@ class Retriever(nn.Module):
         knowledge_index = knowledge_index.view(batch_size, -1, dialog_emb.size(-1))  # [B, K, d]
 
         knowledge_index_pos = knowledge_index[:, :self.args.pseudo_pos_rank, :]  # [B, 1, d]
-        knowledge_index_neg = knowledge_index[:, self.args.pseudo_pos_rank:, :]  # [B, 1, d]
-
+        knowledge_index_neg = knowledge_index[:, self.args.pseudo_pos_rank:, :]  # [B, N, d]
+        knowledge_index_neg = knowledge_index_neg.view(-1, self.hidden_size)
         # inbatch_index = torch.repeat(knowledge_index_pos.squeeze(1).repeat(batch_size, 1))  # [B * B, d]
         # inbatch_index = inbatch_index.view(batch_size, batch_size, -1)  # [B, B, d]
         #
         # logit_inbatch = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index_pos, dim=2)  # [B, B]
 
         logit_pos = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index_pos, dim=2)  # [B, 1, d] * [B, K, d] = [B, K]
-        logit_neg = torch.matmul(dialog_emb, knowledge_index_neg.squeeze(1).transpose(1, 0))  # [B, B]
+        logit_neg = torch.matmul(dialog_emb, knowledge_index_neg.transpose(1, 0))  # [B, N*B]
         # logit_mask = torch.zeros_like(logit_neg).fill_diagonal_(-1e10)
         # logit_neg = logit_neg + logit_mask  # [B, B]
 
