@@ -93,7 +93,7 @@ def write_goal_topic_result(args, generator, tokenizer, test_dataloader, subtask
     all_response = []
     all_generated = []
 
-    for batch in tqdm(test_dataloader, desc="Generate_Predicted_Goal", bar_format=' {l_bar} | {bar:23} {r_bar}'):
+    for batch in tqdm(test_dataloader, desc=f"Generate_Predicted_{subtask}", bar_format=' {l_bar} | {bar:23} {r_bar}'):
         generator.eval()
         dialog_token = batch['input_ids'].to(args.device)
         dialog_mask = batch['attention_mask'].to(args.device)
