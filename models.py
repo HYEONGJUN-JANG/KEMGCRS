@@ -130,15 +130,20 @@ class Retriever(nn.Module):
         knowledge_index = self.rerank_bert(input_ids=candidate_knowledge_token, attention_mask=candidate_knowledge_mask).last_hidden_state[:, 0, :]  # [B*K, L]
         knowledge_index = knowledge_index.view(batch_size, -1, dialog_emb.size(-1))  # [B, K, d]
 
-        knowledge_index_pos = knowledge_index[:, :self.args.pseudo_pos_rank, :]  # [B, 1, d]
-        knowledge_index_neg = knowledge_index[:, self.args.pseudo_pos_rank:, :]  # [B, 1, d]
+        knowledge_index_pos = knowledge_index[:, :1, :]  # [B, 1, d]
+        knowledge_index_neg = knowledge_index[:, 1:, :]  # [B, 1, d]
 
         # inbatch_index = torch.repeat(knowledge_index_pos.squeeze(1).repeat(batch_size, 1))  # [B * B, d]
         # inbatch_index = inbatch_index.view(batch_size, batch_size, -1)  # [B, B, d]
         #
         # logit_inbatch = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index_pos, dim=2)  # [B, B]
 
-        logit_pos = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index_pos, dim=2)  # [B, 1, d] * [B, K, d] = [B, K]
-        logit_neg = torch.matmul(dialog_emb, knowledge_index_neg.squeeze(1).transpose(1, 0))  # [B, d] x [d, B] = [B, B]
-        logit = torch.cat([logit_pos, logit_neg], dim=-1)  # [B, K+B]
-        return logit
+        logit_pos = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index, dim=2)  # [B, 1, d] * [B, K, d] = [B, K]
+
+        logit_neg = torch.matmul(dialog_emb, knowledge_index_pos.squeeze(1).transpose(1, 0))  # [B, B]
+        logit_mask = torch.zeros_like(logit_neg).fill_diagonal_(-1e10)
+        logit_neg = logit_neg + logit_mask  # [B, B]
+
+        # logit_neg = torch.matmul(dialog_emb, knowledge_index_neg.squeeze(1).transpose(1, 0))  # [B, d] x [d, B] = [B, B]
+        # logit = torch.cat([logit_pos, logit_inbatch_neg], dim=-1)  # [B, K+B]
+        return logit_pos, logit_neg
