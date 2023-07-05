@@ -102,7 +102,7 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
             prompt = self.tokenizer.encode('<knowledge>%s. predict the next %s: ' % (related_knowledges, self.subtask))[:400]
         elif self.subtask == 'topic':
             # predicted_goal = data['predicted_goal']
-            prefix = self.tokenizer.encode('<goal>%s. <profile>%s.' % (goal, user_profile))[:int(self.args.max_length * 2 / 3)]
+            prefix = self.tokenizer.encode('<goal>%s. <profile>%s.' % (data['predicted_goal'], user_profile))[:int(self.args.max_length * 2 / 3)]
             prompt = self.tokenizer.encode('. predict the next topic: ')
         elif self.subtask == 'goal':
             prefix = self.tokenizer.encode('<profile>%s.' % user_profile)[:int(self.args.max_length * 2 / 3)]
@@ -245,15 +245,15 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         if self.args.input_prompt == 'dialog':
             prefix = ''
         elif self.args.input_prompt == 'dialog_goal':
-            prefix = '<goal>' + goal + self.tokenizer.sep_token
+            prefix = '<goal>' + data['predicted_goal'] + self.tokenizer.sep_token
         elif self.args.input_prompt == 'dialog_topic':
-            prefix = '<topic>' + topic + self.tokenizer.sep_token
+            prefix = '<topic>' + data['predicted_topic'] + self.tokenizer.sep_token
         elif self.args.input_prompt == 'dialog_goal_topic':
-            prefix = '<goal>' + goal + '<topic>' + topic + self.tokenizer.sep_token
+            prefix = '<goal>' + data['predicted_goal'] + '<topic>' + data['predicted_topic'] + self.tokenizer.sep_token
         elif self.args.input_prompt == 'dialog_topic_profile':
-            prefix = '<profile>' + user_profile + '<topic>' + topic + self.tokenizer.sep_token
+            prefix = '<profile>' + user_profile + '<topic>' + data['predicted_topic'] + self.tokenizer.sep_token
         elif self.args.input_prompt == 'dialog_goal_profile':
-            prefix = '<profile>' + user_profile + '<goal>' + goal + self.tokenizer.sep_token
+            prefix = '<profile>' + user_profile + '<goal>' + data['predicted_goal'] + self.tokenizer.sep_token
         else:
             assert Exception
 

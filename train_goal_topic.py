@@ -107,7 +107,7 @@ def write_goal_topic_result(args, generator, tokenizer, test_dataloader, subtask
         all_response.extend(tokenizer.batch_decode(response, skip_special_tokens=True))
 
         for idx in range(len(decoded_generated_goal)):
-            test_dataloader.dataset.augmented_raw_sample[current + idx][subtask] = decoded_generated_goal[idx]
+            test_dataloader.dataset.augmented_raw_sample[current + idx][f"predicted_{subtask}"] = decoded_generated_goal[idx]
         current += dialog_token.size(0)
 
     hitAll = {'hit1': [], 'hit3': [], 'hit5': []}
