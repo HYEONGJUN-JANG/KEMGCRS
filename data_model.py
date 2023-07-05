@@ -70,7 +70,6 @@ class GenerationDataset(Dataset):  # knowledge용 데이터셋
                 negative_indice.append(negative_idx)
         return negative_indice
 
-
     def __getitem__(self, idx):  # TODO 구현 전
         data = self.augmented_raw_sample[idx]
         cbdicKeys = ['dialog', 'user_profile', 'response', 'goal', 'topic', 'situation', 'target_knowledge', 'candidate_knowledges', 'candidate_confidences']
@@ -207,7 +206,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         self.task = task
         self.tokenizer = tokenizer
         self.knowledgeDB = knowledgeDB
-        self.train_knowledgeDB = train_knowledgeDB
+        self.train_knowledgeDB = train_knowledgeDB  # new knowledge 체크용
         self.augmented_raw_sample = data_sample
         self.mode = mode
 
@@ -239,6 +238,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         data = self.augmented_raw_sample[idx]
         cbdicKeys = ['dialog', 'user_profile', 'response', 'goal', 'topic', 'situation', 'target_knowledge', 'candidate_knowledges', 'candidate_confidences']
         dialog, user_profile, response, goal, topic, situation, target_knowledge_idx, candidate_knowledges, candidate_confidences = [data[i] for i in cbdicKeys]
+        candidate_knowledges = [self.knowledgeDB.index(passage) for passage in candidate_knowledges]
         pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
 
         context_batch = defaultdict()

@@ -136,15 +136,14 @@ def process_augment_sample_topic(raw_data, tokenizer, knowledgeDB):
             goal = conversation['goal'][i]
             if role == 'System' and len(augmented_dialog) > 0:
                 flatten_dialog = ''.join(augmented_dialog)
-                candidate_knowledges = [knowledgeDB.index(cand) for cand in conversation['pseudo_knowledge_seq'][i]]
                 train_sample.append({'dialog': flatten_dialog,
                                      'user_profile': conversation['user_profile'],
                                      'response': utterance,
                                      'goal': conversation['goal'][i],
                                      'topic': conversation['topic'][i],
                                      'situation': conversation['situation'],
-                                     'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i]),
-                                     'candidate_knowledges': candidate_knowledges,
+                                     'target_knowledge': conversation['knowledge_seq'][i],
+                                     'candidate_knowledges': conversation['pseudo_knowledge_seq'][i],
                                      'candidate_confidences': conversation['pseudo_confidence_seq'][i]  # prob
                                      })
             augmented_dialog.append(utterance)
@@ -166,8 +165,6 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB, goal_list=['Movie r
             goal = conversation['goal'][i]
             if goal in goal_list:
                 if role == 'System' and len(augmented_dialog) > 0 and len(conversation['pseudo_knowledge_seq'][i]) != 0:
-                    candidate_knowledges = [knowledgeDB.index(cand) for cand in conversation['pseudo_knowledge_seq'][i]]
-
                     flatten_dialog = ''.join(augmented_dialog)
                     train_sample.append({'dialog': flatten_dialog,
                                          'user_profile': conversation['user_profile'],
@@ -175,8 +172,8 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB, goal_list=['Movie r
                                          'goal': conversation['goal'][i],
                                          'topic': conversation['topic'][i],
                                          'situation': conversation['situation'],
-                                         'target_knowledge': knowledgeDB.index(conversation['knowledge_seq'][i]),
-                                         'candidate_knowledges': candidate_knowledges,
+                                         'target_knowledge': conversation['knowledge_seq'][i],
+                                         'candidate_knowledges': conversation['pseudo_knowledge_seq'][i],
                                          'candidate_confidences': conversation['pseudo_confidence_seq'][i]  # prob
                                          })
             augmented_dialog.append(utterance)

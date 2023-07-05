@@ -77,7 +77,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         # candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
         # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
 
-        type_idx = [args.goalDic['int'][int(idx)] for idx in batch['goal_idx']]
+        goal_idx = [args.goalDic['int'][int(idx)] for idx in batch['goal_idx']]
         topic_idx = [args.topicDic['int'][int(idx)] for idx in batch['topic_idx']]
 
         # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
@@ -128,7 +128,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             query = topic_idx[0] + "|" + response
             bm_scores = args.bm25.get_scores(bm_tokenizer(query, tokenizer))
             retrieved_knowledge_score = bm_scores[top_candidate[0].cpu().numpy()]
-            jsonlineSave.append({'goal_type': type_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': target_knowledge_text, 'response': response, "predict5": retrieved_knowledge_text, "score5": retrieved_knowledge_score})
+            jsonlineSave.append({'goal_type': goal_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': target_knowledge_text, 'response': response, "predict5": retrieved_knowledge_text, "score5": retrieved_knowledge_score})
             # save_json(args, f"{args.time}_{args.model_name}_inout", jsonlineSave)
 
         for idx, (score, target, pseudo_targets, goal, new) in enumerate(zip(dot_score, target_knowledge_idx, batch['pseudo_targets'], type_idx, new_knowledge)):

@@ -257,9 +257,9 @@ def main():
         train_dataset_raw, valid_dataset_raw = split_validation(train_dataset_raw, args.train_ratio)
         train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB, goal_list=goal_list)
         valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB)
-        # test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)  # gold-topic
-        test_dataset = read_pkl("augmented_raw_sample_topic.txt")
-        for aug_data in test_dataset:
+        test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)  # gold-topic
+        test_dataset2 = read_pkl("augmented_raw_sample_topic.txt")
+        for aug_data in test_dataset2:
             aug_data['dialog'] = aug_data['dialog'].replace('</s>', '[SEP]')
 
         train_datamodel_know = DialogDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
