@@ -74,7 +74,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             retriever.train()
             dialog_token = batch['input_ids']
             dialog_mask = batch['attention_mask']
-            goal_type = batch['goal']
+            goal_idx = batch['goal_idx']
             # response = batch['response']
             candidate_indice = batch['candidate_indice']
             candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,2,256]
@@ -92,7 +92,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             #     knowledge_index = knowledge_index.to(args.device)
 
             if args.know_ablation == 'target':
-                logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_type)
+                logit = retriever.compute_know_score(dialog_token, dialog_mask, knowledge_index, goal_idx)
                 loss = torch.mean(criterion(logit, target_knowledge_idx[:, 0]))  # For MLP predict
 
             if args.know_ablation == 'pseudo':

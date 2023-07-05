@@ -45,7 +45,7 @@ class Retriever(nn.Module):
 
         return outputs[0]
 
-    def compute_know_score(self, token_seq, mask, knowledge_index, type_idx):
+    def compute_know_score(self, token_seq, mask, knowledge_index, goal_idx):
         """
         eval_know.computing_score에서
         모든 key vector에서 올라온 벡터를 통해 계산처리

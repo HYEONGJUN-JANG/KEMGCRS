@@ -250,6 +250,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
             prefix = '<topic>' + data['predicted_topic'] + self.tokenizer.sep_token
         elif self.args.input_prompt == 'dialog_goal_topic':
             prefix = '<goal>' + data['predicted_goal'] + '<topic>' + data['predicted_topic'] + self.tokenizer.sep_token
+
         elif self.args.input_prompt == 'dialog_topic_profile':
             prefix = '<profile>' + user_profile + '<topic>' + data['predicted_topic'] + self.tokenizer.sep_token
         elif self.args.input_prompt == 'dialog_goal_profile':
