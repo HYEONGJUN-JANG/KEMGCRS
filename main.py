@@ -170,8 +170,8 @@ def main():
         # train_dataset_resp = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB)
         # test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
 
-        train_dataset_resp = process_augment_sample_topic(train_dataset_raw, tokenizer, train_knowledgeDB)
-        test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
+        train_dataset_resp = process_augment_sample_topic(train_dataset_raw, tokenizer, train_knowledgeDB)  # for topic-task (모든 시스템 발화)
+        test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)  # for knowledge-task (시스템 발화 중 knowledge 가 태깅되어 있는거)
         # test_dataset_resp_retrieve = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
 
         # with open('augmented_dataset_test.txt', 'rb') as f:
@@ -196,6 +196,7 @@ def main():
             generator.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_goal_model_path}.pt")))
         else:
             train_goal_topic(args, generator, tokenizer, train_dataloader_resp, test_dataloader_resp, 'goal')
+
         augmented_raw_sample_goal = write_goal_topic_result(args, generator, tokenizer, test_dataloader_resp, 'goal')
         test_dataloader_resp.dataset.augmented_raw_sample = augmented_raw_sample_goal
         write_pkl(augmented_raw_sample_goal, "augmented_raw_sample_goal.txt")
@@ -204,6 +205,7 @@ def main():
             generator.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_topic_model_path}.pt")))
         else:
             train_goal_topic(args, generator, tokenizer, train_dataloader_resp, test_dataloader_resp, 'topic')
+
         augmented_raw_sample_topic = write_goal_topic_result(args, generator, tokenizer, test_dataloader_resp, 'topic')
         test_dataloader_resp.dataset.augmented_raw_sample = augmented_raw_sample_topic
         write_pkl(augmented_raw_sample_topic, "augmented_raw_sample_topic.txt")

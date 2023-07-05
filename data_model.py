@@ -242,19 +242,25 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
 
         context_batch = defaultdict()
+
+        if self.mode == 'train':
+            predicted_goal, predicted_topic = goal, topic
+        else:
+            predicted_goal, predicted_topic = data['predicted_goal'], data['predicted_topic']
+
         if self.args.input_prompt == 'dialog':
             prefix = ''
         elif self.args.input_prompt == 'dialog_goal':
-            prefix = '<goal>' + data['predicted_goal'] + self.tokenizer.sep_token
+            prefix = '<goal>' + predicted_goal + self.tokenizer.sep_token
         elif self.args.input_prompt == 'dialog_topic':
-            prefix = '<topic>' + data['predicted_topic'] + self.tokenizer.sep_token
+            prefix = '<topic>' + predicted_topic + self.tokenizer.sep_token
         elif self.args.input_prompt == 'dialog_goal_topic':
-            prefix = '<goal>' + data['predicted_goal'] + '<topic>' + data['predicted_topic'] + self.tokenizer.sep_token
+            prefix = '<goal>' + predicted_goal + '<topic>' + predicted_topic + self.tokenizer.sep_token
 
         elif self.args.input_prompt == 'dialog_topic_profile':
-            prefix = '<profile>' + user_profile + '<topic>' + data['predicted_topic'] + self.tokenizer.sep_token
+            prefix = '<profile>' + user_profile + '<topic>' + predicted_topic + self.tokenizer.sep_token
         elif self.args.input_prompt == 'dialog_goal_profile':
-            prefix = '<profile>' + user_profile + '<goal>' + data['predicted_goal'] + self.tokenizer.sep_token
+            prefix = '<profile>' + user_profile + '<goal>' + predicted_goal + self.tokenizer.sep_token
         else:
             assert Exception
 
