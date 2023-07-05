@@ -238,28 +238,28 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 if args.stage == 'rerank':
                     # loss = retriever.dpr_retrieve_train(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
 
+                    logit_pos, logit_neg = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_indice, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
+                    logit = torch.cat([logit_pos, logit_neg], dim=-1)
+                    cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]
+                    loss = 0
+                    for idx in range(args.pseudo_pos_rank):
+                        g_logit = cumsum_logit[:, idx] / (idx + 1)
+                        g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
+                        pseudo_mask = torch.zeros_like(logit)
+                        pseudo_mask[:, :idx + 1] = -1e10
+                        pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
+                        loss += (-torch.log_softmax(g_logit+pseudo_mask, dim=1).select(dim=1, index=0)).mean()
+
                     # logit_pos, logit_neg = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_indice, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
-                    # logit = torch.cat([logit_pos, logit_neg], dim=-1)
-                    # cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]
+                    # cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]  # Grouping
+                    # # cumsum_logit = logit_pos  # torch.cumsum(logit_pos, dim=1)  # [B, K]  # For Sampling
+                    #
                     # loss = 0
                     # for idx in range(args.pseudo_pos_rank):
                     #     g_logit = cumsum_logit[:, idx] / (idx + 1)
-                    #     g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
-                    #     pseudo_mask = torch.zeros_like(logit)
-                    #     pseudo_mask[:, :idx + 1] = -1e10
-                    #     pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
-                    #     loss += (-torch.log_softmax(g_logit+pseudo_mask, dim=1).select(dim=1, index=0)).mean()
-
-                    logit_pos, logit_neg = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_indice, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
-                    # cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]  # Grouping
-                    cumsum_logit = logit_pos  # torch.cumsum(logit_pos, dim=1)  # [B, K]  # For Sampling
-
-                    loss = 0
-                    for idx in range(args.pseudo_pos_rank):
-                        # g_logit = cumsum_logit[:, idx] / (idx + 1)
-                        g_logit = cumsum_logit[:, idx]  # For Sampling
-                        g_logit = torch.cat([g_logit.unsqueeze(1), logit_neg], dim=1)
-                        loss += (-torch.log_softmax(g_logit, dim=1).select(dim=1, index=0)).mean()
+                    #     # g_logit = cumsum_logit[:, idx]  # For Sampling
+                    #     g_logit = torch.cat([g_logit.unsqueeze(1), logit_neg], dim=1)
+                    #     loss += (-torch.log_softmax(g_logit, dim=1).select(dim=1, index=0)).mean()
 
                 ### Group-wise + Seq (original)
                 # loss = torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))

@@ -262,6 +262,20 @@ def main():
         for aug_data in test_dataset:
             aug_data['dialog'] = aug_data['dialog'].replace('</s>', '[SEP]')
 
+        goal_len_list = []
+        rec_len_list = []
+        for data in train_dataset:
+            dialog = data['dialog']
+            goal = data['goal']
+            response = data['response']
+            if goal == 'Q&A':
+                goal_len_list.append(len(response))
+            if 'recommendation' in goal:
+                rec_len_list.append(len(response))
+        mean_len_goal = np.mean(goal_len_list)
+        mean_len_rec = np.mean(rec_len_list)
+
+
         train_datamodel_know = DialogDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, mode='train', task='know')
         valid_datamodel_know = DialogDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, mode='test', task='know')
         test_datamodel_know = DialogDataset(args, test_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, mode='test', task='know')
