@@ -172,7 +172,7 @@ def main():
         # test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
 
         train_dataset_resp = process_augment_sample_topic(train_dataset_raw, tokenizer, train_knowledgeDB)
-        test_dataset_resp = process_augment_sample_topic(test_dataset_raw, tokenizer, all_knowledgeDB)
+        test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
         # test_dataset_resp_retrieve = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
 
         # with open('augmented_dataset_test.txt', 'rb') as f:
@@ -193,14 +193,13 @@ def main():
         generator = Retriever(args, gpt_model=gpt_model)
         generator = generator.to(args.device)
 
-        # train generate task
-        # if args.saved_goal_model_path != '':
-        #     generator.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_goal_model_path}.pt")))
-        # else:
-        #     train_goal_topic(args, generator, tokenizer, train_dataloader_resp, test_dataloader_resp, 'goal')
-        # augmented_raw_sample_goal = write_goal_topic_result(args, generator, tokenizer, test_dataloader_resp, 'goal')
-        # test_dataloader_resp.dataset.augmented_raw_sample = augmented_raw_sample_goal
-        # write_pkl(augmented_raw_sample_goal, "augmented_raw_sample_goal.txt")
+        if args.saved_goal_model_path != '':
+            generator.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_goal_model_path}.pt")))
+        else:
+            train_goal_topic(args, generator, tokenizer, train_dataloader_resp, test_dataloader_resp, 'goal')
+        augmented_raw_sample_goal = write_goal_topic_result(args, generator, tokenizer, test_dataloader_resp, 'goal')
+        test_dataloader_resp.dataset.augmented_raw_sample = augmented_raw_sample_goal
+        write_pkl(augmented_raw_sample_goal, "augmented_raw_sample_goal.txt")
 
         if args.saved_topic_model_path != '':
             generator.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_topic_model_path}.pt")))
