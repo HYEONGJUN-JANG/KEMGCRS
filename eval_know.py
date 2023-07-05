@@ -131,7 +131,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
             jsonlineSave.append({'goal_type': goal_idx[0], 'topic': topic_idx[0], 'tf': correct, 'dialog': input_text, 'target': target_knowledge_text, 'response': response, "predict5": retrieved_knowledge_text, "score5": retrieved_knowledge_score})
             # save_json(args, f"{args.time}_{args.model_name}_inout", jsonlineSave)
 
-        for idx, (score, target, pseudo_targets, goal, new) in enumerate(zip(dot_score, target_knowledge_idx, batch['pseudo_targets'], type_idx, new_knowledge)):
+        for idx, (score, target, pseudo_targets, goal, new) in enumerate(zip(dot_score, target_knowledge_idx, batch['pseudo_targets'], goal_idx, new_knowledge)):
             # goal = args.goalDic['int'][int(goal_idx)]
             # top_candidate = torch.topk(score, k=args.know_topk, dim=0).indices  # [K]
             # candidate_knowledge_text = [args.knowledgeDB[int(idx)] for idx in top_candidate]  # [K, .]
