@@ -1,4 +1,5 @@
 import os
+from copy import deepcopy
 
 from torch import optim
 from torch.utils.data import DataLoader
@@ -118,5 +119,5 @@ def write_goal_topic_result(args, generator, tokenizer, test_dataloader, subtask
         hitAll["hit1"].append(correct)
     print("[hit1]\t[%s]\t%.4f" % (subtask, np.average(hitAll[f"hit1"])))
 
-    return test_dataloader.dataset.augmented_raw_sample
+    return deepcopy(test_dataloader.dataset.augmented_raw_sample)
     # test_dataloader.dataset.subtask = 'topic'
