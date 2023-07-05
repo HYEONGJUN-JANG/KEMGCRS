@@ -273,7 +273,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
                                                    truncation=True).input_ids
 
         context_batch['goal'] = self.args.goalDic['str'][goal]  # index로 바꿈
-        context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
+        # context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
         context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
 
         # List-wise
