@@ -77,7 +77,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         # candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,5,256]
         # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
 
-        type_idx = [args.goalDic['int'][int(idx)] for idx in batch['goal']]
+        type_idx = [args.goalDic['int'][int(idx)] for idx in batch['goal_idx']]
         topic_idx = [args.topicDic['int'][int(idx)] for idx in batch['topic_idx']]
 
         # candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,5,256]
