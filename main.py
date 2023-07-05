@@ -257,14 +257,14 @@ def main():
         train_dataset_raw, valid_dataset_raw = split_validation(train_dataset_raw, args.train_ratio)
         train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB, goal_list=goal_list)
         valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB)
-        test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)  # gold-topic
-        test_dataset2 = read_pkl("augmented_raw_sample_topic.txt")
-        for aug_data in test_dataset2:
+        # test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)  # gold-topic
+        test_dataset = read_pkl("augmented_raw_sample_topic.txt")
+        for aug_data in test_dataset:
             aug_data['dialog'] = aug_data['dialog'].replace('</s>', '[SEP]')
 
-        train_datamodel_know = DialogDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
-        valid_datamodel_know = DialogDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
-        test_datamodel_know = DialogDataset(args, test_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+        train_datamodel_know = DialogDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, mode='train', task='know')
+        valid_datamodel_know = DialogDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, mode='test', task='know')
+        test_datamodel_know = DialogDataset(args, test_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, mode='test', task='know')
 
         train_dataloader = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=True)
         train_dataloader_retrieve = DataLoader(train_datamodel_know, batch_size=args.batch_size, shuffle=False)
