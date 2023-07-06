@@ -28,7 +28,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_dc_step, gamma=args.lr_dc)
 
-    eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
     best_hit = [[], [], [], [], []]
     best_hit_new = [[], [], [], [], []]
@@ -79,6 +79,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             candidate_indice = batch['candidate_indice']
             candidate_knowledge_token = batch['candidate_knowledge_token']  # [B,2,256]
             candidate_knowledge_mask = batch['candidate_knowledge_mask']  # [B,2,256]
+            sampling_results = batch['sampling_results']
+
             # pseudo_positive_idx = torch.stack([idx[0] for idx in batch['candidate_indice']])
             # pseudo_positive = batch['pseudo_positive']
             # pseudo_negative = batch['pseudo_negative']
@@ -251,12 +253,14 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     #     loss += (-torch.log_softmax(g_logit+pseudo_mask, dim=1).select(dim=1, index=0)).mean()
 
                     logit_pos, logit_neg = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_indice, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
-                    cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]  # Grouping
+                    cumsum_logit = torch.cumsum(logit_pos * sampling_results, dim=1)  # [B, K]  # Grouping
+                    num_samples = torch.cumsum(sampling_results, dim=-1)
                     # cumsum_logit = logit_pos  # torch.cumsum(logit_pos, dim=1)  # [B, K]  # For Sampling
 
                     loss = 0
                     for idx in range(args.pseudo_pos_rank):
-                        g_logit = cumsum_logit[:, idx] / (idx + 1)
+                        # g_logit = cumsum_logit[:, idx] / (idx + 1)
+                        g_logit = cumsum_logit[:, idx] / num_samples[:, idx]
                         # g_logit = cumsum_logit[:, idx]  # For Sampling
                         g_logit = torch.cat([g_logit.unsqueeze(1), logit_neg], dim=1)
                         loss += (-torch.log_softmax(g_logit, dim=1).select(dim=1, index=0)).mean()

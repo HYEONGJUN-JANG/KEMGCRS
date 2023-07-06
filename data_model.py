@@ -199,6 +199,16 @@ def convert_idx_to_docid(idx):
     return f"{idx}"
 
 
+def min_max_norm(confidences):
+    return (np.array(confidences) - min(confidences)) / (max(confidences) - min(confidences) + 1e-20)
+
+
+def softmax(x):
+    """Compute softmax values for each sets of scores in x."""
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum(axis=0)  # only difference
+
+
 class DialogDataset(Dataset):  # knowledge용 데이터셋
     def __init__(self, args, data_sample, knowledgeDB, train_knowledgeDB, tokenizer, task, mode='train'):
         super(Dataset, self).__init__()
@@ -239,6 +249,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         cbdicKeys = ['dialog', 'user_profile', 'response', 'goal', 'topic', 'situation', 'target_knowledge', 'candidate_knowledges', 'candidate_confidences']
         dialog, user_profile, response, goal, topic, situation, target_knowledge, candidate_knowledges, candidate_confidences = [data[i] for i in cbdicKeys]
         candidate_knowledges = [self.knowledgeDB.index(passage) for passage in candidate_knowledges]
+        candidate_confidences = min_max_norm(candidate_confidences)
+
         target_knowledge_idx = self.knowledgeDB.index(target_knowledge)
         pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
 
@@ -298,9 +310,12 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         #     candidate_knowledges.insert(0, target_knowledge_idx)
         #     target_confidence = candidate_confidences.pop(idxinlist)
         #     candidate_confidences.insert(0, target_confidence)
-
-        candidate_knowledges_pos = candidate_knowledges[:self.args.pseudo_pos_num]
         candidate_confidences_pos = candidate_confidences[:self.args.pseudo_pos_num]
+        candidate_knowledges_pos = candidate_knowledges[:self.args.pseudo_pos_num]
+        sampling_results = []
+        for i, data in enumerate(candidate_knowledges_pos):
+            sampling_result = np.random.binomial(1, candidate_confidences_pos[i])
+            sampling_results.append(sampling_result)
 
         # random_idx = random.randrange(min(self.args.pseudo_pos_num, len(candidate_knowledges)))
 
@@ -364,6 +379,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['all_negative'] = candidate_knowledges + self.all_negative(candidate_knowledges)
         context_batch['bm25_top20'] = candidate_knowledges
         context_batch['new_knowledge'] = self.knowledgeDB[target_knowledge_idx] not in self.train_knowledgeDB
+        context_batch['sampling_results'] = sampling_results
 
         context_batch['indices'] = idx
         for k, v in context_batch.items():
