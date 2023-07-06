@@ -108,7 +108,7 @@ def parseargs():
 
 
     parser.add_argument('--log_name', default='', type=str, help="log file name")  # HJ: log file name
-
+    parser.add_argument("--debug", action='store_true', help="Whether to run debug.") # HJ
     # TH
     parser.add_argument('--retrieve', default='negative', type=str, help="retrieve")
     parser.add_argument('--input_prompt', default='dialog_topic_profile', type=str, help="input_prompt")

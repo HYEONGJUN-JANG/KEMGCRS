@@ -6,8 +6,9 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import torch
 import numpy as np
-
+import logging
 from data_model import GenerationDataset
+logger = logging.getLogger('__main__')
 
 
 def train_goal_topic(args, generator, tokenizer, train_dataloader, test_dataloader, subtask):
@@ -31,8 +32,8 @@ def train_goal_topic(args, generator, tokenizer, train_dataloader, test_dataload
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-        print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
-
+        # print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
+        logger.info(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
         # test generation task
         all_dialog = []
         all_response = []
@@ -79,16 +80,16 @@ def train_goal_topic(args, generator, tokenizer, train_dataloader, test_dataload
             correct = (gold == pred)
             hitAll["hit1"].append(correct)
 
-        print("[hit1]\t[%s]\t%.4f" % (subtask, np.average(hitAll[f"hit1"])))
+        logger.info("[hit1]\t[%s]\t%.4f" % (subtask, np.average(hitAll[f"hit1"])))
         if best_hit < np.average(hitAll[f"hit1"]):
             best_hit = np.average(hitAll[f"hit1"])
             torch.save(generator.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_{args.task}_{subtask}_{args.num_epochs}.pt"))  # TIME_MODELNAME 형식
-    print("[BEST][hit1]\t[%s]\t%.4f" % (subtask, best_hit))
+    logger.info("[BEST][hit1]\t[%s]\t%.4f" % (subtask, best_hit))
 
 
 def write_goal_topic_result(args, generator, tokenizer, test_dataloader, subtask):
     test_dataloader.dataset.subtask = subtask
-    print('[write_goal_topic_result] subtask is %s' % subtask)
+    logger.info('[write_goal_topic_result] subtask is %s' % subtask)
     current = 0
     all_response = []
     all_generated = []
@@ -117,7 +118,7 @@ def write_goal_topic_result(args, generator, tokenizer, test_dataloader, subtask
         pred = all_generated[idx]
         correct = (gold == pred)
         hitAll["hit1"].append(correct)
-    print("[hit1]\t[%s]\t%.4f" % (subtask, np.average(hitAll[f"hit1"])))
+    logger.info("[hit1]\t[%s]\t%.4f" % (subtask, np.average(hitAll[f"hit1"])))
 
     return deepcopy(test_dataloader.dataset.augmented_raw_sample)
     # test_dataloader.dataset.subtask = 'topic'

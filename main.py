@@ -23,9 +23,34 @@ from models import *
 from data_util import readDic, dataset_reader, process_augment_sample, bm_tokenizer, process_augment_sample_topic
 from rank_bm25 import BM25Okapi
 import nltk
+logger = logging.getLogger(__name__)
+
 
 nltk.download('stopwords')
 
+def initLogging(args):
+    filename = os.path.join(args.home, 'logs', args.version, f'{args.time}_{args.log_name}_{args.model_name.replace("/", "_")}' + '_log.txt')
+    global logger
+    if logger == None: logger = logging.getLogger()
+    else:  # wish there was a logger.close()
+        for handler in logger.handlers[:]:  # make a copy of the list
+            logger.removeHandler(handler)
+
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(fmt='%(asctime)s: %(message)s', datefmt='%Y/%m/%d_%p_%I:%M:%S ')
+    if args.debug and False:
+        pass
+    else:
+        fh = logging.FileHandler(filename)
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+
+    sh = logging.StreamHandler(sys.stdout)
+    sh.setFormatter(formatter)
+    logger.addHandler(sh)
+    logger.info(f"FILENAME: {filename}")
+    logger.info('Commend: {}'.format(', '.join(map(str, sys.argv))))
+    return logger
 
 # def train_knowledge_indexing(args, knowledge_data, retriever, optimizer):
 #     # 모든 know_index를 버트에 태움
@@ -79,7 +104,8 @@ def main():
     checkPath(args.log_dir)
     checkPath(args.model_dir)
 
-    logging.basicConfig(level=logging.DEBUG, filename=os.path.join(args.log_dir, f'{args.time}_{args.log_name + "_"}log.txt'), filemode='a', format='%(asctime)s: %(levelname)s: %(message)s', datefmt='%Y/%m/%d_%p_%I:%M:%S ')
+    # logging.basicConfig(level=logging.DEBUG, filename=os.path.join(args.log_dir, f'{args.time}_{args.log_name + "_"}log.txt'), filemode='a', format='%(asctime)s: %(levelname)s: %(message)s', datefmt='%Y/%m/%d_%p_%I:%M:%S ')
+    initLogging(args)
     logging.info('Commend: {}'.format(', '.join(map(str, sys.argv))))
     # Model cached load
     # checkPath(os.path.join("cache", args.bert_name))
@@ -269,9 +295,9 @@ def main():
             goal = data['goal']
             response = data['response']
             if goal == 'Q&A':
-                goal_len_list.append(len(response))
+                goal_len_list.append(len(response.split()))
             if 'recommendation' in goal:
-                rec_len_list.append(len(response))
+                rec_len_list.append(len(response.split()))
         mean_len_goal = np.mean(goal_len_list)
         mean_len_rec = np.mean(rec_len_list)
 
@@ -289,19 +315,19 @@ def main():
         # retriever.init_reranker()
         # train_know(args, train_dataloader, valid_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)
 
-        if args.saved_model_path == '':
-            print('retrieve mode')
-            args.stage = 'retrieve'
-            eval_know(args, valid_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
-            train_know(args, train_dataloader, valid_dataloader, retriever, train_knowledge_data, train_knowledgeDB, all_knowledge_data, all_knowledgeDB, tokenizer)
-
-            # eval_know(args, train_dataloader_retrieve, retriever, train_knowledge_data, train_knowledgeDB, tokenizer, retrieve=True)  # todo: remove
-            # eval_know(args, valid_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer, retrieve=True)  # todo: remove
-
-            args.stage = 'rerank'
-        else:
-            print('############################retriever load:\t%s#################################' % args.saved_model_path)
-            retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path), map_location=args.device))
+        # if args.saved_model_path == '':
+        #     print('retrieve mode')
+        #     args.stage = 'retrieve'
+        #     eval_know(args, valid_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+        #     train_know(args, train_dataloader, valid_dataloader, retriever, train_knowledge_data, train_knowledgeDB, all_knowledge_data, all_knowledgeDB, tokenizer)
+        #
+        #     # eval_know(args, train_dataloader_retrieve, retriever, train_knowledge_data, train_knowledgeDB, tokenizer, retrieve=True)  # todo: remove
+        #     # eval_know(args, valid_dataloader, retriever, all_knowledge_data, all_knowledgeDB, tokenizer, retrieve=True)  # todo: remove
+        #
+        #     args.stage = 'rerank'
+        # else:
+        #     print('############################retriever load:\t%s#################################' % args.saved_model_path)
+        #     retriever.load_state_dict(torch.load(os.path.join(args.model_dir, args.saved_model_path), map_location=args.device))
 
         if args.stage == 'rerank':
             args.stage = 'retrieve'
