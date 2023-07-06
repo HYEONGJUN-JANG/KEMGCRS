@@ -256,7 +256,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     cumsum_logit = torch.cumsum(logit_pos * sampling_results, dim=1)  # [B, K]  # Grouping
                     num_samples = torch.cumsum(sampling_results, dim=-1)
                     # cumsum_logit = logit_pos  # torch.cumsum(logit_pos, dim=1)  # [B, K]  # For Sampling
-
+                    if (num_samples[:, 0]==0).sum() > 0: print('fuck')
                     loss = 0
                     for idx in range(args.pseudo_pos_rank):
                         # g_logit = cumsum_logit[:, idx] / (idx + 1)
