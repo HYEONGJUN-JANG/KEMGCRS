@@ -108,6 +108,7 @@ def parseargs():
 
 
     parser.add_argument('--log_name', default='', type=str, help="log file name")  # HJ: log file name
+    parser.add_argument('--version', default='2', type=str, help="DuRec Version")  # HJ: log file name
     parser.add_argument("--debug", action='store_true', help="Whether to run debug.") # HJ
     # TH
     parser.add_argument('--retrieve', default='negative', type=str, help="retrieve")
@@ -121,9 +122,10 @@ def parseargs():
     if sysChecker() == 'Linux':
         # HJ KT-server
         args.home = '/home/work/CRSFolder/KEMGCRS'
+        # args.home = os.path.dirname(os.path.realpath(__file__))
         args.data_dir = os.path.join(args.home, 'data')
         args.output_dir = os.path.join(args.data_dir, 'output')
-        args.log_dir = os.path.join(args.home, 'logs')
+        args.log_dir = os.path.join(args.home, 'logs',args.version)
         args.model_dir = os.path.join(args.home, 'models')
         args.bert_saved_model_path = os.path.join(args.home, "cache", args.kencoder_name)
         # args.batch_size = 64
@@ -143,6 +145,7 @@ def parseargs():
 
     args.usebart = True
     args.bert_cache_name = os.path.join(args.home, "cache", args.kencoder_name)
+    checkPath(args.log_dir)
 
     return args
 

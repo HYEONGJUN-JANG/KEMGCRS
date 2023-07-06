@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 nltk.download('stopwords')
 
 def initLogging(args):
-    filename = os.path.join(args.home, 'logs', args.version, f'{args.time}_{args.log_name}_{args.model_name.replace("/", "_")}' + '_log.txt')
+    filename = os.path.join(args.log_dir, f'{args.time}_{args.log_name}_{args.model_name.replace("/", "_")}' + '_log.txt')
     global logger
     if logger == None: logger = logging.getLogger()
     else:  # wish there was a logger.close()
