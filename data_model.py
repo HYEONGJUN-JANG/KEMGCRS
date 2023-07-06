@@ -314,8 +314,11 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         candidate_knowledges_pos = candidate_knowledges[:self.args.pseudo_pos_num]
         sampling_results = []
         for i, data in enumerate(candidate_knowledges_pos):
-            sampling_result = np.random.binomial(1, candidate_confidences_pos[i])
-            sampling_results.append(sampling_result)
+            if i == 0:
+                sampling_results.append(1)
+            else:
+                sampling_result = np.random.binomial(1, candidate_confidences_pos[i])
+                sampling_results.append(sampling_result)
 
         # random_idx = random.randrange(min(self.args.pseudo_pos_num, len(candidate_knowledges)))
 
