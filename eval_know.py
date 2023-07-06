@@ -9,10 +9,12 @@ from utils import write_pkl, save_json
 import numpy as np
 import pickle
 
+import logging
+logger = logging.getLogger('__main__')
 
 def knowledge_reindexing(args, knowledge_data, retriever, stage):
     # 모든 know_index를 버트에 태움
-    print('...knowledge indexing...(%s)' % stage)
+    logger.info('...knowledge indexing...(%s)' % stage)
     retriever.eval()
     knowledgeDataLoader = DataLoader(
         knowledge_data,
@@ -38,7 +40,7 @@ def knowledge_reindexing(args, knowledge_data, retriever, stage):
 
 
 def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer, write=None, retrieve=None, data_type='test'):
-    print(args.stage)
+    logger.info(args.stage)
     retriever.eval()
     # Read knowledge DB
     # knowledge_index = knowledge_reindexing(args, knowledge_data, retriever)
@@ -46,7 +48,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     jsonlineSave = []
     # bert_model = bert_model.to(args.device)
     new_cnt = 0
-    print('Knowledge indexing for test')
+    logger.info('Knowledge indexing for test')
     knowledge_index = knowledge_reindexing(args, knowledge_data, retriever, stage='retrieve')
     knowledge_index = knowledge_index.to(args.device)
 
@@ -195,7 +197,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
                 # if k == 20:
                 #     hit20_p23.append(correct_k)
     # for i in range(10):
-    #     print("T:%s\tP:%s" %(targets[i], pred[i]))
+    #     logger.info("T:%s\tP:%s" %(targets[i], pred[i]))
 
     # topic_eval(targets, pred)
     hit1 = np.average(hit1)
@@ -234,26 +236,26 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         write_pkl(obj=jsonlineSave, filename='jsonline.pkl')  # 입출력 저장
         save_json(args, f"{args.time}_{args.model_name}_inout", jsonlineSave)
     else:
-        print(f"Test Hit@1: %.4f" % np.average(hit1))
-        print(f"Test Hit@3: %.4f" % np.average(hit3))
-        print(f"Test Hit@5: %.4f" % np.average(hit5))
-        print(f"Test Hit@10: %.4f" % np.average(hit10))
-        print(f"Test Hit@20: %.4f" % np.average(hit20))
+        logger.info(f"Test Hit@1: %.4f" % np.average(hit1))
+        logger.info(f"Test Hit@3: %.4f" % np.average(hit3))
+        logger.info(f"Test Hit@5: %.4f" % np.average(hit5))
+        logger.info(f"Test Hit@10: %.4f" % np.average(hit10))
+        logger.info(f"Test Hit@20: %.4f" % np.average(hit20))
 
-        print(f"Test New Hit@1: %.4f" % np.average(hit1_new))
-        print(f"Test New Hit@3: %.4f" % np.average(hit3_new))
-        print(f"Test New Hit@5: %.4f" % np.average(hit5_new))
-        print(f"Test New Hit@10: %.4f" % np.average(hit10_new))
-        print(f"Test New Hit@20: %.4f" % np.average(hit20_new))
+        logger.info(f"Test New Hit@1: %.4f" % np.average(hit1_new))
+        logger.info(f"Test New Hit@3: %.4f" % np.average(hit3_new))
+        logger.info(f"Test New Hit@5: %.4f" % np.average(hit5_new))
+        logger.info(f"Test New Hit@10: %.4f" % np.average(hit10_new))
+        logger.info(f"Test New Hit@20: %.4f" % np.average(hit20_new))
 
-        # print(f"Test Hit@20_P1: %.4f" % np.average(hit20_p1))
-        # print(f"Test Hit@20_P2: %.4f" % np.average(hit20_p2))
+        # logger.info(f"Test Hit@20_P1: %.4f" % np.average(hit20_p1))
+        # logger.info(f"Test Hit@20_P2: %.4f" % np.average(hit20_p2))
 
-        print("Movie recommendation\t" + "\t".join(hit_movie_result))
-        print("Music recommendation\t" + "\t".join(hit_music_result))
-        print("Q&A\t" + "\t".join(hit_qa_result))
-        # print("Chat about stars\t" + "\t".join(hit_chat_result))
-        print("POI recommendation\t" + "\t".join(hit_poi_result))
+        logger.info("Movie recommendation\t" + "\t".join(hit_movie_result))
+        logger.info("Music recommendation\t" + "\t".join(hit_music_result))
+        logger.info("Q&A\t" + "\t".join(hit_qa_result))
+        # logger.info("Chat about stars\t" + "\t".join(hit_chat_result))
+        logger.info("POI recommendation\t" + "\t".join(hit_poi_result))
 
-    print("new knowledge %d" % new_cnt)
+    logger.info("new knowledge %d" % new_cnt)
     return [hit1, hit3, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result, hit1_new, hit3_new, hit5_new, hit10_new, hit20_new]

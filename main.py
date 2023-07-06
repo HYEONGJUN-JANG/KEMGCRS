@@ -335,11 +335,11 @@ def main():
 
             print('rerank mode')
             args.stage = 'rerank'
-            retriever.init_reranker()
-            modules = [retriever.rerank_bert.encoder.layer[:bert_config.num_hidden_layers - 2], retriever.rerank_bert.embeddings]
-            for module in modules:
-                for param in module.parameters():
-                    param.requires_grad = False
+            # retriever.init_reranker()
+            # modules = [retriever.rerank_bert.encoder.layer[:bert_config.num_hidden_layers - 2], retriever.rerank_bert.embeddings]
+            # for module in modules:
+            #     for param in module.parameters():
+            #         param.requires_grad = False
 
             args.lr = args.lr_rerank
 
