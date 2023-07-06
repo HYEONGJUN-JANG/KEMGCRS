@@ -312,13 +312,13 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         #     candidate_confidences.insert(0, target_confidence)
         candidate_confidences_pos = candidate_confidences[:self.args.pseudo_pos_num]
         candidate_knowledges_pos = candidate_knowledges[:self.args.pseudo_pos_num]
-        sampling_results = []
-        for i, data in enumerate(candidate_knowledges_pos):
-            if i == 0:
-                sampling_results.append(1)
-            else:
-                sampling_result = np.random.binomial(1, candidate_confidences_pos[i])
-                sampling_results.append(sampling_result)
+        # sampling_results = []
+        # for i, data in enumerate(candidate_knowledges_pos):
+        #     if i == 0:
+        #         sampling_results.append(1)
+        #     else:
+        #         sampling_result = np.random.binomial(1, candidate_confidences_pos[i])
+        #         sampling_results.append(sampling_result)
 
         # random_idx = random.randrange(min(self.args.pseudo_pos_num, len(candidate_knowledges)))
 
@@ -382,7 +382,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['all_negative'] = candidate_knowledges + self.all_negative(candidate_knowledges)
         context_batch['bm25_top20'] = candidate_knowledges
         context_batch['new_knowledge'] = self.knowledgeDB[target_knowledge_idx] not in self.train_knowledgeDB
-        context_batch['sampling_results'] = sampling_results
+        # context_batch['sampling_results'] = sampling_results
 
         context_batch['indices'] = idx
         for k, v in context_batch.items():
