@@ -282,8 +282,8 @@ def main():
             goal_list.append('Music recommendation')
         if 'QA' in args.goal_list:
             goal_list.append('Q&A')
-        # if 'Food' in args.goal_list:
-        #     goal_list.append('Food recommendation')
+        if 'Food' in args.goal_list:
+            goal_list.append('Food recommendation')
         # if 'Chat' in args.goal_list:
         #     goal_list.append('Chat about stars')
 

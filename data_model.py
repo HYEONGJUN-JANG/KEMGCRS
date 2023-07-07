@@ -383,6 +383,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['all_negative'] = candidate_knowledges + self.all_negative(candidate_knowledges)
         context_batch['bm25_top20'] = candidate_knowledges
         context_batch['new_knowledge'] = self.knowledgeDB[target_knowledge_idx] not in self.train_knowledgeDB
+        context_batch['isFood'] = (goal == 'Food recommendation')
+
         # context_batch['sampling_results'] = sampling_results
 
         context_batch['indices'] = idx

@@ -251,10 +251,16 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     #     pseudo_mask = torch.zeros_like(logit)
                     #     pseudo_mask[:, :idx + 1] = -1e10
                     #     pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
-                    #     loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
+
 
                     logit_pos, logit_neg = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_indice, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
-                    cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]  # Grouping
+
+                    #     loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
+                    isFood = batch['isFood'].view(logit_pos.size(0), -1).repeat(1, args.pseudo_pos_rank).long()
+                    isFood[:, 0] = 0
+                    isFood = isFood * -1e10
+
+                    cumsum_logit = torch.cumsum(logit_pos + isFood, dim=1)  # [B, K]  # Grouping
                     # num_samples = torch.cumsum(sampling_results, dim=-1)
                     # cumsum_logit = logit_pos  # torch.cumsum(logit_pos, dim=1)  # [B, K]  # For Sampling
 
@@ -419,7 +425,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
         hit1, hit3, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result, hit_food_result, hit_chat_result, hit1_new, hit3_new, hit5_new, hit10_new, hit20_new = eval_know(args, test_dataloader, retriever, all_knowledge_data, all_knowledgeDB,
-                                                                                                                                                                                                          tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+                                                                                                                                                                                                            tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
         with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
             f.write("EPOCH:\t%d\n" % epoch)
