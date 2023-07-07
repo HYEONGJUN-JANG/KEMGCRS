@@ -220,9 +220,9 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     hit_movie_result = [np.average(hit1_goal["Movie recommendation"]), np.average(hit3_goal["Movie recommendation"]), np.average(hit5_goal["Movie recommendation"]), np.average(hit10_goal["Movie recommendation"]), np.average(hit20_goal["Movie recommendation"])]
     hit_music_result = [np.average(hit1_goal["Music recommendation"]), np.average(hit3_goal["Music recommendation"]), np.average(hit5_goal["Music recommendation"]), np.average(hit10_goal["Music recommendation"]), np.average(hit20_goal["Music recommendation"])]
     hit_qa_result = [np.average(hit1_goal["Q&A"]), np.average(hit3_goal["Q&A"]), np.average(hit5_goal["Q&A"]), np.average(hit10_goal["Q&A"]), np.average(hit20_goal["Q&A"])]
-    hit_chat_result = [np.average(hit1_goal["Chat about stars"]), np.average(hit5_goal["Chat about stars"]), np.average(hit10_goal["Chat about stars"]), np.average(hit20_goal["Chat about stars"])]
     hit_poi_result = [np.average(hit1_goal["POI recommendation"]), np.average(hit3_goal["POI recommendation"]), np.average(hit5_goal["POI recommendation"]), np.average(hit10_goal["POI recommendation"]), np.average(hit20_goal["POI recommendation"])]
-    hit_food_result = [np.average(hit1_goal["Food recommendation"]), np.average(hit5_goal["Food recommendation"]), np.average(hit10_goal["Food recommendation"]), np.average(hit20_goal["Food recommendation"])]
+    hit_food_result = [np.average(hit1_goal["Food recommendation"]), np.average(hit3_goal["Food recommendation"]), np.average(hit5_goal["Food recommendation"]), np.average(hit10_goal["Food recommendation"]), np.average(hit20_goal["Food recommendation"])]
+    hit_chat_result = [np.average(hit1_goal["Chat about stars"]), np.average(hit3_goal["Chat about stars"]), np.average(hit5_goal["Chat about stars"]), np.average(hit10_goal["Chat about stars"]), np.average(hit20_goal["Chat about stars"])]
 
     hit_movie_result = ["%.4f" % hit for hit in hit_movie_result]
     hit_music_result = ["%.4f" % hit for hit in hit_music_result]
