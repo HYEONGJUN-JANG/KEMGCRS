@@ -19,8 +19,8 @@ class Retriever(nn.Module):
 
         self.gpt_model = gpt_model
         self.hidden_size = args.hidden_size
-        self.topic_proj = nn.Linear(self.hidden_size, args.topic_num)
-        self.goal_proj = nn.Linear(self.hidden_size, args.goal_num)
+        self.goal_proj = nn.Sequential(nn.Linear(self.hidden_size, self.hidden_size // 2), nn.ReLU(), nn.Linear(self.hidden_size // 2, args.goal_num))  # nn.Linear(self.hidden_size, args.goal_num)
+        self.topic_proj = nn.Sequential(nn.Linear(self.hidden_size, self.hidden_size // 2), nn.ReLU(), nn.Linear(self.hidden_size // 2, args.topic_num))  # nn.Linear(self.hidden_size, args.topic_num)
 
         self.linear_proj = nn.Linear(self.hidden_size, 1)
         # self.know_proj = nn.Linear(self.hidden_size, self.args.knowledge_num, bias=False)
