@@ -256,11 +256,11 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     logit_pos, logit_neg = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_indice, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
 
                     #     loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
-                    isFood = batch['isFood'].view(logit_pos.size(0), -1).repeat(1, args.pseudo_pos_rank).long()
+                    isFood = batch['isFood'].view(logit_pos.size(0), -1).repeat(1, logit_neg.size(1)+1).long()
                     isFood[:, 0] = 0
                     isFood = isFood * -1e10
 
-                    cumsum_logit = torch.cumsum(logit_pos + isFood, dim=1)  # [B, K]  # Grouping
+                    cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]  # Grouping
                     # num_samples = torch.cumsum(sampling_results, dim=-1)
                     # cumsum_logit = logit_pos  # torch.cumsum(logit_pos, dim=1)  # [B, K]  # For Sampling
 
