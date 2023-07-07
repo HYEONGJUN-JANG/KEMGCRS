@@ -265,8 +265,11 @@ def main():
 
         # KNOWLEDGE TASk
         retriever = Retriever(args, bert_model)
-        retriever = retriever.to(args.device)
 
+        if args.saved_model_path != '':
+            retriever.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_model_path}.pt"), map_location=args.device))
+
+        retriever = retriever.to(args.device)
         train_knowledge_data = KnowledgeDataset(args, train_knowledgeDB, tokenizer)  # knowledge dataset class
         all_knowledge_data = KnowledgeDataset(args, all_knowledgeDB, tokenizer)  # knowledge dataset class
 
@@ -286,7 +289,6 @@ def main():
             goal_list.append('Food recommendation')
         # if 'Chat' in args.goal_list:
         #     goal_list.append('Chat about stars')
-
 
         # train_dataset_raw, valid_dataset_raw = split_validation(train_dataset_raw, args.train_ratio)
         train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB, goal_list=goal_list)
