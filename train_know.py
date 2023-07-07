@@ -28,7 +28,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_dc_step, gamma=args.lr_dc)
 
-    eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
     best_hit = [[], [], [], [], []]
     best_hit_new = [[], [], [], [], []]
@@ -259,7 +259,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     # cumsum_logit = logit_pos  # torch.cumsum(logit_pos, dim=1)  # [B, K]  # For Sampling
 
                     loss = 0
-                    pseudo_confidences = batch['pseudo_confidences']
+                    # pseudo_confidences = batch['pseudo_confidences']
                     for idx in range(args.pseudo_pos_rank):
                         # confidence = torch.softmax(pseudo_confidences[:, :idx + 1], dim=-1)
                         # g_logit = torch.sum(logit_pos[:, :idx + 1] * confidence, dim=-1)

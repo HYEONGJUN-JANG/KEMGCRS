@@ -292,7 +292,7 @@ def main():
         train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB, goal_list=goal_list)
         valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB, goal_list=goal_list)
         test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB, goal_list=goal_list)  # gold-topic
-        # test_dataset = read_pkl("augmented_raw_sample_topic.txt")
+        test_dataset_temp = read_pkl("augmented_raw_sample_topic.txt")
         test_dataset_pred_aug = read_pkl(os.path.join(args.data_dir, 'pred_aug', f'gt_test_pred_aug_dataset.pkl'))
         test_dataset_pred_aug = [data for data in test_dataset_pred_aug if data['target_knowledge'] != '' and data['goal'] in goal_list]
         for idx, data in enumerate(test_dataset):

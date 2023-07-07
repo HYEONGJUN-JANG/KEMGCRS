@@ -39,7 +39,7 @@ def parseargs():
     parser.add_argument("--know_ablation", default='pseudo', type=str, help="know_ablation", choices=['target', 'pseudo'])
     parser.add_argument("--train_ablation", default='LG', type=str, help="train ablation", choices=['R', 'S', 'RG', 'LG','G','O'])
 
-    parser.add_argument('--topk_topic', default=1, type=int, help="pseudo_pos_num")
+    parser.add_argument('--topk_topic', default=1, type=int, help="num of topics for input prompt")
 
     parser.add_argument("--siamese", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument("--pseudo", action='store_true', help="Whether to Fine-tune on type.")
@@ -48,7 +48,7 @@ def parseargs():
     parser.add_argument("--pseudo_confidence", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument('--tau', type=float, default=1.0, help='Learning rate')
     parser.add_argument('--train_ratio', type=float, default=1.0, help='train_ratio')
-    parser.add_argument('--negative_num', default=2, type=int, help="negative_num")
+    parser.add_argument('--negative_num', default=1, type=int, help="negative_num")
     parser.add_argument('--stage', default='rerank', type=str, choices=['retrieve', 'rerank'])
     parser.add_argument("--stage2_test", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument('--update_freq', default=-1, type=int, help="update_freq")

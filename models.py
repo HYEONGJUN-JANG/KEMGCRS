@@ -134,9 +134,15 @@ class Retriever(nn.Module):
 
         logit_pos = torch.sum(dialog_emb.unsqueeze(1) * knowledge_index_pos, dim=2)  # [B, 1, d] * [B, K, d] = [B, K]
         logit_neg = torch.matmul(dialog_emb, knowledge_index_neg.transpose(1, 0))  # [B, N*B]
+
+        all_neg = candidate_indice[:, self.args.pseudo_pos_rank:].squeeze(1).unsqueeze(0).repeat(batch_size, 1)
+        logit_neg_mask = (all_neg == candidate_indice[:, 0])
+        for c_idx in range(1, self.args.pseudo_pos_rank):
+            logit_neg_mask |= (all_neg == candidate_indice[:, c_idx])
+        logit_neg_mask = logit_neg_mask.long() * -1e20
         # logit_mask = torch.zeros_like(logit_neg).fill_diagonal_(-1e10)
         # logit_neg = logit_neg + logit_mask  # [B, B]
 
         # logit_neg = torch.matmul(dialog_emb, knowledge_index_neg.squeeze(1).transpose(1, 0))  # [B, d] x [d, B] = [B, B]
         # logit = torch.cat([logit_pos, logit_inbatch_neg], dim=-1)  # [B, K+B]
-        return logit_pos, logit_neg
+        return logit_pos, logit_neg + logit_neg_mask
