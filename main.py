@@ -308,39 +308,41 @@ def main():
             data['predicted_goal'] = test_dataset_pred_aug[idx]['predicted_goal']
             data['predicted_topic'] = test_dataset_pred_aug[idx]['predicted_topic']
 
-        # cnt = 0
-        # cntdic2={}
-        #
-        # for aug_data in test_dataset:
-        #     aug_data['dialog'] = aug_data['dialog'].replace('</s>', '[SEP]')
-        #     target_know = aug_data['target_knowledge']
-        #     pseudo_know = aug_data['candidate_knowledges'][0]
-        #     g_topic = aug_data['topic']
-        #     p_topic = aug_data['predicted_topic'][0]
-        #     if g_topic == p_topic: # and aug_data['goal'] == 'Food recommendation':
-        #         if aug_data['goal'] not in cntdic2:
-        #             cntdic2[aug_data['goal']] = 1
-        #         else:
-        #             cntdic2[aug_data['goal']] += 1
-        # print('')
-        # cntdic={}
-        # for data in test_dataset:
-        #     if data['goal'] not in cntdic: cntdic[data['goal']] = 1
-        #     else: cntdic[data['goal']]+=1
-        # print('')
+        cnt = 0
+        cntdic2 = {}
 
-        # goal_len_list = []
-        # rec_len_list = []
-        # for data in train_dataset:
-        #     dialog = data['dialog']
-        #     goal = data['goal']
-        #     response = data['response']
-        #     if goal == 'Q&A':
-        #         goal_len_list.append(len(response.split()))
-        #     if 'recommendation' in goal:
-        #         rec_len_list.append(len(response.split()))
-        # mean_len_goal = np.mean(goal_len_list)
-        # mean_len_rec = np.mean(rec_len_list)
+        for aug_data in train_dataset:
+            aug_data['dialog'] = aug_data['dialog'].replace('</s>', '[SEP]')
+            target_know = aug_data['target_knowledge']
+            pseudo_know = aug_data['candidate_knowledges'][0]
+            g_topic = aug_data['topic']
+            p_topic = aug_data['predicted_topic'][0]
+            if target_know == pseudo_know:  # and aug_data['goal'] == 'Food recommendation':
+                if aug_data['goal'] not in cntdic2:
+                    cntdic2[aug_data['goal']] = 1
+                else:
+                    cntdic2[aug_data['goal']] += 1
+        print('')
+        cntdic = {}
+        for data in train_dataset:
+            if data['goal'] not in cntdic:
+                cntdic[data['goal']] = 1
+            else:
+                cntdic[data['goal']] += 1
+        print('')
+
+        goal_len_list = []
+        rec_len_list = []
+        for data in train_dataset:
+            dialog = data['dialog']
+            goal = data['goal']
+            response = data['response']
+            if goal == 'Q&A':
+                goal_len_list.append(len(response.split()))
+            if 'recommendation' in goal:
+                rec_len_list.append(len(response.split()))
+        mean_len_goal = np.mean(goal_len_list)
+        mean_len_rec = np.mean(rec_len_list)
 
         train_datamodel_know = DialogDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, mode='train', task='know')
         valid_datamodel_know = DialogDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, mode='test', task='know')
