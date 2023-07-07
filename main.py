@@ -284,8 +284,8 @@ def main():
             goal_list.append('Q&A')
         if 'Food' in args.goal_list:
             goal_list.append('Food recommendation')
-        if 'Chat' in args.goal_list:
-            goal_list.append('Chat about stars')
+        # if 'Chat' in args.goal_list:
+        #     goal_list.append('Chat about stars')
 
 
         train_dataset_raw, valid_dataset_raw = split_validation(train_dataset_raw, args.train_ratio)
