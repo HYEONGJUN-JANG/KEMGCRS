@@ -429,9 +429,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             f.write("Movie recommendation\t" + "\t".join(hit_movie_result) + "\n")
             f.write("Music recommendation\t" + "\t".join(hit_music_result) + "\n")
             f.write("Q&A\t" + "\t".join(hit_qa_result) + "\n")
-            # f.write("Chat about stars\t" + "\t".join(hit_chat_result) + "\n")
-            f.write("POI recommendation\t" + "\t".join(hit_poi_result) + "\n\n")
-            f.write("Food recommendation\t" + "\t".join(hit_food_result) + "\n\n")
+            f.write("POI recommendation\t" + "\t".join(hit_poi_result) + "\n")
+            f.write("Food recommendation\t" + "\t".join(hit_food_result) + "\n")
             f.write("Chat about stars\t" + "\t".join(hit_chat_result) + "\n\n")
 
         if hit1 > eval_metric[0]:

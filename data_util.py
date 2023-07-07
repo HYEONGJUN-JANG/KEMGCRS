@@ -150,7 +150,7 @@ def process_augment_sample_topic(raw_data, tokenizer, knowledgeDB):
     return train_sample
 
 
-def process_augment_sample(raw_data, tokenizer, knowledgeDB, goal_list=['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A']):
+def process_augment_sample(raw_data, tokenizer, knowledgeDB, goal_list=['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A', 'Food recommendation', 'Chat about stars']):
     train_sample = []
     if tokenizer.eos_token is not None:
         eos_token = tokenizer.eos_token
@@ -163,21 +163,19 @@ def process_augment_sample(raw_data, tokenizer, knowledgeDB, goal_list=['Movie r
             role = conversation['role_seq'][i]
             utterance = conversation['dialog'][i] + eos_token
             goal = conversation['goal'][i]
-            # if goal in goal_list:
-            # if role == 'System' and len(augmented_dialog) > 0 and len(conversation['pseudo_knowledge_seq'][i]) != 0:
-            if role == 'System' and len(augmented_dialog) > 0 and conversation['knowledge_seq'][i] != '':
-
-                flatten_dialog = ''.join(augmented_dialog)
-                train_sample.append({'dialog': flatten_dialog,
-                                     'user_profile': conversation['user_profile'],
-                                     'response': utterance,
-                                     'goal': conversation['goal'][i],
-                                     'topic': conversation['topic'][i],
-                                     'situation': conversation['situation'],
-                                     'target_knowledge': conversation['knowledge_seq'][i],
-                                     'candidate_knowledges': conversation['pseudo_knowledge_seq'][i],
-                                     'candidate_confidences': conversation['pseudo_confidence_seq'][i]  # prob
-                                     })
+            if goal in goal_list:
+                if role == 'System' and len(augmented_dialog) > 0 and conversation['knowledge_seq'][i] != '':
+                    flatten_dialog = ''.join(augmented_dialog)
+                    train_sample.append({'dialog': flatten_dialog,
+                                         'user_profile': conversation['user_profile'],
+                                         'response': utterance,
+                                         'goal': conversation['goal'][i],
+                                         'topic': conversation['topic'][i],
+                                         'situation': conversation['situation'],
+                                         'target_knowledge': conversation['knowledge_seq'][i],
+                                         'candidate_knowledges': conversation['pseudo_knowledge_seq'][i],
+                                         'candidate_confidences': conversation['pseudo_confidence_seq'][i]  # prob
+                                         })
             augmented_dialog.append(utterance)
     return train_sample
 
