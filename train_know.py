@@ -252,15 +252,16 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     #     pseudo_mask[:, :idx + 1] = -1e10
                     #     pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
 
-
                     logit_pos, logit_neg = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_indice, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
 
                     #     loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
-                    isFood = batch['isFood'].view(logit_pos.size(0), -1).repeat(1, logit_neg.size(1)+1).long()
-                    isFood[:, 0] = 0
-                    isFood = isFood * -1e10
+                    isFood = batch['isFood'].view(logit_pos.size(0), -1).repeat(1, args.pseudo_pos_rank).long()
+                    isFood = torch.ones_like(isFood) - isFood
+                    isFood[:, 0] = 1
+                    batch_denominator = torch.cumsum(isFood, dim=-1)  # [B]
+                    # isFood = isFood * -1e10
 
-                    cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]  # Grouping
+                    cumsum_logit = torch.cumsum(logit_pos * isFood, dim=1)  # [B, K]  # Grouping
                     # num_samples = torch.cumsum(sampling_results, dim=-1)
                     # cumsum_logit = logit_pos  # torch.cumsum(logit_pos, dim=1)  # [B, K]  # For Sampling
 
@@ -269,7 +270,9 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     for idx in range(args.pseudo_pos_rank):
                         # confidence = torch.softmax(pseudo_confidences[:, :idx + 1], dim=-1)
                         # g_logit = torch.sum(logit_pos[:, :idx + 1] * confidence, dim=-1)
-                        g_logit = cumsum_logit[:, idx] / (idx + 1)
+                        # g_logit = cumsum_logit[:, idx] / (idx + 1)
+                        g_logit = cumsum_logit[:, idx] / batch_denominator[:, idx]
+
                         # g_logit = cumsum_logit[:, idx] / num_samples[:, idx]
                         # g_logit = cumsum_logit[:, idx]  # For Sampling
                         g_logit = torch.cat([g_logit.unsqueeze(1), logit_neg], dim=1)

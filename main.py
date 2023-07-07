@@ -266,8 +266,8 @@ def main():
         # KNOWLEDGE TASk
         retriever = Retriever(args, bert_model)
 
-        if args.saved_model_path != '':
-            retriever.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_model_path}.pt"), map_location=args.device))
+        # if args.saved_model_path != '':
+        #     retriever.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_model_path}.pt"), map_location=args.device))
 
         retriever = retriever.to(args.device)
         train_knowledge_data = KnowledgeDataset(args, train_knowledgeDB, tokenizer)  # knowledge dataset class
