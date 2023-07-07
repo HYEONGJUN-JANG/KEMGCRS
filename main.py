@@ -288,32 +288,44 @@ def main():
         #     goal_list.append('Chat about stars')
 
 
-        train_dataset_raw, valid_dataset_raw = split_validation(train_dataset_raw, args.train_ratio)
+        # train_dataset_raw, valid_dataset_raw = split_validation(train_dataset_raw, args.train_ratio)
         train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB, goal_list=goal_list)
         valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB, goal_list=goal_list)
         test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB, goal_list=goal_list)  # gold-topic
         # test_dataset_temp = read_pkl("augmented_raw_sample_topic.txt")
+        train_dataset_pred_aug = read_pkl(os.path.join(args.data_dir, 'pred_aug', f'gt_train_pred_aug_dataset.pkl'))
+        train_dataset_pred_aug = [data for data in train_dataset_pred_aug if data['target_knowledge'] != '' and data['goal'] in goal_list]
+        for idx, data in enumerate(train_dataset):
+            data['predicted_goal'] = train_dataset_pred_aug[idx]['predicted_goal']
+            data['predicted_topic'] = train_dataset_pred_aug[idx]['predicted_topic']
+
         test_dataset_pred_aug = read_pkl(os.path.join(args.data_dir, 'pred_aug', f'gt_test_pred_aug_dataset.pkl'))
         test_dataset_pred_aug = [data for data in test_dataset_pred_aug if data['target_knowledge'] != '' and data['goal'] in goal_list]
+
         for idx, data in enumerate(test_dataset):
             data['predicted_goal'] = test_dataset_pred_aug[idx]['predicted_goal']
             data['predicted_topic'] = test_dataset_pred_aug[idx]['predicted_topic']
 
         # cnt = 0
+        # cntdic2={}
+        #
         # for aug_data in test_dataset:
         #     aug_data['dialog'] = aug_data['dialog'].replace('</s>', '[SEP]')
         #     target_know = aug_data['target_knowledge']
         #     pseudo_know = aug_data['candidate_knowledges'][0]
-        #     # g_topic = aug_data['topic']
-        #     # p_topic = aug_data['predicted_topic'][0]
-        #     if target_know == pseudo_know and aug_data['goal'] == 'Food recommendation':
-        #         cnt+=1
+        #     g_topic = aug_data['topic']
+        #     p_topic = aug_data['predicted_topic'][0]
+        #     if g_topic == p_topic: # and aug_data['goal'] == 'Food recommendation':
+        #         if aug_data['goal'] not in cntdic2:
+        #             cntdic2[aug_data['goal']] = 1
+        #         else:
+        #             cntdic2[aug_data['goal']] += 1
         # print('')
         # cntdic={}
         # for data in test_dataset:
         #     if data['goal'] not in cntdic: cntdic[data['goal']] = 1
         #     else: cntdic[data['goal']]+=1
-        # pass
+        # print('')
 
         # goal_len_list = []
         # rec_len_list = []
