@@ -87,6 +87,10 @@ def softmax(x):
 
 
 def convert_know(know):
+    know[0] = know[0].replace('℃', ' degrees Celsius')
+    know[1] = know[1].replace('℃', ' degrees Celsius')
+    know[2] = know[2].replace('℃', ' degrees Celsius')
+
     if len(know) == 0:
         return ''
     if know[1] == 'Sings':

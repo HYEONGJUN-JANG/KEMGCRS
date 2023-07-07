@@ -1,5 +1,6 @@
 import random
 from collections import defaultdict
+from copy import deepcopy
 
 import torch
 from responses import target
@@ -256,11 +257,13 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         context_batch = defaultdict()
 
+        predicted_topic_list = deepcopy(data['predicted_topic'][:self.args.topk_topic])
         if self.mode == 'train':
             # predicted_goal, predicted_topic = goal, topic
-            predicted_goal, predicted_topic = data['predicted_goal'][0], '|'.join(random.shuffle(data['predicted_topic'][:self.args.topk_topic]))
+            random.shuffle(predicted_topic_list)
+            predicted_goal, predicted_topic = data['predicted_goal'][0], '|'.join(predicted_topic_list)
         else:
-            predicted_goal, predicted_topic = data['predicted_goal'][0], '|'.join(data['predicted_topic'][:self.args.topk_topic])
+            predicted_goal, predicted_topic = data['predicted_goal'][0], '|'.join(predicted_topic_list)
 
         if self.args.input_prompt == 'dialog':
             prefix = ''
