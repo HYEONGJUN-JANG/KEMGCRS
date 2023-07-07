@@ -23,15 +23,17 @@ from models import *
 from data_util import readDic, dataset_reader, process_augment_sample, bm_tokenizer, process_augment_sample_topic
 from rank_bm25 import BM25Okapi
 import nltk
+
 logger = logging.getLogger(__name__)
 
-
 nltk.download('stopwords')
+
 
 def initLogging(args):
     filename = os.path.join(args.log_dir, f'{args.time}_{args.log_name}_{args.model_name.replace("/", "_")}' + '_log.txt')
     global logger
-    if logger == None: logger = logging.getLogger()
+    if logger == None:
+        logger = logging.getLogger()
     else:  # wish there was a logger.close()
         for handler in logger.handlers[:]:  # make a copy of the list
             logger.removeHandler(handler)
@@ -51,6 +53,7 @@ def initLogging(args):
     logger.info(f"FILENAME: {filename}")
     logger.info('Commend: {}'.format(', '.join(map(str, sys.argv))))
     return logger
+
 
 # def train_knowledge_indexing(args, knowledge_data, retriever, optimizer):
 #     # 모든 know_index를 버트에 태움
@@ -279,14 +282,31 @@ def main():
             goal_list.append('Music recommendation')
         if 'QA' in args.goal_list:
             goal_list.append('Q&A')
+        if 'Food' in args.goal_list:
+            goal_list.append('Food recommendation')
+        if 'Chat' in args.goal_list:
+            goal_list.append('Chat about stars')
+
 
         train_dataset_raw, valid_dataset_raw = split_validation(train_dataset_raw, args.train_ratio)
         train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB, goal_list=goal_list)
         valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB)
-        # test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)  # gold-topic
-        test_dataset = read_pkl("augmented_raw_sample_topic.txt")
+        test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)  # gold-topic
+        # test_dataset = read_pkl("augmented_raw_sample_topic.txt")
+        test_dataset_pred_aug = read_pkl(os.path.join(args.data_dir, 'pred_aug', f'gt_test_pred_aug_dataset.pkl'))
+        test_dataset_pred_aug = [data for data in test_dataset_pred_aug if data['target_knowledge'] != '']
+        for idx, data in enumerate(test_dataset):
+            data['predicted_goal'] = test_dataset_pred_aug[idx]['predicted_goal']
+            data['predicted_topic'] = test_dataset_pred_aug[idx]['predicted_topic']
+
         for aug_data in test_dataset:
             aug_data['dialog'] = aug_data['dialog'].replace('</s>', '[SEP]')
+
+        # cntdic={}
+        # for data in test_dataset:
+        #     if data['goal'] not in cntdic: cntdic[data['goal']] = 1
+        #     else: cntdic[data['goal']]+=1
+        # pass
 
         goal_len_list = []
         rec_len_list = []
@@ -300,7 +320,6 @@ def main():
                 rec_len_list.append(len(response.split()))
         mean_len_goal = np.mean(goal_len_list)
         mean_len_rec = np.mean(rec_len_list)
-
 
         train_datamodel_know = DialogDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, mode='train', task='know')
         valid_datamodel_know = DialogDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, mode='test', task='know')

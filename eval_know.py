@@ -10,7 +10,9 @@ import numpy as np
 import pickle
 
 import logging
+
 logger = logging.getLogger('__main__')
+
 
 def knowledge_reindexing(args, knowledge_data, retriever, stage):
     # 모든 know_index를 버트에 태움
@@ -56,7 +58,7 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         knowledge_index_rerank = knowledge_reindexing(args, knowledge_data, retriever, stage='rerank')
         knowledge_index_rerank = knowledge_index_rerank.to(args.device)
 
-    goal_list = ['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A', 'Chat about stars']
+    goal_list = ['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A', 'Food recommendation', 'Chat about stars']
     hit1_goal, hit3_goal, hit5_goal, hit10_goal, hit20_goal = defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
     hit1, hit5, hit3, hit10, hit20 = [], [], [], [], []
     hit1_new, hit5_new, hit3_new, hit10_new, hit20_new = [], [], [], [], []
@@ -218,14 +220,16 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
     hit_movie_result = [np.average(hit1_goal["Movie recommendation"]), np.average(hit3_goal["Movie recommendation"]), np.average(hit5_goal["Movie recommendation"]), np.average(hit10_goal["Movie recommendation"]), np.average(hit20_goal["Movie recommendation"])]
     hit_music_result = [np.average(hit1_goal["Music recommendation"]), np.average(hit3_goal["Music recommendation"]), np.average(hit5_goal["Music recommendation"]), np.average(hit10_goal["Music recommendation"]), np.average(hit20_goal["Music recommendation"])]
     hit_qa_result = [np.average(hit1_goal["Q&A"]), np.average(hit3_goal["Q&A"]), np.average(hit5_goal["Q&A"]), np.average(hit10_goal["Q&A"]), np.average(hit20_goal["Q&A"])]
-    # hit_chat_result = [np.average(hit1_goal["Chat about stars"]), np.average(hit5_goal["Chat about stars"]), np.average(hit10_goal["Chat about stars"]), np.average(hit20_goal["Chat about stars"])]
+    hit_chat_result = [np.average(hit1_goal["Chat about stars"]), np.average(hit5_goal["Chat about stars"]), np.average(hit10_goal["Chat about stars"]), np.average(hit20_goal["Chat about stars"])]
     hit_poi_result = [np.average(hit1_goal["POI recommendation"]), np.average(hit3_goal["POI recommendation"]), np.average(hit5_goal["POI recommendation"]), np.average(hit10_goal["POI recommendation"]), np.average(hit20_goal["POI recommendation"])]
+    hit_food_result = [np.average(hit1_goal["Food recommendation"]), np.average(hit5_goal["Food recommendation"]), np.average(hit10_goal["Food recommendation"]), np.average(hit20_goal["Food recommendation"])]
 
     hit_movie_result = ["%.4f" % hit for hit in hit_movie_result]
     hit_music_result = ["%.4f" % hit for hit in hit_music_result]
     hit_qa_result = ["%.4f" % hit for hit in hit_qa_result]
-    # hit_chat_result = ["%.4f" % hit for hit in hit_chat_result]
     hit_poi_result = ["%.4f" % hit for hit in hit_poi_result]
+    hit_food_result = ["%.4f" % hit for hit in hit_food_result]
+    hit_chat_result = ["%.4f" % hit for hit in hit_chat_result]
 
     if retrieve:
         with open(f'augmented_dataset_{data_type}.txt', 'wb') as f:
@@ -254,8 +258,9 @@ def eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tok
         logger.info("Movie recommendation\t" + "\t".join(hit_movie_result))
         logger.info("Music recommendation\t" + "\t".join(hit_music_result))
         logger.info("Q&A\t" + "\t".join(hit_qa_result))
-        # logger.info("Chat about stars\t" + "\t".join(hit_chat_result))
         logger.info("POI recommendation\t" + "\t".join(hit_poi_result))
+        logger.info("Food recommendation\t" + "\t".join(hit_food_result))
+        logger.info("Chat about stars\t" + "\t".join(hit_chat_result))
 
     logger.info("new knowledge %d" % new_cnt)
-    return [hit1, hit3, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result, hit1_new, hit3_new, hit5_new, hit10_new, hit20_new]
+    return [hit1, hit3, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result, hit_food_result, hit_chat_result, hit1_new, hit3_new, hit5_new, hit10_new, hit20_new]

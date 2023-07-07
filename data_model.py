@@ -259,7 +259,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         if self.mode == 'train':
             predicted_goal, predicted_topic = goal, topic
         else:
-            predicted_goal, predicted_topic = data['predicted_goal'], data['predicted_topic']
+            predicted_goal, predicted_topic = data['predicted_goal'][0], '|'.join(data['predicted_topic'][:self.args.topk_topic])
 
         if self.args.input_prompt == 'dialog':
             prefix = ''

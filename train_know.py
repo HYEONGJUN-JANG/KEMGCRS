@@ -28,7 +28,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_dc_step, gamma=args.lr_dc)
 
-    # eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+    eval_know(args, test_dataloader, retriever, knowledge_data, knowledgeDB, tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
     best_hit = [[], [], [], [], []]
     best_hit_new = [[], [], [], [], []]
@@ -38,6 +38,7 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     best_hit_music = [[], [], [], [], []]
     best_hit_qa = [[], [], [], [], []]
     best_hit_chat = [[], [], [], [], []]
+    best_hit_food = [[], [], [], [], []]
 
     eval_metric = [-1]
     result_path = f"{args.time}_{args.model_name}_result"
@@ -240,33 +241,33 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                 if args.stage == 'rerank':
                     # loss = retriever.dpr_retrieve_train(dialog_token, dialog_mask, candidate_knowledge_token, candidate_knowledge_mask)
 
-                    logit_pos, logit_neg = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_indice, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
-                    logit = torch.cat([logit_pos, logit_neg], dim=-1)
-                    cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]
-                    loss = 0
-                    for idx in range(args.pseudo_pos_rank):
-                        g_logit = cumsum_logit[:, idx] / (idx + 1)
-                        g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
-                        pseudo_mask = torch.zeros_like(logit)
-                        pseudo_mask[:, :idx + 1] = -1e10
-                        pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
-                        loss += (-torch.log_softmax(g_logit+pseudo_mask, dim=1).select(dim=1, index=0)).mean()
-
                     # logit_pos, logit_neg = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_indice, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
-                    # cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]  # Grouping
-                    # # num_samples = torch.cumsum(sampling_results, dim=-1)
-                    # # cumsum_logit = logit_pos  # torch.cumsum(logit_pos, dim=1)  # [B, K]  # For Sampling
-                    #
+                    # logit = torch.cat([logit_pos, logit_neg], dim=-1)
+                    # cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]
                     # loss = 0
-                    # pseudo_confidences = batch['pseudo_confidences']
                     # for idx in range(args.pseudo_pos_rank):
-                    #     # confidence = torch.softmax(pseudo_confidences[:, :idx + 1], dim=-1)
-                    #     # g_logit = torch.sum(logit_pos[:, :idx + 1] * confidence, dim=-1)
                     #     g_logit = cumsum_logit[:, idx] / (idx + 1)
-                    #     # g_logit = cumsum_logit[:, idx] / num_samples[:, idx]
-                    #     # g_logit = cumsum_logit[:, idx]  # For Sampling
-                    #     g_logit = torch.cat([g_logit.unsqueeze(1), logit_neg], dim=1)
-                    #     loss += (-torch.log_softmax(g_logit, dim=1).select(dim=1, index=0)).mean()
+                    #     g_logit = torch.cat([g_logit.unsqueeze(1), logit], dim=1)
+                    #     pseudo_mask = torch.zeros_like(logit)
+                    #     pseudo_mask[:, :idx + 1] = -1e10
+                    #     pseudo_mask = torch.cat([torch.zeros(pseudo_mask.size(0)).unsqueeze(1).to(args.device), pseudo_mask], dim=1)
+                    #     loss += (-torch.log_softmax(g_logit + pseudo_mask, dim=1).select(dim=1, index=0)).mean()
+
+                    logit_pos, logit_neg = retriever.knowledge_retrieve(dialog_token, dialog_mask, candidate_indice, candidate_knowledge_token, candidate_knowledge_mask)  # [B, 2]
+                    cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]  # Grouping
+                    # num_samples = torch.cumsum(sampling_results, dim=-1)
+                    # cumsum_logit = logit_pos  # torch.cumsum(logit_pos, dim=1)  # [B, K]  # For Sampling
+
+                    loss = 0
+                    pseudo_confidences = batch['pseudo_confidences']
+                    for idx in range(args.pseudo_pos_rank):
+                        # confidence = torch.softmax(pseudo_confidences[:, :idx + 1], dim=-1)
+                        # g_logit = torch.sum(logit_pos[:, :idx + 1] * confidence, dim=-1)
+                        g_logit = cumsum_logit[:, idx] / (idx + 1)
+                        # g_logit = cumsum_logit[:, idx] / num_samples[:, idx]
+                        # g_logit = cumsum_logit[:, idx]  # For Sampling
+                        g_logit = torch.cat([g_logit.unsqueeze(1), logit_neg], dim=1)
+                        loss += (-torch.log_softmax(g_logit, dim=1).select(dim=1, index=0)).mean()
 
                 ### Group-wise + Seq (original)
                 # loss = torch.mean(criterion(logit, batch['pseudo_targets'][:, 0]))
@@ -417,8 +418,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
 
         print(f"Epoch: {epoch}\nTrain Loss: {train_epoch_loss}")
 
-        hit1, hit3, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result, hit1_new, hit3_new, hit5_new, hit10_new, hit20_new = eval_know(args, test_dataloader, retriever, all_knowledge_data, all_knowledgeDB,
-                                                                                                                                                                          tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
+        hit1, hit3, hit5, hit10, hit20, hit_movie_result, hit_music_result, hit_qa_result, hit_poi_result, hit_food_result, hit_chat_result, hit1_new, hit3_new, hit5_new, hit10_new, hit20_new = eval_know(args, test_dataloader, retriever, all_knowledge_data, all_knowledgeDB,
+                                                                                                                                                                                                          tokenizer)  # HJ: Knowledge text top-k 뽑아서 output만들어 체크하던 코드 분리
 
         with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
             f.write("EPOCH:\t%d\n" % epoch)
@@ -430,6 +431,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             f.write("Q&A\t" + "\t".join(hit_qa_result) + "\n")
             # f.write("Chat about stars\t" + "\t".join(hit_chat_result) + "\n")
             f.write("POI recommendation\t" + "\t".join(hit_poi_result) + "\n\n")
+            f.write("Food recommendation\t" + "\t".join(hit_food_result) + "\n\n")
+            f.write("Chat about stars\t" + "\t".join(hit_chat_result) + "\n\n")
 
         if hit1 > eval_metric[0]:
             eval_metric[0] = hit1
@@ -447,6 +450,8 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
             best_hit_poi = hit_poi_result
             best_hit_music = hit_music_result
             best_hit_qa = hit_qa_result
+            best_hit_chat = hit_chat_result
+            best_hit_food = hit_food_result
 
             if args.stage == 'retrieve':
                 torch.save(retriever.state_dict(), os.path.join(args.model_dir, f"{args.model_name}_retriever.pt"))  # TIME_MODELNAME 형식
@@ -464,10 +469,11 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
     with open(os.path.join('results', result_path), 'a', encoding='utf-8') as f:
         f.write("[BEST]\n")
         f.write("Overall\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\n" % (best_hit[0], best_hit[1], best_hit[2], best_hit[3], best_hit[4]))
-        f.write("Overall\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\n" % (best_hit_new[0], best_hit_new[1], best_hit_new[2], best_hit_new[3], best_hit_new[4]))
+        f.write("New\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\n" % (best_hit_new[0], best_hit_new[1], best_hit_new[2], best_hit_new[3], best_hit_new[4]))
 
         f.write("Movie recommendation\t" + "\t".join(best_hit_movie) + "\n")
         f.write("Music recommendation\t" + "\t".join(best_hit_music) + "\n")
         f.write("QA\t" + "\t".join(best_hit_qa) + "\n")
-        # f.write("Chat about stars\t" + "\t".join(best_hit_chat) + "\n")
         f.write("POI recommendation\t" + "\t".join(best_hit_poi) + "\n")
+        f.write("Food recommendation\t" + "\t".join(best_hit_food) + "\n")
+        f.write("Chat about stars\t" + "\t".join(best_hit_chat) + "\n")
