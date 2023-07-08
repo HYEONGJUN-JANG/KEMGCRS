@@ -225,7 +225,7 @@ def dataset_reader(args, data_name='train'):
 
             for i in range(len(conversation)):  # HJ: [1],[2] 같은 text 제거, conversation 추가해넣는코드
                 conversation[i] = conversation[i] if conversation[i][0] != '[' else conversation[i][4:]
-                conversation[i] = role_seq[i] + ": " + conversation[i]
+                conversation[i] = role_seq[i] + ": " + conversation[i].replace('℃', ' degrees Celsius')
             conversation_sample.append({
                 'dialog': conversation,
                 'role_seq': role_seq,
