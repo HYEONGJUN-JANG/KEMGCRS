@@ -17,7 +17,7 @@ from data_model import GenerationDataset, DialogDataset, KnowledgeDataset, Knowl
 from eval_know import eval_know, knowledge_reindexing
 from train_goal_topic import train_goal_topic, write_goal_topic_result
 from train_know import train_know
-from train_topic import train_topic, pretrain_topic, train_goal
+from train_topic import train_topic, pretrain_topic, train_goal, eval_topic
 from utils import *
 from models import *
 from data_util import readDic, dataset_reader, process_augment_sample, bm_tokenizer, process_augment_sample_topic
@@ -125,6 +125,7 @@ def main():
     args.goalDic = goalDic
     args.topic_num = len(topicDic['int'])
     args.goal_num = len(goalDic['int'])
+    args.taskDic = {'goal':goalDic, 'topic':topicDic}
 
     # modules = [bert_model.encoder.layer[:bert_config.num_hidden_layers - 2], bert_model.embeddings]
     # for module in modules:
@@ -161,6 +162,51 @@ def main():
 
     args.all_knowledge_num = len(all_knowledgeDB)
     args.all_knowledgeDB = all_knowledgeDB
+
+    # if True:
+    #     from hj_train_gt import pred_goal_topic_aug
+    #     train_dataset, valid_dataset, test_dataset = None, None, None
+    #     args.max_length=256
+    #     # train_dataset = process_augment_all_sample(train_dataset_raw, tokenizer, train_knowledgeDB)
+    #     # test_dataset = process_augment_all_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
+    #
+    #     goal_list = ['Q&A', 'Movie recommendation', 'Music recommendation', 'POI recommendation', 'Food recommendation']
+    #
+    #     train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB, goal_list)
+    #     test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB, goal_list)
+    #
+    #     train_dataset_pred_aug = read_pkl(os.path.join(args.data_dir, 'pred_aug', f'gt_train_pred_aug_dataset.pkl'))
+    #     train_dataset_pred_aug = [data for data in train_dataset_pred_aug if data['target_knowledge'] != '' and data['goal'] in goal_list]
+    #     for idx, data in enumerate(train_dataset):
+    #         data['predicted_goal2'] = train_dataset_pred_aug[idx]['predicted_goal']
+    #         data['predicted_topic2'] = train_dataset_pred_aug[idx]['predicted_topic']
+    #
+    #     test_dataset_pred_aug = read_pkl(os.path.join(args.data_dir, 'pred_aug', f'gt_test_pred_aug_dataset.pkl'))
+    #     test_dataset_pred_aug = [data for data in test_dataset_pred_aug if data['target_knowledge'] != '' and data['goal'] in goal_list]
+    #
+    #     for idx, data in enumerate(test_dataset):
+    #         data['predicted_goal2'] = test_dataset_pred_aug[idx]['predicted_goal']
+    #         data['predicted_topic2'] = test_dataset_pred_aug[idx]['predicted_topic']
+    #
+    #     retriever = Retriever(args, bert_model)
+    #     retriever.load_state_dict(torch.load(os.path.join('models', f"goal_best_model.pt"), map_location=args.device))
+    #     retriever.to(args.device)
+    #     train_datamodel_topic = TopicDataset(args, train_dataset, train_knowledgeDB, tokenizer, mode='train', subtask=args.subtask)
+    #     # valid_datamodel_topic = TopicDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+    #     test_datamodel_topic = TopicDataset(args, test_dataset, all_knowledgeDB, tokenizer, mode='test', subtask=args.subtask)
+    #     # train_dataloader_topic = DataLoader(train_datamodel_topic, batch_size=args.batch_size, shuffle=True)
+    #     # valid_dataloader_topic = DataLoader(valid_datamodel_topic, batch_size=args.batch_size, shuffle=False)
+    #     # test_dataloader_topic = DataLoader(test_datamodel_topic, batch_size=args.batch_size, shuffle=False)
+    #
+    #     # if args.debug: args.num_epochs = 1
+    #     pred_goal_topic_aug(args, retriever, tokenizer, train_datamodel_topic, task='goal')
+    #     pred_goal_topic_aug(args, retriever, tokenizer, test_datamodel_topic, task='goal')
+    #     retriever.load_state_dict(torch.load(os.path.join('models', f"topic_best_model_GP.pt"), map_location=args.device))
+    #     retriever.to(args.device)
+    #     pred_goal_topic_aug(args, retriever, tokenizer, train_datamodel_topic, task='topic')
+    #     pred_goal_topic_aug(args, retriever, tokenizer, test_datamodel_topic, task='topic')
+    #     return
+
 
     if 'goal' in args.task:
         # KNOWLEDGE TASk
@@ -242,22 +288,40 @@ def main():
     if 'topic' in args.task:
         # KNOWLEDGE TASk
         retriever = Retriever(args, bert_model)
+        args.saved_model_path = 'topic_best_model_GP'
+        args.max_length = 256
+        retriever.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_model_path}.pt"), map_location=args.device))
         retriever = retriever.to(args.device)
 
-        # pretrain_topic(args, retriever, train_knowledge_topic, test_knowledge_topic, tokenizer)
+        goal_list = ['Q&A', 'Movie recommendation', 'Music recommendation', 'POI recommendation']  # , 'Food recommendation']
 
-        train_dataset = process_augment_sample_topic(train_dataset_raw, tokenizer, train_knowledgeDB)
-        valid_dataset = process_augment_sample_topic(valid_dataset_raw, tokenizer, all_knowledgeDB)
-        test_dataset = process_augment_sample_topic(test_dataset_raw, tokenizer, all_knowledgeDB)
+        train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB, goal_list=goal_list)
+        valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB, goal_list=goal_list)
+        test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB, goal_list=goal_list)  # gold-topic
 
-        train_datamodel_topic = TopicDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
-        valid_datamodel_topic = TopicDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
-        test_datamodel_topic = TopicDataset(args, test_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
+        # test_dataset_temp = read_pkl("augmented_raw_sample_topic.txt")
+        train_dataset_pred_aug = read_pkl(os.path.join(args.data_dir, 'pred_aug', f'gt_train_pred_aug_dataset.pkl'))
+        train_dataset_pred_aug = [data for data in train_dataset_pred_aug if data['target_knowledge'] != '' and data['goal'] in goal_list]
+        for idx, data in enumerate(train_dataset):
+            data['predicted_goal'] = train_dataset_pred_aug[idx]['predicted_goal']
+            data['predicted_topic'] = train_dataset_pred_aug[idx]['predicted_topic']
+
+        test_dataset_pred_aug = read_pkl(os.path.join(args.data_dir, 'pred_aug', f'gt_test_pred_aug_dataset.pkl'))
+        test_dataset_pred_aug = [data for data in test_dataset_pred_aug if data['target_knowledge'] != '' and data['goal'] in goal_list]
+
+        for idx, data in enumerate(test_dataset):
+            data['predicted_goal'] = test_dataset_pred_aug[idx]['predicted_goal']
+            data['predicted_topic'] = test_dataset_pred_aug[idx]['predicted_topic']
+
+        train_datamodel_topic = TopicDataset(args, train_dataset, train_knowledgeDB, tokenizer)
+        valid_datamodel_topic = TopicDataset(args, valid_dataset, all_knowledgeDB, tokenizer)
+        test_datamodel_topic = TopicDataset(args, test_dataset, all_knowledgeDB, tokenizer)
 
         train_dataloader_topic = DataLoader(train_datamodel_topic, batch_size=args.batch_size, shuffle=True)
         valid_dataloader_topic = DataLoader(valid_datamodel_topic, batch_size=args.batch_size, shuffle=False)
         test_dataloader_topic = DataLoader(test_datamodel_topic, batch_size=args.batch_size, shuffle=False)
 
+        eval_topic(args, retriever, test_dataloader_topic, tokenizer)
         train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer)
 
     if 'know' in args.task:
@@ -308,41 +372,41 @@ def main():
             data['predicted_goal'] = test_dataset_pred_aug[idx]['predicted_goal']
             data['predicted_topic'] = test_dataset_pred_aug[idx]['predicted_topic']
 
-        # cnt = 0
-        # cntdic2 = {}
-        #
-        # for aug_data in test_dataset:
-        #     aug_data['dialog'] = aug_data['dialog'].replace('</s>', '[SEP]')
-        #     target_know = aug_data['target_knowledge']
-        #     pseudo_know = aug_data['candidate_knowledges'][0]
-        #     g_topic = aug_data['topic']
-        #     p_topic = aug_data['predicted_topic'][0]
-        #     if target_know == pseudo_know:  # and aug_data['goal'] == 'Food recommendation':
-        #         if aug_data['goal'] not in cntdic2:
-        #             cntdic2[aug_data['goal']] = 1
-        #         else:
-        #             cntdic2[aug_data['goal']] += 1
-        # print('')
-        # cntdic = {}
-        # for data in test_dataset:
-        #     if data['goal'] not in cntdic:
-        #         cntdic[data['goal']] = 1
-        #     else:
-        #         cntdic[data['goal']] += 1
-        # print('')
-        #
-        # goal_len_list = []
-        # rec_len_list = []
-        # for data in train_dataset:
-        #     dialog = data['dialog']
-        #     goal = data['goal']
-        #     response = data['response']
-        #     if goal == 'Q&A':
-        #         goal_len_list.append(len(response.split()))
-        #     if 'recommendation' in goal:
-        #         rec_len_list.append(len(response.split()))
-        # mean_len_goal = np.mean(goal_len_list)
-        # mean_len_rec = np.mean(rec_len_list)
+        cnt = 0
+        cntdic2 = {}
+
+        for aug_data in test_dataset:
+            aug_data['dialog'] = aug_data['dialog'].replace('</s>', '[SEP]')
+            target_know = aug_data['target_knowledge']
+            pseudo_know = aug_data['candidate_knowledges'][0]
+            g_topic = aug_data['topic']
+            p_topic = aug_data['predicted_topic'][0]
+            if target_know == pseudo_know:  # and aug_data['goal'] == 'Food recommendation':
+                if aug_data['goal'] not in cntdic2:
+                    cntdic2[aug_data['goal']] = 1
+                else:
+                    cntdic2[aug_data['goal']] += 1
+        print('')
+        cntdic = {}
+        for data in test_dataset:
+            if data['goal'] not in cntdic:
+                cntdic[data['goal']] = 1
+            else:
+                cntdic[data['goal']] += 1
+        print('')
+
+        goal_len_list = []
+        rec_len_list = []
+        for data in train_dataset:
+            dialog = data['dialog']
+            goal = data['goal']
+            response = data['response']
+            if goal == 'Q&A':
+                goal_len_list.append(len(response.split()))
+            if 'recommendation' in goal:
+                rec_len_list.append(len(response.split()))
+        mean_len_goal = np.mean(goal_len_list)
+        mean_len_rec = np.mean(rec_len_list)
 
         train_datamodel_know = DialogDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, mode='train', task='know')
         valid_datamodel_know = DialogDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, mode='test', task='know')

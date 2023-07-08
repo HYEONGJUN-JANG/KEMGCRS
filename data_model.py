@@ -1,5 +1,5 @@
 import random
-from collections import defaultdict
+from collections import defaultdict, deque
 from copy import deepcopy
 
 import torch
@@ -453,49 +453,92 @@ class KnowledgeTopicDataset(Dataset):
         return len(self.knowledgeTopicDB)
 
 
-class TopicDataset(Dataset):  # knowledge용 데이터셋
-    def __init__(self, args, data_sample, knowledgeDB, train_knowledgeDB, tokenizer, task, mode='train'):
+class TopicDataset(Dataset):
+    """
+    goal, topic, 용 dataset
+    """
+
+    def __init__(self, args, data_sample, knowledgeDB, tokenizer, mode='train', subtask='topic'):
         super(Dataset, self).__init__()
         self.args = args
-        self.task = task
         self.tokenizer = tokenizer
         self.knowledgeDB = knowledgeDB
-        self.train_knowledgeDB = train_knowledgeDB
         self.augmented_raw_sample = data_sample
         self.mode = mode
+        self.subtask = subtask
+        self.generate_prompt_ids = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize('System:'))
+        self.idxList = deque(maxlen=len(self.augmented_raw_sample))
+        self.TopicTask_Train_Prompt_usePredGoal = True  # args.TopicTask_Train_Prompt_usePredGoal
+        self.TopicTask_Test_Prompt_usePredGoal = True  # args.TopicTask_Test_Prompt_usePredGoal
+        # TopicTask_Train_Prompt_usePredGoal TopicTask_Test_Prompt_usePredGoal
 
     def __getitem__(self, idx):  # TODO 구현 전
         data = self.augmented_raw_sample[idx]
+        self.idxList.append(idx)
         cbdicKeys = ['dialog', 'user_profile', 'response', 'goal', 'topic', 'situation', 'target_knowledge', 'candidate_knowledges', 'candidate_confidences']
         dialog, user_profile, response, goal, topic, situation, target_knowledge_idx, candidate_knowledges, candidate_confidences = [data[i] for i in cbdicKeys]
-        pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
+        pad_token_id = self.tokenizer.pad_token_id
 
         context_batch = defaultdict()
-        prefix = '<profile>' + user_profile  # + '<goal>' + goal + self.tokenizer.sep_token
+        context_batch['goal_type'] = self.tokenizer(goal, max_length=self.args.max_gen_length, truncation=True, padding='max_length').input_ids
+        resp_batch = []
+        context_len_batch = []
 
-        prefix_encoding = self.tokenizer.encode(prefix)[1:-1][:self.args.max_prefix_length]
-        input_sentence = self.tokenizer('<dialog>' + dialog, add_special_tokens=False).input_ids
+        ## Prompt 관련
+        prefix = ''
+        if self.subtask == 'topic':
+            if self.mode == 'train':  # Golden label
+                if self.TopicTask_Train_Prompt_usePredGoal:
+                    predicted_goal = data['predicted_goal'][0]
+                else:
+                    predicted_goal = goal
+            elif self.mode == 'test':  # Golden label
+                if self.TopicTask_Test_Prompt_usePredGoal:
+                    predicted_goal = data['predicted_goal'][0]
+                else:
+                    predicted_goal = goal
+            else:  # pretrain. 이 땐, predicted_goal을 아얘 안넣어주고, dialog만 보고 topic을 맞추도록 하는 training을 진행할것
+                predicted_goal = ""
 
-        input_sentence = [self.tokenizer.cls_token_id] + prefix_encoding + input_sentence[-(self.args.max_length - len(prefix_encoding) - 1):]
-        input_sentence = input_sentence + [pad_token_id] * (self.args.max_length - len(input_sentence))
+            prefix = self.tokenizer.encode('<goal>%s. <profile>%s.' % (predicted_goal, user_profile))[:int(self.args.max_length * 2 / 3)]
+            prompt = self.tokenizer.encode('. predict the next topic: ')
+        elif self.subtask == 'goal':
+            prefix = self.tokenizer.encode('<profile>%s.' % user_profile)[:int(self.args.max_length * 2 / 3)]
+            prompt = self.tokenizer.encode('predict the next goal: ')
+        else:
+            prefix, prompt = [], []
 
-        context_batch['input_ids'] = torch.LongTensor(input_sentence).to(self.args.device)
-        attention_mask = context_batch['input_ids'].ne(pad_token_id)
-        context_batch['attention_mask'] = attention_mask
-        context_batch['response'] = self.tokenizer(response,
-                                                   add_special_tokens=True,
-                                                   max_length=self.args.max_length,
-                                                   padding='max_length',
-                                                   truncation=True).input_ids
+        ## Dialog input 관련
+        # dialog = self.tokenizer('<dialog>' + dialog, max_length=self.args.max_length - len(prompt), truncation=True).input_ids
+        dialog = self.tokenizer('<dialog>' + dialog).input_ids[-(self.args.max_length - len(prefix) - len(prompt)):]
+        dialog = prefix + dialog + prompt
+
+        if self.subtask == 'goal':
+            label = self.tokenizer(goal, max_length=self.args.max_gen_length, truncation=True, padding='max_length').input_ids
+        elif self.subtask == 'topic':
+            label = self.tokenizer(topic, max_length=self.args.max_gen_length, truncation=True, padding='max_length').input_ids
+
+        context_ids = dialog
+        context_ids = context_ids[-self.args.max_length:]
+        context_ids = context_ids + [pad_token_id] * (self.args.max_length - len(context_ids))
+        label = label + [pad_token_id] * (self.args.max_gen_length - len(label))
+        resp_batch = [token_id if token_id != self.tokenizer.pad_token_id else -100 for token_id in label]
+        # resp_batch = label
+        context_batch['input_ids'] = torch.LongTensor(context_ids)
+        context_batch['attention_mask'] = torch.ne(context_batch['input_ids'], pad_token_id)
+        context_batch['response'] = torch.LongTensor(resp_batch)
 
         context_batch['goal_idx'] = self.args.goalDic['str'][goal]  # index로 바꿈
         context_batch['topic_idx'] = self.args.topicDic['str'][topic]  # index로 바꿈
-        context_batch['topic'] = self.tokenizer(topic, truncation=True, padding='max_length', max_length=32).input_ids
+
+        if 'predicted_goal' in data:
+            context_batch['predicted_goal_idx'] = self.args.goalDic['str'][data['predicted_goal'][0]]
+        if 'predicted_topic' in data:
+            context_batch['predicted_topic_idx'] = self.args.topicDic['str'][data['predicted_topic'][0]]
 
         for k, v in context_batch.items():
             if not isinstance(v, torch.Tensor):
                 context_batch[k] = torch.as_tensor(v, device=self.args.device)
-                # context_batch[k] = torch.as_tensor(v)
         return context_batch
 
     def __len__(self):

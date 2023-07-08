@@ -153,7 +153,7 @@ def process_augment_sample_topic(raw_data, tokenizer, knowledgeDB):
     return train_sample
 
 
-def process_augment_sample(raw_data, tokenizer, knowledgeDB, goal_list=['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A', 'Food recommendation', 'Chat about stars']):
+def process_augment_sample(raw_data, tokenizer, knowledgeDB, goal_list=['Movie recommendation', 'POI recommendation', 'Music recommendation', 'Q&A', 'Food recommendation']):
     train_sample = []
     if tokenizer.eos_token is not None:
         eos_token = tokenizer.eos_token

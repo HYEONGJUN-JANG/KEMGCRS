@@ -66,15 +66,36 @@ def train_goal(args, retriever, train_dataloader_topic, test_dataloader_topic, t
         print("Goal-Test Hit@1: %.4f" % np.average(hit1))
 
 
+def eval_topic(args, retriever, test_dataloader_topic, tokenizer):
+    hit1 = []
+    for batch in tqdm(test_dataloader_topic, bar_format=' {l_bar} | {bar:23} {r_bar}'):
+        retriever.eval()
+        input_ids = batch['input_ids'].to(args.device)
+        attention_mask = batch['attention_mask'].to(args.device)
+        topic_idx = batch['topic_idx'].to(args.device)
+
+        # knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
+        knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
+        scores = retriever.topic_proj(knowledge_emb)
+
+        for idx, (score, target) in enumerate(zip(scores, topic_idx)):
+            top_candidate = torch.topk(score, k=1).indices
+            correct_k = target in top_candidate
+            hit1.append(correct_k)
+
+    hit1 = np.average(hit1)
+    print("Topic-Test Hit@1: %.4f" % np.average(hit1))
+
+
 def train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer):
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)
     for epoch in range(args.epoch_pt):
         total_loss = 0
         for batch in tqdm(train_dataloader_topic, bar_format=' {l_bar} | {bar:23} {r_bar}'):
             retriever.train()
-            input_ids = batch['input_ids']
-            attention_mask = batch['attention_mask']
-            topic_idx = batch['topic_idx']
+            input_ids = batch['input_ids'].to(args.device)
+            attention_mask = batch['attention_mask'].to(args.device)
+            topic_idx = batch['topic_idx'].to(args.device)
 
             # knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
             knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
@@ -86,25 +107,7 @@ def train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, 
             loss.backward()
             optimizer.step()
         print('LOSS_TOPIC:\t%.4f' % total_loss)
-
-        hit1 = []
-        for batch in tqdm(test_dataloader_topic, bar_format=' {l_bar} | {bar:23} {r_bar}'):
-            retriever.eval()
-            input_ids = batch['input_ids']
-            attention_mask = batch['attention_mask']
-            topic_idx = batch['topic_idx']
-
-            # knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
-            knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
-            scores = retriever.topic_proj(knowledge_emb)
-
-            for idx, (score, target) in enumerate(zip(scores, topic_idx)):
-                top_candidate = torch.topk(score, k=1).indices
-                correct_k = target in top_candidate
-                hit1.append(correct_k)
-
-        hit1 = np.average(hit1)
-        print("Topic-Test Hit@1: %.4f" % np.average(hit1))
+        eval_topic(args, retriever, test_dataloader_topic, tokenizer)
 
 
 def pretrain_topic(args, retriever, train_knowledge_topic, test_knowledge_topic, tokenizer):
