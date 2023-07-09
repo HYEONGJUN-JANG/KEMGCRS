@@ -321,7 +321,7 @@ def main():
         valid_dataloader_topic = DataLoader(valid_datamodel_topic, batch_size=args.batch_size, shuffle=False)
         test_dataloader_topic = DataLoader(test_datamodel_topic, batch_size=args.batch_size, shuffle=False)
 
-        eval_topic(args, retriever, test_dataloader_topic, tokenizer)
+        # eval_topic(args, retriever, test_dataloader_topic, tokenizer)
         train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer)
 
     if 'know' in args.task:
