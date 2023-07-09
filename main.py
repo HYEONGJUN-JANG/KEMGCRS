@@ -280,7 +280,7 @@ def main():
         test_dataloader_topic = DataLoader(test_datamodel_topic, batch_size=args.batch_size, shuffle=False)
 
         augmented_raw_sample_topic = eval_topic(args, retriever, test_dataloader_topic, tokenizer)
-        write_pkl(augmented_raw_sample_topic, "augmented_raw_sample_topic.txt")
+        write_pkl(augmented_raw_sample_topic, "data/pred_aug/gt_test_pred_aug_dataset.pkl")
 
         # augmented_raw_sample_topic = write_goal_topic_result(args, retriever, tokenizer, test_dataloader_resp, 'topic')
         # test_dataloader_resp.dataset.augmented_raw_sample = augmented_raw_sample_topic
