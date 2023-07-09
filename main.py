@@ -26,7 +26,7 @@ import nltk
 
 logger = logging.getLogger(__name__)
 
-nltk.download('stopwords')
+# nltk.download('stopwords')
 
 
 def initLogging(args):
@@ -290,7 +290,7 @@ def main():
         retriever = Retriever(args, bert_model)
         args.saved_model_path = 'topic_best_model_GP'
         args.max_length = 256
-        retriever.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_model_path}.pt"), map_location=args.device))
+        # retriever.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_model_path}.pt"), map_location=args.device))
         retriever = retriever.to(args.device)
 
         goal_list = ['Q&A', 'Movie recommendation', 'Music recommendation', 'POI recommendation']  # , 'Food recommendation']
