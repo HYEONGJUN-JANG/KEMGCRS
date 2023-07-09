@@ -230,7 +230,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
             predicted_goal, predicted_topic = data['predicted_goal'][0], '|'.join(predicted_topic_list)
         else:
             predicted_goal = data['predicted_goal'][0]
-            if data['predicted_topic_confidence'][0] > 0.5:
+            if data['predicted_topic_confidence'][0] > self.args.topic_conf:
                 predicted_topic = data['predicted_topic'][0]
             else:
                 predicted_topic = '|'.join(predicted_topic_list)

@@ -334,7 +334,7 @@ def main():
         #     data['predicted_goal'] = test_dataset_pred_aug[idx]['predicted_goal']
         #     data['predicted_topic'] = test_dataset_pred_aug[idx]['predicted_topic']
 
-        test_dataset = read_pkl(os.path.join(args.data_dir, 'pred_aug', "data/pred_aug/gt_test_pred_aug_dataset.txt"))
+        test_dataset = read_pkl(os.path.join(args.data_dir, 'pred_aug', "gt_test_pred_aug_dataset.txt"))
 
         # cnt = 0
         # cntdic2 = {}
