@@ -223,10 +223,10 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
 
         context_batch = defaultdict()
 
-        if self.mode != 'train':
+        if self.mode == 'train':
             predicted_topic_list = deepcopy(data['predicted_topic'][:self.args.topk_topic])
             # predicted_goal, predicted_topic = goal, topic
-            random.shuffle(predicted_topic_list)
+            # random.shuffle(predicted_topic_list)
             predicted_goal, predicted_topic = data['predicted_goal'][0], '|'.join(predicted_topic_list)
         else:
             predicted_goal, predicted_topic = data['predicted_goal'][0], data['predicted_topic'][0]
