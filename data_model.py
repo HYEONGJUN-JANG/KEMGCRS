@@ -222,14 +222,18 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
 
         context_batch = defaultdict()
+        predicted_topic_list = deepcopy(data['predicted_topic'][:self.args.topk_topic])
 
         if self.mode == 'train':
-            predicted_topic_list = deepcopy(data['predicted_topic'][:self.args.topk_topic])
             # predicted_goal, predicted_topic = goal, topic
-            # random.shuffle(predicted_topic_list)
+            random.shuffle(predicted_topic_list)
             predicted_goal, predicted_topic = data['predicted_goal'][0], '|'.join(predicted_topic_list)
         else:
-            predicted_goal, predicted_topic = data['predicted_goal'][0], data['predicted_topic'][0]
+            predicted_goal = data['predicted_goal'][0]
+            if data['predicted_topic_confidence'][0] > 0.5:
+                predicted_topic = data['predicted_topic'][0]
+            else:
+                predicted_topic = '|'.join(predicted_topic_list)
 
         if self.args.input_prompt == 'dialog':
             prefix = ''
@@ -434,8 +438,8 @@ class TopicDataset(Dataset):
         self.subtask = subtask
         self.generate_prompt_ids = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize('System:'))
         self.idxList = deque(maxlen=len(self.augmented_raw_sample))
-        self.TopicTask_Train_Prompt_usePredGoal = True #args.TopicTask_Train_Prompt_usePredGoal
-        self.TopicTask_Test_Prompt_usePredGoal = False # True # args.TopicTask_Test_Prompt_usePredGoal
+        self.TopicTask_Train_Prompt_usePredGoal = True  # args.TopicTask_Train_Prompt_usePredGoal
+        self.TopicTask_Test_Prompt_usePredGoal = False  # True # args.TopicTask_Test_Prompt_usePredGoal
         # TopicTask_Train_Prompt_usePredGoal TopicTask_Test_Prompt_usePredGoal
 
     def negative_sampler(self, target_knowledge, candidate_knowledges):

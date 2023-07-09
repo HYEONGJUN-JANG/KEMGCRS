@@ -1,4 +1,5 @@
 import sys
+from copy import deepcopy
 
 import torch
 from torch.utils.data import DataLoader
@@ -94,13 +95,14 @@ def eval_topic(args, retriever, test_dataloader_topic, tokenizer):
             #     if correct_k is True: FT += 1
             #     else: FF += 1
             test_dataloader_topic.dataset.augmented_raw_sample[current + idx][f"predicted_topic"] = [args.topicDic['int'][tp.item()] for tp in top_candidate]
-            test_dataloader_topic.dataset.augmented_raw_sample[current + idx][f"predicted_topic_confidence"] = [conf for conf in top_confidence]
+            test_dataloader_topic.dataset.augmented_raw_sample[current + idx][f"predicted_topic_confidence"] = [conf.item() for conf in top_confidence]
 
         current += input_ids.size(0)
 
     hit1 = np.average(hit1)
     print("Topic-Test Hit@1: %.4f" % np.average(hit1))
     # print('%d\t%d\t%d\t%d' % (TT,TF,FT,FF))
+    return deepcopy(test_dataloader_topic.dataset.augmented_raw_sample)
 
 def train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer):
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)

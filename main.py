@@ -251,8 +251,8 @@ def main():
         retriever.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_model_path}.pt"), map_location=args.device))
         retriever = retriever.to(args.device)
 
-        # goal_list = ['Q&A', 'Movie recommendation', 'Music recommendation', 'POI recommendation', 'Food recommendation']
-        goal_list = ['Q&A']
+        goal_list = ['Q&A', 'Movie recommendation', 'Music recommendation', 'POI recommendation', 'Food recommendation']
+        # goal_list = ['Q&A']
 
         train_dataset = process_augment_sample_all(train_dataset_raw, tokenizer, train_knowledgeDB)
         valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB, goal_list=goal_list)
@@ -320,19 +320,22 @@ def main():
         train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB, goal_list=goal_list)
         valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB, goal_list=goal_list)
         test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB, goal_list=goal_list)  # gold-topic
-        # test_dataset_temp = read_pkl("augmented_raw_sample_topic.txt")
+
         train_dataset_pred_aug = read_pkl(os.path.join(args.data_dir, 'pred_aug', f'gt_train_pred_aug_dataset.pkl'))
         train_dataset_pred_aug = [data for data in train_dataset_pred_aug if data['target_knowledge'] != '' and data['goal'] in goal_list]
         for idx, data in enumerate(train_dataset):
             data['predicted_goal'] = train_dataset_pred_aug[idx]['predicted_goal']
             data['predicted_topic'] = train_dataset_pred_aug[idx]['predicted_topic']
 
-        test_dataset_pred_aug = read_pkl(os.path.join(args.data_dir, 'pred_aug', f'gt_test_pred_aug_dataset.pkl'))
-        test_dataset_pred_aug = [data for data in test_dataset_pred_aug if data['target_knowledge'] != '' and data['goal'] in goal_list]
+        # test_dataset_pred_aug = read_pkl(os.path.join(args.data_dir, 'pred_aug', f'gt_test_pred_aug_dataset.pkl'))
+        # test_dataset_pred_aug = [data for data in test_dataset_pred_aug if data['target_knowledge'] != '' and data['goal'] in goal_list]
+        #
+        # for idx, data in enumerate(test_dataset):
+        #     data['predicted_goal'] = test_dataset_pred_aug[idx]['predicted_goal']
+        #     data['predicted_topic'] = test_dataset_pred_aug[idx]['predicted_topic']
 
-        for idx, data in enumerate(test_dataset):
-            data['predicted_goal'] = test_dataset_pred_aug[idx]['predicted_goal']
-            data['predicted_topic'] = test_dataset_pred_aug[idx]['predicted_topic']
+        test_dataset = read_pkl("augmented_raw_sample_topic.txt")
+
 
         cnt = 0
         cntdic2 = {}
