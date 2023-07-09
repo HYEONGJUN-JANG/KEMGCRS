@@ -14,8 +14,6 @@ from transformers import AutoModel, AutoTokenizer, BartForConditionalGeneration,
 import data
 from config import bert_special_tokens_dict, gpt_special_tokens_dict
 from data_model import GenerationDataset, DialogDataset, KnowledgeDataset, KnowledgeTopicDataset, TopicDataset
-from eval_know import eval_know, knowledge_reindexing
-from train_bert_goal_topic import pred_goal_topic_aug
 from train_goal_topic import train_goal_topic, write_goal_topic_result
 from train_know import train_know
 from train_topic import train_topic, pretrain_topic, train_goal, eval_topic
