@@ -68,6 +68,7 @@ def train_goal(args, retriever, train_dataloader_topic, test_dataloader_topic, t
 
 def eval_topic(args, retriever, test_dataloader_topic, tokenizer):
     hit1 = []
+    TT, TF, FT, FF = 0, 0, 0, 0
     for batch in tqdm(test_dataloader_topic, bar_format=' {l_bar} | {bar:23} {r_bar}'):
         retriever.eval()
         input_ids = batch['input_ids'].to(args.device)
@@ -81,10 +82,16 @@ def eval_topic(args, retriever, test_dataloader_topic, tokenizer):
             top_candidate = torch.topk(score, k=1).indices
             correct_k = target in top_candidate
             hit1.append(correct_k)
+            if torch.softmax(score, dim=-1).max() > 0.8:
+                if correct_k is True: TT += 1
+                else: TF += 1
+            else:
+                if correct_k is True: FT += 1
+                else: FF += 1
 
     hit1 = np.average(hit1)
     print("Topic-Test Hit@1: %.4f" % np.average(hit1))
-
+    print('%d\t%d\t%d\t%d' % (TT,TF,FT,FF))
 
 def train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer):
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)

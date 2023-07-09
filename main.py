@@ -245,11 +245,12 @@ def main():
         retriever = Retriever(args, bert_model)
         args.saved_model_path = 'topic_best_model_GP'
         args.max_length = 256
-        args.batch_size = 1
+        args.batch_size = 8
         retriever.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_model_path}.pt"), map_location=args.device))
         retriever = retriever.to(args.device)
 
-        goal_list = ['POI recommendation'] #, 'Movie recommendation', 'Music recommendation', 'POI recommendation', 'Food recommendation']
+        # goal_list = ['Q&A', 'Movie recommendation', 'Music recommendation', 'POI recommendation', 'Food recommendation']
+        goal_list = ['Movie recommendation']
 
         train_dataset = process_augment_sample_all(train_dataset_raw, tokenizer, train_knowledgeDB)
         valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB, goal_list=goal_list)
