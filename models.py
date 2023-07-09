@@ -33,8 +33,8 @@ class Retriever(nn.Module):
     # def init_know_proj(self, weights):
     #     self.know_proj.weight = nn.Parameter(weights, requires_grad=False)
 
-    def forward(self, token_seq, mask):
-        dialog_emb = self.query_bert(input_ids=token_seq, attention_mask=mask).last_hidden_state[:, 0, :]  # [B, d]
+    def forward(self, input_ids, attention_mask):
+        dialog_emb = self.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
         return dialog_emb
 
     def generation(self, token_seq, mask, labels):

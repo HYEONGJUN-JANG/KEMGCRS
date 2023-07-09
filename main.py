@@ -15,16 +15,18 @@ import data
 from config import bert_special_tokens_dict, gpt_special_tokens_dict
 from data_model import GenerationDataset, DialogDataset, KnowledgeDataset, KnowledgeTopicDataset, TopicDataset
 from eval_know import eval_know, knowledge_reindexing
+from train_bert_goal_topic import pred_goal_topic_aug
 from train_goal_topic import train_goal_topic, write_goal_topic_result
 from train_know import train_know
 from train_topic import train_topic, pretrain_topic, train_goal, eval_topic
 from utils import *
 from models import *
-from data_util import readDic, dataset_reader, process_augment_sample, bm_tokenizer, process_augment_sample_topic
+from data_util import readDic, dataset_reader, process_augment_sample, bm_tokenizer, process_augment_sample_all
 from rank_bm25 import BM25Okapi
 import nltk
 
 logger = logging.getLogger(__name__)
+
 
 # nltk.download('stopwords')
 
@@ -125,7 +127,7 @@ def main():
     args.goalDic = goalDic
     args.topic_num = len(topicDic['int'])
     args.goal_num = len(goalDic['int'])
-    args.taskDic = {'goal':goalDic, 'topic':topicDic}
+    args.taskDic = {'goal': goalDic, 'topic': topicDic}
 
     # modules = [bert_model.encoder.layer[:bert_config.num_hidden_layers - 2], bert_model.embeddings]
     # for module in modules:
@@ -163,51 +165,6 @@ def main():
     args.all_knowledge_num = len(all_knowledgeDB)
     args.all_knowledgeDB = all_knowledgeDB
 
-    # if True:
-    #     from hj_train_gt import pred_goal_topic_aug
-    #     train_dataset, valid_dataset, test_dataset = None, None, None
-    #     args.max_length=256
-    #     # train_dataset = process_augment_all_sample(train_dataset_raw, tokenizer, train_knowledgeDB)
-    #     # test_dataset = process_augment_all_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
-    #
-    #     goal_list = ['Q&A', 'Movie recommendation', 'Music recommendation', 'POI recommendation', 'Food recommendation']
-    #
-    #     train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB, goal_list)
-    #     test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB, goal_list)
-    #
-    #     train_dataset_pred_aug = read_pkl(os.path.join(args.data_dir, 'pred_aug', f'gt_train_pred_aug_dataset.pkl'))
-    #     train_dataset_pred_aug = [data for data in train_dataset_pred_aug if data['target_knowledge'] != '' and data['goal'] in goal_list]
-    #     for idx, data in enumerate(train_dataset):
-    #         data['predicted_goal2'] = train_dataset_pred_aug[idx]['predicted_goal']
-    #         data['predicted_topic2'] = train_dataset_pred_aug[idx]['predicted_topic']
-    #
-    #     test_dataset_pred_aug = read_pkl(os.path.join(args.data_dir, 'pred_aug', f'gt_test_pred_aug_dataset.pkl'))
-    #     test_dataset_pred_aug = [data for data in test_dataset_pred_aug if data['target_knowledge'] != '' and data['goal'] in goal_list]
-    #
-    #     for idx, data in enumerate(test_dataset):
-    #         data['predicted_goal2'] = test_dataset_pred_aug[idx]['predicted_goal']
-    #         data['predicted_topic2'] = test_dataset_pred_aug[idx]['predicted_topic']
-    #
-    #     retriever = Retriever(args, bert_model)
-    #     retriever.load_state_dict(torch.load(os.path.join('models', f"goal_best_model.pt"), map_location=args.device))
-    #     retriever.to(args.device)
-    #     train_datamodel_topic = TopicDataset(args, train_dataset, train_knowledgeDB, tokenizer, mode='train', subtask=args.subtask)
-    #     # valid_datamodel_topic = TopicDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
-    #     test_datamodel_topic = TopicDataset(args, test_dataset, all_knowledgeDB, tokenizer, mode='test', subtask=args.subtask)
-    #     # train_dataloader_topic = DataLoader(train_datamodel_topic, batch_size=args.batch_size, shuffle=True)
-    #     # valid_dataloader_topic = DataLoader(valid_datamodel_topic, batch_size=args.batch_size, shuffle=False)
-    #     # test_dataloader_topic = DataLoader(test_datamodel_topic, batch_size=args.batch_size, shuffle=False)
-    #
-    #     # if args.debug: args.num_epochs = 1
-    #     pred_goal_topic_aug(args, retriever, tokenizer, train_datamodel_topic, task='goal')
-    #     pred_goal_topic_aug(args, retriever, tokenizer, test_datamodel_topic, task='goal')
-    #     retriever.load_state_dict(torch.load(os.path.join('models', f"topic_best_model_GP.pt"), map_location=args.device))
-    #     retriever.to(args.device)
-    #     pred_goal_topic_aug(args, retriever, tokenizer, train_datamodel_topic, task='topic')
-    #     pred_goal_topic_aug(args, retriever, tokenizer, test_datamodel_topic, task='topic')
-    #     return
-
-
     if 'goal' in args.task:
         # KNOWLEDGE TASk
         retriever = Retriever(args, bert_model)
@@ -215,9 +172,9 @@ def main():
 
         # pretrain_topic(args, retriever, train_knowledge_topic, test_knowledge_topic, tokenizer)
 
-        train_dataset = process_augment_sample_topic(train_dataset_raw, tokenizer, train_knowledgeDB)
-        valid_dataset = process_augment_sample_topic(valid_dataset_raw, tokenizer, all_knowledgeDB)
-        test_dataset = process_augment_sample_topic(test_dataset_raw, tokenizer, all_knowledgeDB)
+        train_dataset = process_augment_sample_all(train_dataset_raw, tokenizer, train_knowledgeDB)
+        valid_dataset = process_augment_sample_all(valid_dataset_raw, tokenizer, all_knowledgeDB)
+        test_dataset = process_augment_sample_all(test_dataset_raw, tokenizer, all_knowledgeDB)
 
         train_datamodel_topic = TopicDataset(args, train_dataset, train_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
         valid_datamodel_topic = TopicDataset(args, valid_dataset, all_knowledgeDB, train_knowledgeDB, tokenizer, task='know')
@@ -245,7 +202,7 @@ def main():
         # train_dataset_resp = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB)
         # test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
 
-        train_dataset_resp = process_augment_sample_topic(train_dataset_raw, tokenizer, train_knowledgeDB)  # for topic-task (모든 시스템 발화)
+        train_dataset_resp = process_augment_sample_all(train_dataset_raw, tokenizer, train_knowledgeDB)  # for topic-task (모든 시스템 발화)
         test_dataset_resp = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)  # for knowledge-task (시스템 발화 중 knowledge 가 태깅되어 있는거)
         # test_dataset_resp_retrieve = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB)
 
@@ -290,18 +247,19 @@ def main():
         retriever = Retriever(args, bert_model)
         args.saved_model_path = 'topic_best_model_GP'
         args.max_length = 256
-        # retriever.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_model_path}.pt"), map_location=args.device))
+        args.batch_size = 1
+        retriever.load_state_dict(torch.load(os.path.join(args.model_dir, f"{args.saved_model_path}.pt"), map_location=args.device))
         retriever = retriever.to(args.device)
 
-        goal_list = ['Q&A', 'Movie recommendation', 'Music recommendation', 'POI recommendation']  # , 'Food recommendation']
+        goal_list = ['POI recommendation'] #, 'Movie recommendation', 'Music recommendation', 'POI recommendation', 'Food recommendation']
 
-        train_dataset = process_augment_sample(train_dataset_raw, tokenizer, train_knowledgeDB, goal_list=goal_list)
+        train_dataset = process_augment_sample_all(train_dataset_raw, tokenizer, train_knowledgeDB)
         valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB, goal_list=goal_list)
         test_dataset = process_augment_sample(test_dataset_raw, tokenizer, all_knowledgeDB, goal_list=goal_list)  # gold-topic
 
         # test_dataset_temp = read_pkl("augmented_raw_sample_topic.txt")
         train_dataset_pred_aug = read_pkl(os.path.join(args.data_dir, 'pred_aug', f'gt_train_pred_aug_dataset.pkl'))
-        train_dataset_pred_aug = [data for data in train_dataset_pred_aug if data['target_knowledge'] != '' and data['goal'] in goal_list]
+        # train_dataset_pred_aug = [data for data in train_dataset_pred_aug if data['target_knowledge'] != '' and data['goal'] in goal_list]
         for idx, data in enumerate(train_dataset):
             data['predicted_goal'] = train_dataset_pred_aug[idx]['predicted_goal']
             data['predicted_topic'] = train_dataset_pred_aug[idx]['predicted_topic']
@@ -313,16 +271,15 @@ def main():
             data['predicted_goal'] = test_dataset_pred_aug[idx]['predicted_goal']
             data['predicted_topic'] = test_dataset_pred_aug[idx]['predicted_topic']
 
-        train_datamodel_topic = TopicDataset(args, train_dataset, train_knowledgeDB, tokenizer)
-        valid_datamodel_topic = TopicDataset(args, valid_dataset, all_knowledgeDB, tokenizer)
-        test_datamodel_topic = TopicDataset(args, test_dataset, all_knowledgeDB, tokenizer)
+        train_datamodel_topic = TopicDataset(args, train_dataset, train_knowledgeDB, tokenizer, mode='train', subtask='topic')
+        test_datamodel_topic = TopicDataset(args, test_dataset, all_knowledgeDB, tokenizer, mode='test', subtask='topic')
 
         train_dataloader_topic = DataLoader(train_datamodel_topic, batch_size=args.batch_size, shuffle=True)
-        valid_dataloader_topic = DataLoader(valid_datamodel_topic, batch_size=args.batch_size, shuffle=False)
+        # valid_dataloader_topic = DataLoader(valid_datamodel_topic, batch_size=args.batch_size, shuffle=False)
         test_dataloader_topic = DataLoader(test_datamodel_topic, batch_size=args.batch_size, shuffle=False)
 
         eval_topic(args, retriever, test_dataloader_topic, tokenizer)
-        train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer)
+        # train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer)
 
     if 'know' in args.task:
         # bert_model = AutoModel.from_pretrained(args.bert_name, cache_dir=os.path.join("cache", args.bert_name))

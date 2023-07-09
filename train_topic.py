@@ -77,7 +77,6 @@ def eval_topic(args, retriever, test_dataloader_topic, tokenizer):
         # knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
         knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
         scores = retriever.topic_proj(knowledge_emb)
-
         for idx, (score, target) in enumerate(zip(scores, topic_idx)):
             top_candidate = torch.topk(score, k=1).indices
             correct_k = target in top_candidate

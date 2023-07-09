@@ -65,19 +65,27 @@ def truncationPadding(input_ids, max_length, prefix=[], suffix=[]):
     return input_ids + [0] * (max_length - len(input_ids))
 
 
+# def user_profile_setting2(ufDic: dict) -> str:
+#     uf = ''
+#     for i, key in enumerate(ufDic.keys()):
+#         one = ufDic[key]
+#         if i == 0 or key[0].lower() != "a":
+#             pass
+#         else:
+#             uf += ' | '
+#         if type(one) == list:
+#             uf += f"{key}: {', '.join(one[:-5])}"
+#         else:
+#             uf += f"{key}: {one}"
+#     return uf
+
 def user_profile_setting(ufDic: dict) -> str:
     uf = ''
-    for i, key in enumerate(ufDic.keys()):
-        one = ufDic[key]
-        if i == 0 or key[0].lower() != "a":
-            pass
-        else:
-            uf += ' | '
-        if type(one) == list:
-            uf += f"{key}: {', '.join(one[:-5])}"
-        else:
-            uf += f"{key}: {one}"
+    for k,v in ufDic.items():
+        if isinstance(v,list): uf+=f" {k}: {', '.join(v)}|"
+        elif isinstance(v, str):uf+=f" {k}: {v.replace(' ','')}|"
     return uf
+
 
 
 def softmax(x):
@@ -124,7 +132,7 @@ def bm_tokenizer(text, tokenizer):
     return tokens
 
 
-def process_augment_sample_topic(raw_data, tokenizer, knowledgeDB):
+def process_augment_sample_all(raw_data, tokenizer, knowledgeDB):
     train_sample = []
     if tokenizer.eos_token is not None:
         eos_token = tokenizer.eos_token
@@ -221,6 +229,8 @@ def dataset_reader(args, data_name='train'):
                     all_knowledge_topic.append((topic, know))
 
             user_profile = user_profile_setting(dialog['user_profile'])
+            # user_profile2 = user_profile_setting2(dialog['user_profile'])
+
             situation = dialog['situation']
 
             for i in range(len(conversation)):  # HJ: [1],[2] 같은 text 제거, conversation 추가해넣는코드
