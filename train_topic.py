@@ -68,7 +68,9 @@ def train_goal(args, retriever, train_dataloader_topic, test_dataloader_topic, t
 
 def eval_topic(args, retriever, test_dataloader_topic, tokenizer):
     hit1 = []
-    TT, TF, FT, FF = 0, 0, 0, 0
+    # TT, TF, FT, FF = 0, 0, 0, 0
+    current = 0
+
     for batch in tqdm(test_dataloader_topic, bar_format=' {l_bar} | {bar:23} {r_bar}'):
         retriever.eval()
         input_ids = batch['input_ids'].to(args.device)
@@ -79,19 +81,26 @@ def eval_topic(args, retriever, test_dataloader_topic, tokenizer):
         knowledge_emb = retriever.query_bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state[:, 0, :]  # [B, d]
         scores = retriever.topic_proj(knowledge_emb)
         for idx, (score, target) in enumerate(zip(scores, topic_idx)):
-            top_candidate = torch.topk(score, k=1).indices
+            score = torch.softmax(score, dim=-1)
+            top_candidate = torch.topk(score, k=5).indices
+            top_confidence = torch.topk(score, k=5).values
+
             correct_k = target in top_candidate
             hit1.append(correct_k)
-            if torch.softmax(score, dim=-1).max() > 0.8:
-                if correct_k is True: TT += 1
-                else: TF += 1
-            else:
-                if correct_k is True: FT += 1
-                else: FF += 1
+            # if torch.softmax(score, dim=-1).max() > 0.8:
+            #     if correct_k is True: TT += 1
+            #     else: TF += 1
+            # else:
+            #     if correct_k is True: FT += 1
+            #     else: FF += 1
+            test_dataloader_topic.dataset.augmented_raw_sample[current + idx][f"predicted_topic"] = [args.topicDic['int'][tp.item()] for tp in top_candidate]
+            test_dataloader_topic.dataset.augmented_raw_sample[current + idx][f"predicted_topic_confidence"] = [conf for conf in top_confidence]
+
+        current += input_ids.size(0)
 
     hit1 = np.average(hit1)
     print("Topic-Test Hit@1: %.4f" % np.average(hit1))
-    print('%d\t%d\t%d\t%d' % (TT,TF,FT,FF))
+    # print('%d\t%d\t%d\t%d' % (TT,TF,FT,FF))
 
 def train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer):
     optimizer = optim.AdamW(retriever.parameters(), lr=args.lr)

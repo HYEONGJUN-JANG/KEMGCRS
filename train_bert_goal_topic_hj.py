@@ -19,7 +19,7 @@ def pred_goal_topic_aug(args, retriever, tokenizer, Auged_Dataset, task):
     Auged_Dataset.args.task = task
     optimizer = torch.optim.Adam(retriever.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.num_epochs * len(Auged_Dataset), eta_min=args.lr * 0.1)
-    data_loader = DataLoader(Auged_Dataset, batch_size=args.batch_size*20, shuffle=False)
+    data_loader = DataLoader(Auged_Dataset, batch_size=args.batch_size, shuffle=False)
     with torch.no_grad():
         task_preds, _ = inEpoch_BatchPlay(args, retriever, tokenizer, data_loader, optimizer, scheduler, epoch=0, task=task, mode='test')
     for i, dataset in enumerate(Auged_Dataset.augmented_raw_sample):

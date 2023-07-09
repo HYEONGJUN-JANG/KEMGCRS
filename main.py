@@ -14,6 +14,7 @@ from transformers import AutoModel, AutoTokenizer, BartForConditionalGeneration,
 import data
 from config import bert_special_tokens_dict, gpt_special_tokens_dict
 from data_model import GenerationDataset, DialogDataset, KnowledgeDataset, KnowledgeTopicDataset, TopicDataset
+from train_bert_goal_topic_hj import pred_goal_topic_aug
 from train_goal_topic import train_goal_topic, write_goal_topic_result
 from train_know import train_know
 from train_topic import train_topic, pretrain_topic, train_goal, eval_topic
@@ -241,7 +242,8 @@ def main():
         write_pkl(augmented_raw_sample_topic, "augmented_raw_sample_topic.txt")
 
     if 'topic' in args.task:
-        # KNOWLEDGE TASk
+
+        # KNOWLEDGE TASk (이전거)
         retriever = Retriever(args, bert_model)
         args.saved_model_path = 'topic_best_model_GP'
         args.max_length = 256
@@ -250,7 +252,7 @@ def main():
         retriever = retriever.to(args.device)
 
         # goal_list = ['Q&A', 'Movie recommendation', 'Music recommendation', 'POI recommendation', 'Food recommendation']
-        goal_list = ['Movie recommendation']
+        goal_list = ['Q&A']
 
         train_dataset = process_augment_sample_all(train_dataset_raw, tokenizer, train_knowledgeDB)
         valid_dataset = process_augment_sample(valid_dataset_raw, tokenizer, all_knowledgeDB, goal_list=goal_list)
@@ -277,7 +279,11 @@ def main():
         # valid_dataloader_topic = DataLoader(valid_datamodel_topic, batch_size=args.batch_size, shuffle=False)
         test_dataloader_topic = DataLoader(test_datamodel_topic, batch_size=args.batch_size, shuffle=False)
 
-        eval_topic(args, retriever, test_dataloader_topic, tokenizer)
+        augmented_raw_sample_topic = eval_topic(args, retriever, test_dataloader_topic, tokenizer)
+        write_pkl(augmented_raw_sample_topic, "augmented_raw_sample_topic.txt")
+
+        # augmented_raw_sample_topic = write_goal_topic_result(args, retriever, tokenizer, test_dataloader_resp, 'topic')
+        # test_dataloader_resp.dataset.augmented_raw_sample = augmented_raw_sample_topic
         # train_topic(args, retriever, train_dataloader_topic, test_dataloader_topic, tokenizer)
 
     if 'know' in args.task:
