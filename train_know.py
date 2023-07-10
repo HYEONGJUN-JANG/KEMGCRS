@@ -54,7 +54,6 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
         result_f.write('[EPOCH]\tHit@1\tHit@5\tHit@10\tHit@20\n')
 
     for epoch in range(args.num_epochs):
-
         train_epoch_loss = 0
         num_update = 0
         for batch in tqdm(train_dataloader, desc="Knowledge_Train", bar_format=' {l_bar} | {bar:23} {r_bar}'):
