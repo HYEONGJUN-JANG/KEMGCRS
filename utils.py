@@ -21,102 +21,70 @@ def read_pkl(filename: str) -> object:
     with open(filename, 'rb') as f: return pickle.load(f)
 
 
-def parseargs():
+def default_parser():
     parser = argparse.ArgumentParser(description="main.py")
-    parser.add_argument("--data_cache", action='store_true', help="Whether to run finetune.")
-    parser.add_argument("--model_load", action='store_true', help="Whether to load saved model.")
-    parser.add_argument("--momentum", action='store_true', help="Whether to load saved model.")
-    parser.add_argument("--do_pipeline", action='store_true', help="Whether to load saved model.")
-    parser.add_argument("--do_finetune", action='store_true', help="Whether to load saved model.")
-    parser.add_argument("--ft_type", action='store_true', help="Whether to Fine-tune on type.")
-    parser.add_argument("--ft_topic", action='store_true', help="Whether to Fine-tune on topic.")
-    parser.add_argument("--ft_know", action='store_true', help="Whether to Fine-tune on know.")
+    # Default For All
     parser.add_argument("--earlystop", action='store_true', help="Whether to Use EarlyStopping.")
     parser.add_argument("--task", default='know', type=str, help="Choose the task")
     parser.add_argument("--subtask", default='topic', type=str, help="Choose the task")
-
-    parser.add_argument("--knowledge", action='store_true', help="Whether to Use knowledge in response.")
-    parser.add_argument("--know_ablation", default='pseudo', type=str, help="know_ablation", choices=['target', 'pseudo'])
-    parser.add_argument("--train_ablation", default='LG', type=str, help="train ablation", choices=['R', 'S', 'RG', 'LG','G','O'])
-
-    parser.add_argument('--topk_topic', default=1, type=int, help="num of topics for input prompt")
-    parser.add_argument('--topic_conf', type=float, default=0.5, help='Minimum threshold for topic confidence')
-    parser.add_argument('--know_conf', type=float, default=0.2, help='Minimum threshold for topic confidence')
-
-    parser.add_argument("--siamese", action='store_true', help="Whether to Fine-tune on type.")
-    parser.add_argument("--pseudo", action='store_true', help="Whether to Fine-tune on type.")
-    parser.add_argument('--pseudo_pos_num', default=3, type=int, help="pseudo_pos_num")
-    parser.add_argument('--pseudo_pos_rank', default=3, type=int, help="pseudo_pos_rank")
-    parser.add_argument("--pseudo_confidence", action='store_true', help="Whether to Fine-tune on type.")
-    parser.add_argument('--tau', type=float, default=1.0, help='Learning rate')
-    parser.add_argument('--train_ratio', type=float, default=1.0, help='train_ratio')
-    parser.add_argument('--negative_num', default=1, type=int, help="negative_num")
-    parser.add_argument('--stage', default='rerank', type=str, choices=['retrieve', 'rerank'])
-    parser.add_argument("--stage2_test", action='store_true', help="Whether to Fine-tune on type.")
-    parser.add_argument('--update_freq', default=-1, type=int, help="update_freq")
-
-    parser.add_argument("--data_dir", default='data', type=str, help="The data directory.")
-    # parser.add_argument('--data_name', default='en_test.txt', type=str, help="dataset name")
-    parser.add_argument('--k_DB_name', default='all_knowledge_DB.pickle', type=str, help="knowledge DB file name in data_dir")
-    parser.add_argument('--k_idx_name', default='knowledge_index.npy', type=str, help="knowledge index file name in data_dir")
     parser.add_argument('--goal_list', default='Movie_Music_POI_QA_Food_Chat', type=str, help="input goal type")
-
-    ## Model BERT or BART
-    parser.add_argument("--type_aware", action='store_true', help="Whether to Use Type-aware Matching")
-    parser.add_argument('--kencoder_name', default='bert-base-uncased', type=str, help="Knowledge Encoder Model Name")
-    parser.add_argument('--qencoder_name', default='facebook/bart-base', type=str, help="Query Encoder Model Name")
-
-    parser.add_argument('--bart_name', default='facebook/bart-base', type=str, help="BERT Model Name")
+    parser.add_argument("--data_dir", default='data', type=str, help="The data directory.")
     parser.add_argument('--bert_name', default='./bert-base-uncased', type=str, help="BERT Model Name")
+    parser.add_argument('--bart_name', default='facebook/bart-base', type=str, help="BERT Model Name")
     parser.add_argument('--gpt_name', default='gpt2', type=str, help="BERT Model Name")
 
     parser.add_argument('--model_name', default='myretriever', type=str, help="BERT Model Name")
 
-    parser.add_argument('--pretrained_model', default='bert_model.pt', type=str, help="Pre-trained Retriever BERT Model Name")
-
-    parser.add_argument('--max_length', default=128, type=int, help="dataset name")
     parser.add_argument('--max_prefix_length', default=30, type=int, help="dataset name")
     parser.add_argument('--max_gen_length', default=30, type=int, help="dataset name")
-
-    parser.add_argument('--know_max_length', default=128, type=int, help="dataset name")
 
     parser.add_argument('--batch_size', default=8, type=int, help="batch size")
     parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate')
     parser.add_argument('--lr_rerank', type=float, default=1e-5, help='Learning rate')
 
-    parser.add_argument('--loss_lamb', type=float, default=1.0, help='Learning rate')
     parser.add_argument('--lr_dc_step', type=int, default=10, help='warmup_step')
     parser.add_argument('--lr_dc', type=float, default=0.1, help='warmup_gamma')
 
     parser.add_argument('--hidden_size', default=768, type=int, help="hidden size")
     parser.add_argument('--num_epochs', default=10, type=int, help="Number of epoch")
 
-    parser.add_argument('--epoch_pt', default=10, type=int, help="Number of epoch")
-
     parser.add_argument("--output_dir", default='output', type=str, help="The output directory where the model predictions and checkpoints will be written.")
-    parser.add_argument("--usekg", action='store_true', help="use know_text for response")  # HJ: Know_text 를 사용하는지 여부
+
     parser.add_argument("--time", default='', type=str, help="Time for fileName")  # HJ : Log file middle Name
-    parser.add_argument("--loss_rec", default='cross_entropy', type=str, help="Loss Type")  # HJ : Loss
-    parser.add_argument('--lamb', type=float, default=0.8, help='lambda for loss target')
 
-    parser.add_argument("--device", default='0', type=str, help="GPU Device")  # HJ : Log file middle Name
+    parser.add_argument("--device", "--gpu", default='0', type=str, help="GPU Device")  # HJ : Log file middle Name
 
-    parser.add_argument('--know_topk', default=20, type=int, help="Number of retrieval know text")  # HJ: Know_text retrieve Top-k
-    parser.add_argument('--topic_topk', default=5, type=int, help="Number of Top-k Topics")  # HJ: Topic Top-k
     parser.add_argument('--home', default='', type=str, help="Project home directory")  # HJ: Project Home directory
     parser.add_argument('--log_dir', default='logs', type=str, help="logging file directory")  # HJ: log file directory
     parser.add_argument('--model_dir', default='models', type=str, help="saved model directory")  # TH: model file directory
     parser.add_argument('--saved_model_path', default='', type=str, help="saved model file name")  # TH: model file directory
-    parser.add_argument('--saved_goal_model_path', default='myretriever_resp_goal_best', type=str, help="saved model file name")  # TH: model file directory
-    parser.add_argument('--saved_topic_model_path', default='', type=str, help="saved model file name")  # TH: model file directory
-
 
     parser.add_argument('--log_name', default='', type=str, help="log file name")  # HJ: log file name
     parser.add_argument('--version', default='2', type=str, help="DuRec Version")  # HJ: log file name
-    parser.add_argument("--debug", action='store_true', help="Whether to run debug.") # HJ
-    # TH
-    parser.add_argument('--retrieve', default='negative', type=str, help="retrieve")
+    parser.add_argument("--debug", action='store_true', help="Whether to run debug.")  # HJ
+
     parser.add_argument('--input_prompt', default='dialog_topic_profile', type=str, help="input_prompt")
+
+    # Default For Goal-Topic task
+    parser.add_argument('--max_length_goal', default=256, type=int, help="dataset name") # max_length_know 로 변경 예정
+    parser.add_argument('--max_length_topic', default=256, type=int, help="dataset name") # max_length_know 로 변경 예정
+
+    # Default For Knowledge retrieve task
+    parser.add_argument('--max_length', default=128, type=int, help="dataset name") # max_length_know 로 변경 예정
+    parser.add_argument("--know_ablation", default='pseudo', type=str, help="know_ablation", choices=['target', 'pseudo'])
+    parser.add_argument("--train_ablation", default='LG', type=str, help="train ablation", choices=['R', 'S', 'RG', 'LG', 'G', 'O'])
+    parser.add_argument('--topk_topic', default=1, type=int, help="num of topics for input prompt")
+    parser.add_argument('--topic_conf', type=float, default=0.5, help='Minimum threshold for topic confidence')
+    parser.add_argument('--know_conf', type=float, default=0.2, help='Minimum threshold for topic confidence')
+    parser.add_argument('--pseudo_pos_num', default=3, type=int, help="pseudo_pos_num")
+    parser.add_argument('--negative_num', default=1, type=int, help="negative_num")
+
+    # Default For Response generation task
+
+
+
+    ## Model BERT or BART
+
 
     args = parser.parse_args()
     # args.model_dir = os.path.join(args.model_dir, args.device)
@@ -129,7 +97,7 @@ def parseargs():
         # args.home = os.path.dirname(os.path.realpath(__file__))
         args.data_dir = os.path.join(args.home, 'data')
         args.output_dir = os.path.join(args.data_dir, 'output')
-        args.log_dir = os.path.join(args.home, 'logs',args.version)
+        args.log_dir = os.path.join(args.home, 'logs', args.version)
         args.model_dir = os.path.join(args.home, 'models')
         args.bert_saved_model_path = os.path.join(args.home, "cache", args.kencoder_name)
         # args.batch_size = 64
@@ -201,6 +169,138 @@ def checkGPU(args, logger=None):
     logger.info('Allocated: {} GB'.format(round(torch.cuda.memory_allocated(device=args.device) / 1024 ** 3, 1)))
     logger.info('Cached:   {} GB'.format(round(torch.cuda.memory_cached(device=args.device) / 1024 ** 3, 1)))
     return False
+
+
+def parseargs():
+    parser = argparse.ArgumentParser(description="main.py")
+    parser.add_argument("--data_cache", action='store_true', help="Whether to run finetune.")
+    parser.add_argument("--model_load", action='store_true', help="Whether to load saved model.")
+    parser.add_argument("--momentum", action='store_true', help="Whether to load saved model.")
+    parser.add_argument("--do_pipeline", action='store_true', help="Whether to load saved model.")
+    parser.add_argument("--do_finetune", action='store_true', help="Whether to load saved model.")
+    parser.add_argument("--ft_type", action='store_true', help="Whether to Fine-tune on type.")
+    parser.add_argument("--ft_topic", action='store_true', help="Whether to Fine-tune on topic.")
+    parser.add_argument("--ft_know", action='store_true', help="Whether to Fine-tune on know.")
+    parser.add_argument("--earlystop", action='store_true', help="Whether to Use EarlyStopping.")
+    parser.add_argument("--task", default='know', type=str, help="Choose the task")
+    parser.add_argument("--subtask", default='topic', type=str, help="Choose the task")
+
+    parser.add_argument("--knowledge", action='store_true', help="Whether to Use knowledge in response.")
+    parser.add_argument("--know_ablation", default='pseudo', type=str, help="know_ablation", choices=['target', 'pseudo'])
+    parser.add_argument("--train_ablation", default='LG', type=str, help="train ablation", choices=['R', 'S', 'RG', 'LG', 'G', 'O'])
+
+    parser.add_argument('--topk_topic', default=1, type=int, help="num of topics for input prompt")
+    parser.add_argument('--topic_conf', type=float, default=0.5, help='Minimum threshold for topic confidence')
+    parser.add_argument('--know_conf', type=float, default=0.99, help='Minimum threshold for topic confidence')
+
+    parser.add_argument("--siamese", action='store_true', help="Whether to Fine-tune on type.")
+    parser.add_argument("--pseudo", action='store_true', help="Whether to Fine-tune on type.")
+    parser.add_argument('--pseudo_pos_num', default=3, type=int, help="pseudo_pos_num")
+    parser.add_argument('--pseudo_pos_rank', default=3, type=int, help="pseudo_pos_rank")
+    parser.add_argument("--pseudo_confidence", action='store_true', help="Whether to Fine-tune on type.")
+    parser.add_argument('--tau', type=float, default=1.0, help='Learning rate')
+    parser.add_argument('--train_ratio', type=float, default=1.0, help='train_ratio')
+    parser.add_argument('--negative_num', default=1, type=int, help="negative_num")
+    parser.add_argument('--stage', default='rerank', type=str, choices=['retrieve', 'rerank'])
+    parser.add_argument("--stage2_test", action='store_true', help="Whether to Fine-tune on type.")
+    parser.add_argument('--update_freq', default=-1, type=int, help="update_freq")
+
+    parser.add_argument("--data_dir", default='data', type=str, help="The data directory.")
+    # parser.add_argument('--data_name', default='en_test.txt', type=str, help="dataset name")
+    parser.add_argument('--k_DB_name', default='all_knowledge_DB.pickle', type=str, help="knowledge DB file name in data_dir")
+    parser.add_argument('--k_idx_name', default='knowledge_index.npy', type=str, help="knowledge index file name in data_dir")
+    parser.add_argument('--goal_list', default='Movie_Music_POI_QA_Food_Chat', type=str, help="input goal type")
+
+    ## Model BERT or BART
+    parser.add_argument("--type_aware", action='store_true', help="Whether to Use Type-aware Matching")
+    parser.add_argument('--kencoder_name', default='bert-base-uncased', type=str, help="Knowledge Encoder Model Name")
+    parser.add_argument('--qencoder_name', default='facebook/bart-base', type=str, help="Query Encoder Model Name")
+
+    parser.add_argument('--bart_name', default='facebook/bart-base', type=str, help="BERT Model Name")
+    parser.add_argument('--bert_name', default='./bert-base-uncased', type=str, help="BERT Model Name")
+    parser.add_argument('--gpt_name', default='gpt2', type=str, help="BERT Model Name")
+
+    parser.add_argument('--model_name', default='myretriever', type=str, help="BERT Model Name")
+
+    parser.add_argument('--pretrained_model', default='bert_model.pt', type=str, help="Pre-trained Retriever BERT Model Name")
+
+    parser.add_argument('--max_length', default=128, type=int, help="dataset name")
+    parser.add_argument('--max_prefix_length', default=30, type=int, help="dataset name")
+    parser.add_argument('--max_gen_length', default=30, type=int, help="dataset name")
+
+    parser.add_argument('--know_max_length', default=128, type=int, help="dataset name")
+
+    parser.add_argument('--batch_size', default=8, type=int, help="batch size")
+    parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate')
+    parser.add_argument('--lr_rerank', type=float, default=1e-5, help='Learning rate')
+
+    parser.add_argument('--loss_lamb', type=float, default=1.0, help='Learning rate')
+    parser.add_argument('--lr_dc_step', type=int, default=10, help='warmup_step')
+    parser.add_argument('--lr_dc', type=float, default=0.1, help='warmup_gamma')
+
+    parser.add_argument('--hidden_size', default=768, type=int, help="hidden size")
+    parser.add_argument('--num_epochs', default=10, type=int, help="Number of epoch")
+
+    parser.add_argument('--epoch_pt', default=10, type=int, help="Number of epoch")
+
+    parser.add_argument("--output_dir", default='output', type=str, help="The output directory where the model predictions and checkpoints will be written.")
+    parser.add_argument("--usekg", action='store_true', help="use know_text for response")  # HJ: Know_text 를 사용하는지 여부
+    parser.add_argument("--time", default='', type=str, help="Time for fileName")  # HJ : Log file middle Name
+    parser.add_argument("--loss_rec", default='cross_entropy', type=str, help="Loss Type")  # HJ : Loss
+    parser.add_argument('--lamb', type=float, default=0.8, help='lambda for loss target')
+
+    parser.add_argument("--device", default='0', type=str, help="GPU Device")  # HJ : Log file middle Name
+
+    parser.add_argument('--know_topk', default=20, type=int, help="Number of retrieval know text")  # HJ: Know_text retrieve Top-k
+    parser.add_argument('--topic_topk', default=5, type=int, help="Number of Top-k Topics")  # HJ: Topic Top-k
+    parser.add_argument('--home', default='', type=str, help="Project home directory")  # HJ: Project Home directory
+    parser.add_argument('--log_dir', default='logs', type=str, help="logging file directory")  # HJ: log file directory
+    parser.add_argument('--model_dir', default='models', type=str, help="saved model directory")  # TH: model file directory
+    parser.add_argument('--saved_model_path', default='', type=str, help="saved model file name")  # TH: model file directory
+    parser.add_argument('--saved_goal_model_path', default='myretriever_resp_goal_best', type=str, help="saved model file name")  # TH: model file directory
+    parser.add_argument('--saved_topic_model_path', default='', type=str, help="saved model file name")  # TH: model file directory
+
+    parser.add_argument('--log_name', default='', type=str, help="log file name")  # HJ: log file name
+    parser.add_argument('--version', default='2', type=str, help="DuRec Version")  # HJ: log file name
+    parser.add_argument("--debug", action='store_true', help="Whether to run debug.")  # HJ
+    # TH
+    parser.add_argument('--retrieve', default='negative', type=str, help="retrieve")
+    parser.add_argument('--input_prompt', default='dialog_topic_profile', type=str, help="input_prompt")
+
+    args = parser.parse_args()
+    # args.model_dir = os.path.join(args.model_dir, args.device)
+    args.device = f'cuda:{args.device}' if args.device else "cpu"
+    if args.time == '': args.time = get_time_kst()
+    from platform import system as sysChecker
+    if sysChecker() == 'Linux':
+        # HJ KT-server
+        args.home = '/home/work/CRSFolder/KEMGCRS'
+        # args.home = os.path.dirname(os.path.realpath(__file__))
+        args.data_dir = os.path.join(args.home, 'data')
+        args.output_dir = os.path.join(args.data_dir, 'output')
+        args.log_dir = os.path.join(args.home, 'logs', args.version)
+        args.model_dir = os.path.join(args.home, 'models')
+        args.bert_saved_model_path = os.path.join(args.home, "cache", args.kencoder_name)
+        # args.batch_size = 64
+        # args.num_epochs = 25
+        pass  # HJ KT-server
+    elif sysChecker() == "Windows":
+        args.data_cache = True
+        # args.batch_size = 4
+        args.log_name = "log_Topic PRF"
+        # args.task = 'goal'
+        args.num_epochs = 2
+        args.do_finetune = True
+        pass  # HJ local
+    else:
+        print("Check Your Platform Setting");
+        exit()
+
+    args.usebart = True
+    args.bert_cache_name = os.path.join(args.home, "cache", args.kencoder_name)
+    checkPath(args.log_dir)
+
+    return args
 
 
 if __name__ == "__main__":
