@@ -41,6 +41,7 @@ def parseargs():
 
     parser.add_argument('--topk_topic', default=1, type=int, help="num of topics for input prompt")
     parser.add_argument('--topic_conf', type=float, default=0.5, help='Minimum threshold for topic confidence')
+    parser.add_argument('--know_conf', type=float, default=0.2, help='Minimum threshold for topic confidence')
 
     parser.add_argument("--siamese", action='store_true', help="Whether to Fine-tune on type.")
     parser.add_argument("--pseudo", action='store_true', help="Whether to Fine-tune on type.")

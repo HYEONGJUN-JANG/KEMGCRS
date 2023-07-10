@@ -20,7 +20,7 @@ from train_know import train_know
 from train_topic import train_topic, pretrain_topic, train_goal, eval_topic
 from utils import *
 from models import *
-from data_util import readDic, dataset_reader, process_augment_sample, bm_tokenizer, process_augment_sample_all
+from data_util import readDic, dataset_reader, process_augment_sample, bm_tokenizer, process_augment_sample_all, softmax
 from rank_bm25 import BM25Okapi
 import nltk
 
@@ -335,7 +335,12 @@ def main():
         #     data['predicted_topic'] = test_dataset_pred_aug[idx]['predicted_topic']
 
         test_dataset = read_pkl(os.path.join(args.data_dir, 'pred_aug', "gt_test_pred_aug_dataset.pkl"))
-
+        # alpha = 0.99
+        # TT = [data for data in test_dataset if softmax(data['candidate_confidences'])[0] > alpha and data['candidate_knowledges'][0] == data['target_knowledge']]
+        # TF = [data for data in test_dataset if softmax(data['candidate_confidences'])[0] > alpha and data['candidate_knowledges'][0] != data['target_knowledge']]
+        # FT = [data for data in test_dataset if softmax(data['candidate_confidences'])[0] < alpha and data['candidate_knowledges'][0] == data['target_knowledge']]
+        # FF = [data for data in test_dataset if softmax(data['candidate_confidences'])[0] < alpha and data['candidate_knowledges'][0] != data['target_knowledge']]
+        print()
         # cnt = 0
         # cntdic2 = {}
         #

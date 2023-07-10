@@ -260,11 +260,11 @@ def train_know(args, train_dataloader, test_dataloader, retriever, knowledge_dat
                     cumsum_logit = torch.cumsum(logit_pos, dim=1)  # [B, K]  # Grouping
 
                     loss = 0
-                    # pseudo_confidences = batch['pseudo_confidences']
+                    pseudo_confidences_mask = batch['pseudo_confidences']  # [B, K]
                     for idx in range(args.pseudo_pos_rank):
                         # confidence = torch.softmax(pseudo_confidences[:, :idx + 1], dim=-1)
-                        # g_logit = torch.sum(logit_pos[:, :idx + 1] * confidence, dim=-1)
-                        g_logit = cumsum_logit[:, idx] / (idx + 1)
+                        g_logit = torch.sum(logit_pos[:, :idx + 1] * pseudo_confidences_mask[:, :idx + 1], dim=-1) / (torch.sum(pseudo_confidences_mask[:, :idx + 1], dim=-1) + 1e-20)
+                        # g_logit = cumsum_logit[:, idx] / (idx + 1)
                         # g_logit = cumsum_logit[:, idx] / batch_denominator[:, idx]
 
                         # g_logit = cumsum_logit[:, idx] / num_samples[:, idx]

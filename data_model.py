@@ -216,7 +216,8 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         cbdicKeys = ['dialog', 'user_profile', 'response', 'goal', 'topic', 'situation', 'target_knowledge', 'candidate_knowledges', 'candidate_confidences']
         dialog, user_profile, response, goal, topic, situation, target_knowledge, candidate_knowledges, candidate_confidences = [data[i] for i in cbdicKeys]
         candidate_knowledges = [self.knowledgeDB.index(passage) for passage in candidate_knowledges]
-        candidate_confidences = min_max_norm(candidate_confidences)
+        # candidate_confidences = min_max_norm(candidate_confidences)
+        candidate_confidences = softmax(candidate_confidences)
 
         target_knowledge_idx = self.knowledgeDB.index(target_knowledge)
         pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id
@@ -350,7 +351,7 @@ class DialogDataset(Dataset):  # knowledge용 데이터셋
         context_batch['candidate_knowledge_mask'] = candidate_knowledge_mask
 
         context_batch['pseudo_targets'] = candidate_knowledges_pos  # [candidate_knowledges[0]]
-        context_batch['pseudo_confidences'] = candidate_confidences_pos  # + [-1e10] * (self.args.knowledge_num - len(candidate_confidences_pos))
+        context_batch['pseudo_confidences'] = (candidate_confidences_pos > self.args.know_conf)  # + [-1e10] * (self.args.knowledge_num - len(candidate_confidences_pos))
 
         context_batch['target_knowledge'] = [target_knowledge_idx]  # candidate_knowledges[:3]  # target_knowledge_idx
         context_batch['all_negative'] = candidate_knowledges + self.all_negative(candidate_knowledges)
