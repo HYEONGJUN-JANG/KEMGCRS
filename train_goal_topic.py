@@ -31,10 +31,10 @@ def train_goal(args, train_dataloader, test_dataloader, retriever, tokenizer):
     cnt=0
     for epoch in range(args.num_epochs):
         train_epoch_loss = 0
-        if args.num_epochs>1:
+        if args.num_epochs > 1:
             torch.cuda.empty_cache()
             cnt = 0
-            if epoch>=args.num_epochs-1: save_output_mode=True
+            if epoch>=args.num_epochs-1 : save_output_mode=True
             # TRAIN
             print("Train")
             #### return {'dialog_token': dialog_token, 'dialog_mask': dialog_mask, 'target_knowledge': target_knowledge, 'goal_type': goal_type, 'response': response, 'topic': topic, 'user_profile':user_profile, 'situation':situation}

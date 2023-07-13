@@ -21,8 +21,9 @@ import metric
 def main():
     # HJ 작업 --> 형준 여기서만 작업
     args = parseargs()
-    args.do_pipeline = True
-    args.ft_type, args.ft_topic, args.ft_know = True, True, True
+    args.ft_type, args.ft_topic, args.ft_know = True, True, False# True
+    # args.do_pipeline = True
+
     if sysChecker() == 'Linux': pass  # HJ KT-server
     args.bert_cache_name = os.path.join(args.home, "cache", args.kencoder_name)
     args.bart_cache_name = os.path.join(args.home, "cache", args.qencoder_name)
